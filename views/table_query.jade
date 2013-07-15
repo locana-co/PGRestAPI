@@ -20,10 +20,18 @@ block content
 		div(data-role='fieldcontain')
 			fieldset(data-role='controlgroup')
 					span Return geometry
-					label(for='optionsRadios1') Yes
-					input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes", checked="") Yes
-					label(for='optionsRadios2') No
-					input(type="radio", name="returnGeometry", id="optionsRadios2", value="no") No
+					-if(!returnGeometry || returnGeometry == 'yes'){
+						label(for='optionsRadios1') Yes
+						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes", checked="") Yes
+						label(for='optionsRadios2') No
+						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no") No
+					-}else{
+						label(for='optionsRadios1') Yes
+						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes") Yes
+						label(for='optionsRadios2') No
+						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no", checked="") No
+					-}
+					
 
 
 		div(data-role='fieldcontain')   
