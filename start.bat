@@ -1,2 +1,1 @@
-node server.js
-PAUSE
+nodemon app.js

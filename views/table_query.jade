@@ -1,0 +1,24 @@
+extends layout
+
+block content
+	pGIS Server
+	p #{table}: Query
+
+	table
+		thead
+			tr
+				th Columns
+		tbody
+			- if(table_details){
+			- var items = table_details
+			- each item in items
+				tr
+					td= item.column_name + " (" + item.data_type + ")"
+			-}
+
+
+block sidebar
+	.widget
+		h1 Operations
+		p
+			a(href="query") Query

@@ -1,0 +1,15 @@
+doctype 5
+html
+	head
+		title #{title}
+		link(rel='stylesheet', href='/stylesheets/style.css')
+	body
+		header
+			h1 pGIS Server
+		.container
+			.main-content
+				block content
+		.sidebar
+				block sidebar
+	footer
+		p Running on node with Express, Jade and Less

@@ -1,0 +1,37 @@
+extends layout
+
+block content
+	p
+		| Vivamus hendrerit arcu sed erat molestie
+		| vehicula. Sed auctor neque eu tellus
+		| rhoncus ut eleifend nibh porttitor. Ut in.
+	p
+		| Donec congue lacinia dui, a porttitor
+		| lectus condimentum laoreet. Nunc eu
+		| ullamcorper orci. Quisque eget odio ac
+		| lectus vestibulum faucibus eget in metus.
+		| In pellentesque faucibus vestibulum. Nulla
+		| at nulla justo, eget luctus tortor.
+	p Welcome to #{title}
+
+	table
+		thead
+			tr
+				th Name
+		tbody
+			- var items = list
+			- each item in items
+				tr
+					td
+						a(href=item.table_name + "/") #{item.table_name}
+
+
+block sidebar
+	.widget
+		h1 Widget
+			p
+				| Sed auctor neque eu tellus rhoncus ut
+				| eleifend nibh porttitor. Ut in nulla enim.
+			p
+				| Vivamus hendrerit arcu sed erat molestie
+				| vehicula.

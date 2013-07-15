@@ -1,9 +1,19 @@
 {
-  "name": "sdrestapi",
-  "description": "SpatialDev REST Endpoint for PostGIS Spatial Tables",
+  "name": "application-name",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "start": "node_modules\\.bin\\supervisor node app.js",
+    "test": "node_modules\\.bin\\mocha -u tdd"
+  },
   "dependencies": {
-    "express": "3.x"
+    "mocha":  "*",
+    "chai": "*",
+    "sinon": "*",
+    "supervisor": "*",
+    "express": "3.3.4",
+    "jade": "*",
+    "pg": "*",
+    "less-middleware": "*"
   }
 }
