@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+	"preinstall": "npm i -g nodemon",
     "start": "node_modules\\.bin\\supervisor node app.js",
     "test": "node_modules\\.bin\\mocha -u tdd"
   },

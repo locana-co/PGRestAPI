@@ -6,6 +6,20 @@ html
 	body
 		header
 			h1 pGIS Server
+		div.breadcrumbs
+			-if(breadcrumbs){
+				each crumb in breadcrumbs
+					-if(crumb.link == ""){
+						|#{crumb.name}
+					-}else{
+						a(href=crumb.link) #{crumb.name}
+						-if(breadcrumbs.length > 1){
+							&nbsp;
+							>
+							&nbsp;
+						-}
+					-}
+			-}
 		.container
 			.main-content
 				block content
