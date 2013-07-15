@@ -23,6 +23,7 @@ block content
 			- each item in items
 				tr
 					td= item.column_name + " (" + item.data_type + ")"
+					-if(item.data_type == "raster") 
 
 
 block sidebar
@@ -30,3 +31,8 @@ block sidebar
 		h1 Operations
 		p
 			a(href=baseURL + "/query") Query
+			&nbsp;
+			- each item in items
+				-if(item.data_type == "raster"){
+					a(href=baseURL +"/rasterOps") Raster Operations
+				-}

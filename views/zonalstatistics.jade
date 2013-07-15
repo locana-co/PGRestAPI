@@ -1,0 +1,60 @@
+extends layout
+
+block content
+	p #{table}: Zonal Statistics
+	p
+		| Define an area for which to get zonal statistics
+	form(action='',method='post')
+
+
+		div(data-role='fieldcontain')
+			fieldset(data-role='controlgroup')
+				label(for='stattype') Summary Statistic
+					select(id='stattype',name='stattype')
+						summarylist = [ 'sum', 'min', 'max','mean', 'stddev', 'count']
+							for item in summarylist
+								option #{item}
+		div(data-role='fieldcontain')
+			fieldset(data-role='controlgroup')
+				label(for='where') Where
+					input(id='where',type='text',value=where,placeholder='where',name='where')
+		div(data-role='fieldcontain')
+			fieldset(data-role='controlgroup')
+				label(for='wkt') Well Known Text (WKT) Polygon
+					textarea(id='wkt',placeholder='wkt',name='wkt')
+						|POLYGON((80.647 23.232,81.965 22.260,81.526 19.799,79.417 20.952,80.647 23.232))
+		-if (message){
+			.red message
+		-}			
+
+
+		div(data-role='fieldcontain')   
+			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
+
+		- if(table_details){
+			table
+				thead
+					tr
+						th Columns
+				tbody
+			
+					- var items = table_details
+					- each item in items
+						tr
+							td= item.column_name + " (" + item.data_type + ")"
+		-}
+
+
+block sidebar
+	.widget
+		h1 Results
+		.results
+			- if (query_results){
+				each row in query_results
+					-if(row.sum){
+						div.geometry #{row.sum}
+					-}else{
+						div.propertyGroup No results found
+					-}
+			-}
+			

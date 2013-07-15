@@ -155,13 +155,13 @@ routes['tableQuery'] = function (req, res) {
         query.on('end', function () {
             if (!req.body.format) {
                 //if no format specified, render html
-                res.render('table_query', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry });
+                res.render('table_query', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, {link: "", name: "Query"}] })
             }
             else {
                 //Check which format was specified
                 if (req.body.format && req.body.format == "html") {
                     //Render HTML page with results at bottom
-                    res.render('table_query', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry });
+                    res.render('table_query', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
                 }
                 else if (req.body.format && req.body.format == "json") {
                     //Respond with JSON
@@ -175,10 +175,91 @@ routes['tableQuery'] = function (req, res) {
     }
     else {
         //Render Query Form without any results.
-        res.render('table_query', { title: 'pGIS Server', table: req.params.table })
+        res.render('table_query', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
     }
 };
 
+
+//List available raster operations
+routes['rasterOps'] = function (req, res) {
+
+    var opslist = [{ link: 'zonalstatistics', name: 'Zonal Statistics' }];
+
+    res.render('rasterops', { baseURL: req.url, title: 'pGIS Server', opslist: opslist, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }] })
+
+};
+
+//Allow for Zonal Statistics Definition
+routes['zonalStats'] = function (req, res) {
+    //If the querystring is empty, just show the regular HTML form.
+
+    if (JSON.stringify(req.body) != '{}') {
+
+        //Get POST parameters
+        var empty = JSON.stringify(req.body);
+
+        //Setup Connection to PG
+        var client = new pg.Client(conString);
+        client.connect();
+
+        var statType = (req.body.statType ? req.body.statType : "sum");
+
+        //Add in WKT, if specified
+        var wkt = "";
+        if (req.body.wkt) {
+            wkt = " " + req.body.wkt;
+        }
+
+        if (wkt.length == 0) {
+            //Respond with friendly message
+            res.render('zonalstatistics', { message: "You must specify an input polygon in WKT format.", title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }] })
+        }
+
+        //build SQL query for zonal stats
+        var sql = "SELECT SUM((ST_SummaryStats(ST_Clip(rast,1,ST_GeomFromText('" +
+        req.body.wkt +
+        "', 4326))))." + statType + ")" +
+        "FROM " + req.params.table +
+        " WHERE ST_Intersects(ST_GeomFromText('" + req.body.wkt +
+        "', 4326),rast)";
+
+        //Log the query to the console, for debugging
+        console.log("Query: " + sql);
+        var query = client.query(sql);
+
+        //Loop thru results
+        var results_list = [];
+        query.on('row', function (row) {
+            results_list.push(row);
+        });
+
+        //On last result, decide how to write out results.
+        query.on('end', function () {
+            if (!req.body.format) {
+                //if no format specified, render html
+                res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+            }
+            else {
+                //Check which format was specified
+                if (req.body.format && req.body.format == "html") {
+                    //Render HTML page with results at bottom
+                    res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+                }
+                else if (req.body.format && req.body.format == "json") {
+                    //Respond with JSON
+                    res.header("Content-Type:", "application/json");
+                    res.end(JSON.stringify(results_list));
+                }
+            }
+            //End PG connection
+            client.end();
+        });
+    }
+    else {
+        //Render Query Form without any results.
+        res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, {link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" },{ link: "", name: "Zonal Statistics" }] })
+    }
+};
 
 
 
@@ -197,6 +278,15 @@ app.get('/services/:table/query', routes['tableQuery']);
 
 //When a Query gets posted - read attributes from post and render results
 app.post('/services/:table/query', routes['tableQuery']);
+
+//Raster Operations Home Page - get - display page with default form
+app.get('/services/:table/rasterOps', routes['rasterOps']);
+
+//ZonalStats - get - display page with default form
+app.get('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+
+//ZonalStats - POST - display page with results
+app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

@@ -1,0 +1,29 @@
+extends layout
+
+block content
+	p
+		| The following operations are available for your raster dataset.
+
+	table
+		thead
+			tr
+				th Operations
+		tbody
+			- var items = opslist
+			- each item in items
+				tr
+					td
+						a(href=baseURL + "/" + item.link) #{item.name}
+					
+
+
+block sidebar
+	.widget
+		h1 Operations
+		p
+			a(href=baseURL + "/query") Query
+			&nbsp;
+			- each item in items
+				-if(item.data_type == "raster"){
+					a(href=baseURL +"/rasterOps") Raster Operations
+				-}
