@@ -1,24 +1,66 @@
 extends layout
 
 block content
-	pGIS Server
 	p #{table}: Query
+	p
+		| Enter a where clause to retrieve a subset of features from this table
+	form(action='',method='post')
+		div(data-role='fieldcontain')
+			fieldset(data-role='controlgroup')
+				label(for='where') Where
+					input(id='where',type='text',value=where,placeholder='where',name='where')
 
-	table
-		thead
-			tr
-				th Columns
-		tbody
-			- if(table_details){
-			- var items = table_details
-			- each item in items
-				tr
-					td= item.column_name + " (" + item.data_type + ")"
-			-}
+		div(data-role='fieldcontain')
+			fieldset(data-role='controlgroup')
+				label(for='format') Format
+					select(id='format',name='format')
+						formatlist = [ 'html', 'json']
+							for item in formatlist
+								option #{item}
+		div(data-role='fieldcontain')
+			fieldset(data-role='controlgroup')
+					span Return geometry
+					label(for='optionsRadios1') Yes
+					input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes", checked="") Yes
+					label(for='optionsRadios2') No
+					input(type="radio", name="returnGeometry", id="optionsRadios2", value="no") No
+
+
+		div(data-role='fieldcontain')   
+			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
+
+		- if(table_details){
+			table
+				thead
+					tr
+						th Columns
+				tbody
+			
+					- var items = table_details
+					- each item in items
+						tr
+							td= item.column_name + " (" + item.data_type + ")"
+		-}
 
 
 block sidebar
 	.widget
-		h1 Operations
-		p
-			a(href="query") Query
+		h1 Results
+		.results
+			- if (query_results){
+				each row in query_results
+					-if(row.row_to_json.features){
+						i # records: #{row.row_to_json.features.length}
+						each val, key in row.row_to_json.features
+							div.propertyGroup
+								each ival, ikey in val.properties
+									div.property #{ikey}: #{ival}
+								-if(val.geometry){
+									each gval, gkey in val.geometry
+										div.geometry #{gkey}: #{gval}
+								-}
+					-}else{
+						div.propertyGroup No results found
+					-}
+			-}
+			
