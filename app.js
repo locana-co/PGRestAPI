@@ -48,10 +48,6 @@ routes['listTables'] = function (req, res) {
 
     var query = client.query(sql);
 
-    //Response
-    res.header("Content-Type:", "application/json");
-
-
     var table_list = [];
     query.on('row', function (row) {
 	table_list.push({ table_name: row.table_name });
@@ -72,10 +68,6 @@ routes['tableDetail'] = function (req, res) {
     var sql = "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = '" + req.params.table + "'";
 
     var query = client.query(sql);
-
-    //Response
-    res.header("Content-Type:", "application/json");
-
 
     var table_list = [];
     query.on('row', function (row) {
@@ -98,16 +90,12 @@ routes['tableQuery'] = function (req, res) {
         //Get POST parameters
         var empty = JSON.stringify(req.body);
 
-        //Setup Connection to PG
-        var client = new pg.Client(conString);
-        client.connect();
-
         var requestGeometry = "";
 
         //Did user specify to returnGeometry
         if (req.body.returnGeometry && req.body.returnGeometry.toLowerCase() == "yes") {
             //request the geometry
-               requestGeometry = " , ST_AsGeoJSON(st_geometryn(lg.geom, 1), 5)::json As geometry "
+               requestGeometry = " , ST_AsGeoJSON(st_geometryn(geom, 1), 5)::json As geometry "
         }
         else if (req.body.returnGeometry && req.body.returnGeometry.toLowerCase() == "no") {
             //Don't request it
@@ -115,63 +103,48 @@ routes['tableQuery'] = function (req, res) {
         }
         else {
             //just request it
-            requestGeometry = " , ST_AsGeoJSON(st_geometryn(lg.geom, 1), 5)::json As geometry "
+            requestGeometry = " , ST_AsGeoJSON(st_geometryn(geom, 1), 5)::json As geometry " //TODO: make geometry column name dynamic
+        }
+        
+        //Add in WHERE clause, if specified
+        var where = "";
+        if (req.body.where) {
+            where = " " + req.body.where;
+        }
+
+        if (where.length > 0) {
+            where = " WHERE " + where;
+        }
+        else {
+            where = " WHERE 1=1";
+        }
+
+        var fields = "";
+        if (req.body.returnfields) {
+            fields = req.body.returnfields;
+        }
+
+        //Because of the way the PG JSON query works, we can use the asterisk to select all.  Instead, we need to provide all columns (except geom).
+        if (fields.legnth == 0 || fields == "" || fields.trim() == "*") {
+            createSelectAllStatementWithExcept(req.params.table, "'geom'", function (gpFields) {
+                //build SQL query
+                var sql = "SELECT " + gpFields +
+                 requestGeometry +
+                " FROM " + req.params.table +
+                where;
+                completeExecuteSpatialQuery(req, res, sql)
+            }); //Get all fields except the no fly list. //TODO - make geom dynamic
+            return; //exit
         }
 
         //build SQL query
-        var sql = "SELECT row_to_json(fc) " +
-         "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features " +
-         "FROM (SELECT 'Feature' As type " +
+        var sql = "SELECT " + fields +
          requestGeometry +
-         "   , row_to_json(lp) As properties " +
-         "  FROM " + req.params.table + " As lg " +
-         "  INNER JOIN (";
-        
-        //Add in WHERE clause, if specified
-        var mods = "";
-        if (req.body.where) {
-            mods = " " + req.body.where;
-        }
+        " FROM " + req.params.table +
+        where;
 
-        if (mods.length > 0) {
-            mods = "WHERE " + mods;
-        }
+        completeExecuteSpatialQuery(req, res, sql);
 
-        //Finish building SQL String
-        sql += "SELECT gid, district, total_popu FROM " + req.params.table + ") As lp " +
-        " ON lg.gid = lp.gid " + mods + ") As f )  As fc;"
-
-        //Log the query to the console, for debugging
-        console.log("Query: " + sql);
-        var query = client.query(sql);
-
-        //Loop thru results
-        var results_list = [];
-        query.on('row', function (row) {
-            results_list.push(row);
-        });
-
-        //On last result, decide how to write out results.
-        query.on('end', function () {
-            if (!req.body.format) {
-                //if no format specified, render html
-                res.render('table_query', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, {link: "", name: "Query"}] })
-            }
-            else {
-                //Check which format was specified
-                if (req.body.format && req.body.format == "html") {
-                    //Render HTML page with results at bottom
-                    res.render('table_query', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
-                }
-                else if (req.body.format && req.body.format == "json") {
-                    //Respond with JSON
-                    res.header("Content-Type:", "application/json");
-                    res.end(JSON.stringify(results_list));
-                }
-            }
-            //End PG connection
-            client.end();
-        });
     }
     else {
         //Render Query Form without any results.
@@ -263,9 +236,11 @@ routes['zonalStats'] = function (req, res) {
 
 
 
+
+
 //Define Paths
 //Root Request
-app.get('/', function (req, res) { res.render('index', { title: 'pGIS Server' }) });
+app.get('/', function (req, res) { res.redirect('/services') });
 
 //List All Tables
 app.get('/services', routes['listTables']);
@@ -291,3 +266,74 @@ app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
+
+
+
+//pass in a table, and a comma separated list of fields to NOT select
+function createSelectAllStatementWithExcept(table, except_list, callback) {
+
+    var client = new pg.Client(conString);
+    client.connect();
+    
+    var sql = "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = '" + table + "' AND  c.column_name NOT IN(" + except_list + ")";
+
+    var query = client.query(sql);
+
+    console.log("field sql: " + sql);
+
+    var fields = [];
+    query.on('row', function (row) {
+        console.log(row);
+        fields.push(row.column_name);
+    });
+
+    query.on('end', function () {
+        client.end();
+        console.log(fields.join(","));
+        callback(fields.join(","));
+    });
+}
+
+function completeExecuteSpatialQuery(req, res, sql){
+
+    //Setup Connection to PG
+    var client = new pg.Client(conString);
+    client.connect();
+
+    //Log the query to the console, for debugging
+    console.log("Query: " + sql);
+    var query = client.query(sql);
+
+    //Loop thru results
+    var featureCollection = { "type": "FeatureCollection", "features": [] };
+    query.on('row', function (row) {
+        var feature = { "type": "Feature", "geometry": (row.geometry ? row.geometry : null), "properties": {} };
+        //remove the geometry property from the row object so we're just left with properties
+        if (row.geometry) delete row.geometry;
+        feature.properties = row;
+        featureCollection.features.push(feature);
+    });
+
+    //On last result, decide how to write out results.
+    query.on('end', function () {
+        if (!req.body.format) {
+            //if no format specified, render html
+            res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+        }
+        else {
+            //Check which format was specified
+            if (req.body.format && req.body.format == "html") {
+                //Render HTML page with results at bottom
+                res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+            }
+            else if (req.body.format && req.body.format == "json") {
+                //Respond with JSON
+                res.header("Content-Type:", "application/json");
+                res.end(JSON.stringify(featureCollection));
+            }
+        }
+        //End PG connection
+        client.end();
+    });
+ 
+}

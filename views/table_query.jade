@@ -5,21 +5,32 @@ block content
 	p
 		| Enter a where clause to retrieve a subset of features from this table
 	form(action='',method='post')
-		div(data-role='fieldcontain')
-			fieldset(data-role='controlgroup')
-				label(for='where') Where
+		table.inputTable
+			tr
+				td
+					label(for='where') Where
+				td
 					input(id='where',type='text',value=where,placeholder='where',name='where')
 
-		div(data-role='fieldcontain')
-			fieldset(data-role='controlgroup')
-				label(for='format') Format
+			tr
+				td
+					label(for='returnfields') Return Fields
+				td
+					input(id='returnfields',type='text',value=returnfields,placeholder='field1,field2',name='returnfields')
+
+
+			tr
+				td
+					label(for='format') Format
+				td
 					select(id='format',name='format')
 						formatlist = [ 'html', 'json']
 							for item in formatlist
 								option #{item}
-		div(data-role='fieldcontain')
-			fieldset(data-role='controlgroup')
+			tr
+				td
 					span Return geometry
+				td
 					-if(!returnGeometry || returnGeometry == 'yes'){
 						label(for='optionsRadios1') Yes
 						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes", checked="") Yes
@@ -31,7 +42,20 @@ block content
 						label(for='optionsRadios2') No
 						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no", checked="") No
 					-}
-					
+		
+			tr
+				td
+					label(for='groupby') Group By Fields
+				td
+					input(id='groupby',type='text',value=groupby,placeholder='field2,field3',name='groupby')
+		
+			tr
+				td
+					label(for='stats') Statistics definition
+				td
+					textarea(id='stats',placeholder='count:field1',name='stats')
+
+
 
 
 		div(data-role='fieldcontain')   
@@ -55,20 +79,19 @@ block sidebar
 	.widget
 		h1 Results
 		.results
-			- if (query_results){
-				each row in query_results
-					-if(row.row_to_json.features){
-						i # records: #{row.row_to_json.features.length}
-						each val, key in row.row_to_json.features
-							div.propertyGroup
-								each ival, ikey in val.properties
-									div.property #{ikey}: #{ival}
-								-if(val.geometry){
-									each gval, gkey in val.geometry
-										div.geometry #{gkey}: #{gval}
-								-}
-					-}else{
-						div.propertyGroup No results found
-					-}
+			- if (featureCollection){
+				-if(featureCollection.features){
+					i # records: #{featureCollection.features.length}
+					each val, key in featureCollection.features
+						div.propertyGroup
+							each ival, ikey in val.properties
+								div.property #{ikey}: #{ival}
+							-if(val.geometry){
+								each gval, gkey in val.geometry
+									div.geometry #{gkey}: #{gval}
+							-}
+				-}else{
+					div.propertyGroup No results found
+				-}
 			-}
 			
