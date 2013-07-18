@@ -51,9 +51,10 @@ block content
 		
 			tr
 				td
-					label(for='stats') Statistics definition
+					label(for='statsdef') Statistics definition
 				td
-					textarea(id='stats',placeholder='count:field1',name='stats')
+					textarea(id='statsdef',placeholder='count:field1',name='statsdef')
+						|#{statsdef}
 
 
 
@@ -61,18 +62,11 @@ block content
 		div(data-role='fieldcontain')   
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
-		- if(table_details){
-			table
-				thead
-					tr
-						th Columns
-				tbody
-			
-					- var items = table_details
-					- each item in items
-						tr
-							td= item.column_name + " (" + item.data_type + ")"
-		-}
+	
+	-if(infoMessage){
+		div.infoMessage
+			|#{infoMessage}
+	-}
 
 
 block sidebar

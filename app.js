@@ -121,11 +121,13 @@ routes['tableQuery'] = flow.define(
             this.where = " WHERE 1=1";
         }
 
+        //requested select fields
         var fields = "";
         if (this.req.body.returnfields) {
             fields = this.req.body.returnfields;
         }
 
+        //return geom?
         if (this.returnGeometry == "yes") {
             //If we got some geom queries, store them here.
             this.geometryStatement = geom_select_array.join(",");
@@ -133,9 +135,56 @@ routes['tableQuery'] = flow.define(
         else {
             this.geometryStatement = "";
             this.geom_fields_array = []; //empty it
+        } 
+
+        //group by? must be accompanied by some stats definitions
+        this.groupby = "";
+        this.statsdef = "";
+        if (this.req.body.groupby) {
+            if (this.req.body.statsdef) {
+                this.groupby = this.req.body.groupby;
+                this.statsdef = this.req.body.statsdef;
+                //If provided, a statistics definition will override the SELECT fields, and NO geometry is returned.  
+                //COULD work later to dissolve geometries by the group by field.
+                var statsDefArray = this.statsdef.split(","); //break up if multiple defs
+                var statsSQLArray = [];
+                var infoMessage = "";
+
+                statsDefArray.forEach(function (def) {
+                    if (def.split(":").length == 2) {
+                        statsSQLArray.push(def.split(":")[0].toLowerCase() + "(" + def.split(":")[1] + ")");
+                    }
+                    else {
+                        infoMessage = "must have 2 arguments for a stats def.  summary type: column name";
+                    }
+                });
+
+                if (infoMessage) {
+                    //Friendly message
+                    routes['onError'](this.req, this.res, "table_query", infoMessage);
+                    return;
+                }
+
+                //If we're here, then the group by fields should be added to the select statement as well.
+                statsSQLArray.push(this.groupby);
+
+                //We've got a new select statement. Override the old one.
+                fields = statsSQLArray.join(",");
+
+                //If we're overriding the select fields, then set returnGeometry to no. (For the time being);
+                this.geometryStatement = "";
+                this.geom_fields_array = []; //empty it
+                this.returnGeometry = "no";
+            }
+            else {
+                //friendly message - exit out
+                var infoMessage = "Group by clause must be accompanied by a statistics definition";
+                routes['onError'](this.req, this.res, "table_query", infoMessage);
+                return;
+            }
         }
 
-        //Because of the way the PG JSON query works, we can use the asterisk to select all.  Instead, we need to provide all columns (except geom).
+        //provide all columns (except geometries).
         if (fields.legnth == 0 || fields == "" || fields.trim() == "*") {
             createSelectAllStatementWithExcept(this.req.params.table, "'" + geom_fields_array.join("','") + "'", this); //Get all fields except the no fly list
         }
@@ -152,7 +201,8 @@ routes['tableQuery'] = flow.define(
         (this.geometryStatement ? ", " + this.geometryStatement : "") +
         " FROM " +
         this.req.params.table +
-        this.where;
+        this.where +
+        (this.groupby ? " GROUP BY " + this.groupby : "");
         completeExecuteSpatialQuery(this.req, this.res, sql, this.geom_fields_array);
     }
 );
@@ -212,6 +262,11 @@ routes['zonalStats'] = function (req, res) {
             results_list.push(row);
         });
 
+        //Handle query error - fires before end event
+        query.on('error', function (error) {
+            req.params.infoMessage = error;
+        });
+
         //On last result, decide how to write out results.
         query.on('end', function () {
             if (!req.body.format) {
@@ -237,6 +292,13 @@ routes['zonalStats'] = function (req, res) {
     else {
         //Render Query Form without any results.
         res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, {link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" },{ link: "", name: "Zonal Statistics" }] })
+    }
+};
+
+//A route to handle an error.  Pass in req, res, and the view you'd like to write to.
+routes['onError'] = function (req, res, view, message) {
+    if (view == "table_query") {
+        res.render('table_query', { title: 'pGIS Server', infoMessage: message, format: req.body.format, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
     }
 };
 
@@ -293,6 +355,11 @@ function createSelectAllStatementWithExcept(table, except_list, callback) {
         fields.push(row.column_name);
     });
 
+    //Handle query error - fires before end event
+    query.on('error', function (error) {
+        req.params.infoMessage = error;
+    });
+
     query.on('end', function () {
         client.end();
         console.log(fields.join(","));
@@ -320,6 +387,11 @@ function getGeometryFieldNames(table, callback) {
     query.on('row', function (row) {
         console.log("geom_names: " + row.column_name);
         geom_fields.push(row.column_name);
+    });
+
+    //Handle query error - fires before end event
+    query.on('error', function (error) {
+        req.params.infoMessage = error;
     });
 
     query.on('end', function () {
@@ -368,27 +440,30 @@ function completeExecuteSpatialQuery(req, res, sql, geom_fields_array){
         featureCollection.features.push(feature);
     });
 
+    //Handle query error - fires before end event
+    query.on('error', function (error) {
+        req.params.infoMessage = error;
+    });
+
     //On last result, decide how to write out results.
     query.on('end', function () {
-        if (!req.body.format) {
-            //if no format specified, render html
-            res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+
+        //Check which format was specified
+        if (!req.body.format || req.body.format == "html") {
+            //Render HTML page with results at bottom
+            res.render('table_query', { title: 'pGIS Server', infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
-        else {
-            //Check which format was specified
-            if (req.body.format && req.body.format == "html") {
-                //Render HTML page with results at bottom
-                res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
-            }
-            else if (req.body.format && req.body.format == "json") {
-                //Respond with JSON
-                res.header("Content-Type:", "application/json");
-                res.end(JSON.stringify(featureCollection));
-            }
+        else if (req.body.format && req.body.format == "json") {
+            //Respond with JSON
+            res.header("Content-Type:", "application/json");
+            res.end(JSON.stringify(featureCollection));
         }
+
         //End PG connection
         client.end();
     });
+
+
 }
 
 var createSpatialQuerySelectStatement = flow.define(
