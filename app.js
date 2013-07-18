@@ -8,7 +8,8 @@ var express = require('express')
   , routes = require('./routes')
   , user = require('./routes/user')
   , http = require('http')
-  , path = require('path');
+  , path = require('path')
+  , flow = require('flow');
 
 var app = express();
 
@@ -82,75 +83,80 @@ routes['tableDetail'] = function (req, res) {
 
 
 //Allow for Table Query
-routes['tableQuery'] = function (req, res) {
+routes['tableQuery'] = flow.define(
     //If the querystring is empty, just show the regular HTML form.
 
-    if (JSON.stringify(req.body) != '{}') {
+    function (req, res) {
+        this.req = req;
+        this.res = res;
 
-        //Get POST parameters
-        var empty = JSON.stringify(req.body);
-
-        var requestGeometry = "";
-
-        //Did user specify to returnGeometry
-        if (req.body.returnGeometry && req.body.returnGeometry.toLowerCase() == "yes") {
-            //request the geometry
-               requestGeometry = " , ST_AsGeoJSON(st_geometryn(geom, 1), 5)::json As geometry "
-        }
-        else if (req.body.returnGeometry && req.body.returnGeometry.toLowerCase() == "no") {
-            //Don't request it
-
+        // arguments passed to renameAndStat() will pass through to this first function
+        if (JSON.stringify(req.body) != '{}') {
+            //See if they want geometry
+            this.returnGeometry = (req.body.returnGeometry ? req.body.returnGeometry : "yes");
+            console.log("return Geometry = " + this.returnGeometry);
+            //either way, get the spatial columns so we can exclude them from the query
+            createSpatialQuerySelectStatement(req.params.table, this);
         }
         else {
-            //just request it
-            requestGeometry = " , ST_AsGeoJSON(st_geometryn(geom, 1), 5)::json As geometry " //TODO: make geometry column name dynamic
+            //Render Query Form without any results.
+            res.render('table_query', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
-        
+
+    }, function (geom_fields_array, geom_select_array) {
+        //Coming from createSpatialQuerySelectStatement
+        //Store the geom_fields for use later
+        this.geom_fields_array = geom_fields_array;
+
         //Add in WHERE clause, if specified
-        var where = "";
-        if (req.body.where) {
-            where = " " + req.body.where;
+        this.where = "";
+        if (this.req.body.where) {
+            this.where = " " + this.req.body.where;
         }
 
-        if (where.length > 0) {
-            where = " WHERE " + where;
+        if (this.where.length > 0) {
+            this.where = " WHERE " + this.where;
         }
         else {
-            where = " WHERE 1=1";
+            this.where = " WHERE 1=1";
         }
 
         var fields = "";
-        if (req.body.returnfields) {
-            fields = req.body.returnfields;
+        if (this.req.body.returnfields) {
+            fields = this.req.body.returnfields;
+        }
+
+        if (this.returnGeometry == "yes") {
+            //If we got some geom queries, store them here.
+            this.geometryStatement = geom_select_array.join(",");
+        }
+        else {
+            this.geometryStatement = "";
+            this.geom_fields_array = []; //empty it
         }
 
         //Because of the way the PG JSON query works, we can use the asterisk to select all.  Instead, we need to provide all columns (except geom).
         if (fields.legnth == 0 || fields == "" || fields.trim() == "*") {
-            createSelectAllStatementWithExcept(req.params.table, "'geom'", function (gpFields) {
-                //build SQL query
-                var sql = "SELECT " + gpFields +
-                 requestGeometry +
-                " FROM " + req.params.table +
-                where;
-                completeExecuteSpatialQuery(req, res, sql)
-            }); //Get all fields except the no fly list. //TODO - make geom dynamic
-            return; //exit
+            createSelectAllStatementWithExcept(this.req.params.table, "'" + geom_fields_array.join("','") + "'", this); //Get all fields except the no fly list
+        }
+        else {
+            //flow to next block - pass fields
+            this(fields);
         }
 
+    }, function (gpFields) {
+        //Coming from createSelectAllStatementWithExcept
         //build SQL query
-        var sql = "SELECT " + fields +
-         requestGeometry +
-        " FROM " + req.params.table +
-        where;
-
-        completeExecuteSpatialQuery(req, res, sql);
-
+        var sql = "SELECT " + gpFields +
+        //Dynamically plug in geometry piece depending on the geom field name(s)
+        (this.geometryStatement ? ", " + this.geometryStatement : "") +
+        " FROM " +
+        this.req.params.table +
+        this.where;
+        completeExecuteSpatialQuery(this.req, this.res, sql, this.geom_fields_array);
     }
-    else {
-        //Render Query Form without any results.
-        res.render('table_query', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
-    }
-};
+);
+
 
 
 //List available raster operations
@@ -188,7 +194,7 @@ routes['zonalStats'] = function (req, res) {
             res.render('zonalstatistics', { message: "You must specify an input polygon in WKT format.", title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }] })
         }
 
-        //build SQL query for zonal stats
+        //build SQL query for zonal stats - TODOD: make rast name dynamic
         var sql = "SELECT SUM((ST_SummaryStats(ST_Clip(rast,1,ST_GeomFromText('" +
         req.body.wkt +
         "', 4326))))." + statType + ")" +
@@ -294,7 +300,37 @@ function createSelectAllStatementWithExcept(table, except_list, callback) {
     });
 }
 
-function completeExecuteSpatialQuery(req, res, sql){
+//pass in a table, get an array of geometry columns
+function getGeometryFieldNames(table, callback) {
+
+    console.log("table: " + table);
+    if (table == '') callback([]); //If no table, return empty array
+
+    console.log("still here");
+
+    var client = new pg.Client(conString);
+    client.connect();
+
+    var sql = "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = '" + table + "'";
+
+    var query = client.query(sql);
+    console.log("swl: " + sql);
+
+    var geom_fields = [];
+    query.on('row', function (row) {
+        console.log("geom_names: " + row.column_name);
+        geom_fields.push(row.column_name);
+    });
+
+    query.on('end', function () {
+        client.end();
+        callback(geom_fields);
+    });
+}
+
+
+//After getting fields for a query, finish executing it and write results accordingly.
+function completeExecuteSpatialQuery(req, res, sql, geom_fields_array){
 
     //Setup Connection to PG
     var client = new pg.Client(conString);
@@ -307,9 +343,27 @@ function completeExecuteSpatialQuery(req, res, sql){
     //Loop thru results
     var featureCollection = { "type": "FeatureCollection", "features": [] };
     query.on('row', function (row) {
-        var feature = { "type": "Feature", "geometry": (row.geometry ? row.geometry : null), "properties": {} };
-        //remove the geometry property from the row object so we're just left with properties
-        if (row.geometry) delete row.geometry;
+        var feature = { "type": "Feature", "properties": {} };
+        //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
+
+        if (geom_fields_array && geom_fields_array.length == 1) {
+            //single geometry
+            if (row[geom_fields_array[0]]) {
+                feature.geometry = row[geom_fields_array[0]];
+                //remove the geometry property from the row object so we're just left with non-spatial properties
+                delete row[geom_fields_array[0]];
+            }
+        }
+        else if (geom_fields_array && geom_fields_array.length > 1) {
+            //if more than 1 geom, make a geomcollection property
+            feature.geometry = {"type": "GeometryCollection", "geometries": []};
+            geom_fields_array.forEach(function (item) {
+                feature.geometry.geometries.push(row[item]);
+                //remove the geometry property from the row object so we're just left with non-spatial properties
+                delete row[item];
+            });
+        }
+
         feature.properties = row;
         featureCollection.features.push(feature);
     });
@@ -318,13 +372,13 @@ function completeExecuteSpatialQuery(req, res, sql){
     query.on('end', function () {
         if (!req.body.format) {
             //if no format specified, render html
-            res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+            res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
         else {
             //Check which format was specified
             if (req.body.format && req.body.format == "html") {
                 //Render HTML page with results at bottom
-                res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+                res.render('table_query', { title: 'pGIS Server', table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
             }
             else if (req.body.format && req.body.format == "json") {
                 //Respond with JSON
@@ -335,5 +389,27 @@ function completeExecuteSpatialQuery(req, res, sql){
         //End PG connection
         client.end();
     });
- 
 }
+
+var createSpatialQuerySelectStatement = flow.define(
+    //If the querystring is empty, just show the regular HTML form.
+
+    function (table, callback) {
+        this.callback = callback;
+        getGeometryFieldNames(table, this);
+    },
+    function (geom_fields_array) {
+        //Array of geometry columns
+        console.log(" in geom fields. " + geom_fields_array.length);
+        if (geom_fields_array.length == 0) {
+            this.callback([], []);
+        }
+        else {
+            var geom_query_array = [];
+            geom_fields_array.forEach(function (item) {
+                geom_query_array.push("ST_AsGeoJSON(st_geometryn(" + item + ", 1), 5)::json As " + item);
+            });
+            this.callback(geom_fields_array, geom_query_array);
+        }
+    }
+ );

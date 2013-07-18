@@ -87,8 +87,15 @@ block sidebar
 							each ival, ikey in val.properties
 								div.property #{ikey}: #{ival}
 							-if(val.geometry){
-								each gval, gkey in val.geometry
-									div.geometry #{gkey}: #{gval}
+								-if(val.geometry.geometries){
+									each mgval, mgkey in val.geometry.geometries
+										-if(mgval.coordinates){
+											div.geometries #{mgval.type}: #{mgval.coordinates}
+										-}
+								-}else{
+									each gval, gkey in val.geometry
+										div.geometry #{gkey}: #{gval}
+								-}
 							-}
 				-}else{
 					div.propertyGroup No results found

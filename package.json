@@ -15,6 +15,7 @@
     "express": "3.3.4",
     "jade": "*",
     "pg": "*",
+    "flow": "*",
     "less-middleware": "*"
   }
 }
