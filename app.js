@@ -303,7 +303,7 @@ routes['zonalStats'] = function (req, res) {
                     //Render HTML page with results at bottom
                     res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, query_results: results_list, format: req.body.format, where: req.body.where, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
                 }
-                else if (req.body.format && req.body.format == "json") {
+                else if (req.body.format && req.body.format == "GeoJSON") {
                     //Respond with JSON
                     res.header("Content-Type:", "application/json");
                     res.end(JSON.stringify(results_list));
@@ -436,32 +436,10 @@ function completeExecuteSpatialQuery(req, res, sql, geom_fields_array){
     console.log("Query: " + sql);
     var query = client.query(sql);
 
-    //Loop thru results
-    var featureCollection = { "type": "FeatureCollection", "features": [] };
+    //formatting
+    var rows = [];
     query.on('row', function (row) {
-        var feature = { "type": "Feature", "properties": {} };
-        //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
-
-        if (geom_fields_array && geom_fields_array.length == 1) {
-            //single geometry
-            if (row[geom_fields_array[0]]) {
-                feature.geometry = row[geom_fields_array[0]];
-                //remove the geometry property from the row object so we're just left with non-spatial properties
-                delete row[geom_fields_array[0]];
-            }
-        }
-        else if (geom_fields_array && geom_fields_array.length > 1) {
-            //if more than 1 geom, make a geomcollection property
-            feature.geometry = {"type": "GeometryCollection", "geometries": []};
-            geom_fields_array.forEach(function (item) {
-                feature.geometry.geometries.push(row[item]);
-                //remove the geometry property from the row object so we're just left with non-spatial properties
-                delete row[item];
-            });
-        }
-
-        feature.properties = row;
-        featureCollection.features.push(feature);
+        rows.push(row);
     });
 
     //Handle query error - fires before end event
@@ -471,23 +449,28 @@ function completeExecuteSpatialQuery(req, res, sql, geom_fields_array){
 
     //On last result, decide how to write out results.
     query.on('end', function () {
+        //End PG connection
+        client.end();
 
         //Check which format was specified
         if (!req.body.format || req.body.format == "html") {
+            var formatted = geoJSONFormatter(rows, geom_fields_array); //The page will parse the geoJson to make the HTMl
             //Render HTML page with results at bottom
-            res.render('table_query', { title: 'pGIS Server', infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: featureCollection, format: req.body.format, wkt: req.body.wkt, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+            res.render('table_query', { title: 'pGIS Server', infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: formatted, format: req.body.format, wkt: req.body.wkt, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
-        else if (req.body.format && req.body.format == "json") {
+        else if (req.body.format && req.body.format == "GeoJSON") {
             //Respond with JSON
+            var formatted = geoJSONFormatter(rows, geom_fields_array);
             res.header("Content-Type:", "application/json");
-            res.end(JSON.stringify(featureCollection));
+            res.end(JSON.stringify(formatted));
         }
-
-        //End PG connection
-        client.end();
+        else if (req.body.format && req.body.format == "ESRI JSON") {
+            //Respond with ESRI JSON
+            var formatted = ESRIFeatureSetJSONFormatter(rows, geom_fields_array);
+            res.header("Content-Type:", "application/json");
+            res.end(JSON.stringify(formatted));
+        }
     });
-
-
 }
 
 var createSpatialQuerySelectStatement = flow.define(
@@ -512,3 +495,83 @@ var createSpatialQuerySelectStatement = flow.define(
         }
     }
  );
+
+
+function geoJSONFormatter(rows, geom_fields_array) {
+    //Take in results object, return GeoJSON
+
+    //Loop thru results
+    var featureCollection = { "type": "FeatureCollection", "features": [] };
+
+    rows.forEach(function(row){
+        var feature = { "type": "Feature", "properties": {} };
+        //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
+
+        if (geom_fields_array && geom_fields_array.length == 1) {
+            //single geometry
+            if (row[geom_fields_array[0]]) {
+                feature.geometry = row[geom_fields_array[0]];
+                //remove the geometry property from the row object so we're just left with non-spatial properties
+                delete row[geom_fields_array[0]];
+            }
+        }
+        else if (geom_fields_array && geom_fields_array.length > 1) {
+            //if more than 1 geom, make a geomcollection property
+            feature.geometry = { "type": "GeometryCollection", "geometries": [] };
+            geom_fields_array.forEach(function (item) {
+                feature.geometry.geometries.push(row[item]);
+                //remove the geometry property from the row object so we're just left with non-spatial properties
+                delete row[item];
+            });
+        }
+
+        feature.properties = row;
+        featureCollection.features.push(feature);
+    })
+
+    return featureCollection;
+}
+
+function ESRIFeatureSetJSONFormatter(rows, geom_fields_array) {
+    //Take in results object, return ESRI Flavor of GeoJSON
+
+    //Loop thru results
+    var featureSet = { "features": [], "geometryType": "" };
+
+    rows.forEach(function (row) {
+        var feature = { "attributes": {} };
+        //Depending on whether or not there is geometry properties, handle it.  
+        //Multiple geometry featureclasses don't exist in ESRI-land.  How to handle?  For now, just take the 1st one we come across
+        //TODO:  Make user choose what they want
+
+        if (geom_fields_array) {
+            //single geometry
+            if (row[geom_fields_array[0]]) {
+                //manipulate to conform
+                if(row[geom_fields_array[0]].type == "Polygon") featureSet.geometryType = "esriGeometryPolygon";
+                else if(row[geom_fields_array[0]].type == "Point") featureSet.geometryType = "esriGeometryPoint";
+                else if(row[geom_fields_array[0]].type == "Line") featureSet.geometryType = "esriGeometryLine";
+                else if(row[geom_fields_array[0]].type == "Polyline") featureSet.geometryType = "esriGeometryPolyline";
+                //TODO - add the rest
+                //TODO - support all types below
+                feature.geometry = {};
+
+                if(featureSet.geometryType = "esriGeometryPolygon"){
+                    feature.geometry.rings = row[geom_fields_array[0]].coordinates;
+                }
+                else{
+                    feature.geometry = row[geom_fields_array[0]];
+                }
+                //remove the geometry property from the row object so we're just left with non-spatial properties
+                delete row[geom_fields_array[0]];
+            }
+        }
+
+
+        feature.attributes = row;
+        featureSet.features.push(feature);
+    })
+
+    return featureSet;
+}
+
