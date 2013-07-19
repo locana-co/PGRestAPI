@@ -107,22 +107,13 @@ routes['tableQuery'] = flow.define(
         //Coming from createSpatialQuerySelectStatement
         //Store the geom_fields for use later
         this.geom_fields_array = geom_fields_array;
-
-        //Add in WHERE clause, if specified
         this.where = "";
-        if (this.req.body.where) {
-            this.where = " " + this.req.body.where;
-        }
-
-        if (this.where.length > 0) {
-            this.where = " WHERE " + this.where;
-        }
-        else {
-            this.where = " WHERE 1=1";
-        }
+        var fields = "";
+        this.groupby = "";
+        this.statsdef = "";
 
         //requested select fields
-        var fields = "";
+        
         if (this.req.body.returnfields) {
             fields = this.req.body.returnfields;
         }
@@ -138,8 +129,7 @@ routes['tableQuery'] = flow.define(
         } 
 
         //group by? must be accompanied by some stats definitions
-        this.groupby = "";
-        this.statsdef = "";
+
         if (this.req.body.groupby) {
             if (this.req.body.statsdef) {
                 this.groupby = this.req.body.groupby;
@@ -155,7 +145,7 @@ routes['tableQuery'] = flow.define(
                         statsSQLArray.push(def.split(":")[0].toLowerCase() + "(" + def.split(":")[1] + ")");
                     }
                     else {
-                        infoMessage = "must have 2 arguments for a stats def.  summary type: column name";
+                        infoMessage = "must have 2 arguments for a stats definition, such as -  sum:columnname";
                     }
                 });
 
@@ -181,6 +171,40 @@ routes['tableQuery'] = flow.define(
                 var infoMessage = "Group by clause must be accompanied by a statistics definition";
                 routes['onError'](this.req, this.res, "table_query", infoMessage);
                 return;
+            }
+        }
+
+        //Add in WKT Geometry to WHERE clause , if specified
+        //For now, assuming 4326.  TODO
+        this.wkt = "";
+        if (this.req.body.wkt) {
+            //For each geometry in the table, give an intersects clause
+            var wkt_array = [];
+            var wkt = this.req.body.wkt;
+            geom_fields_array.forEach(function (item) {
+                wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
+            });
+            this.wkt = wkt_array;
+        } 
+
+        //Add in WHERE clause, if specified
+        
+        if (this.req.body.where) {
+            this.where = " " + this.req.body.where;
+        }
+
+        if (this.where.length > 0) {
+            this.where = " WHERE " + this.where;
+            if (this.wkt) {
+                this.where += " AND (" + this.wkt.join(" OR ") + ")";
+            }
+        }
+        else {
+            if (this.wkt) {
+                this.where += " WHERE (" + this.wkt.join(" OR ") + ")";
+            }
+            else {
+                this.where = " WHERE 1=1";
             }
         }
 
@@ -451,7 +475,7 @@ function completeExecuteSpatialQuery(req, res, sql, geom_fields_array){
         //Check which format was specified
         if (!req.body.format || req.body.format == "html") {
             //Render HTML page with results at bottom
-            res.render('table_query', { title: 'pGIS Server', infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: featureCollection, format: req.body.format, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+            res.render('table_query', { title: 'pGIS Server', infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: featureCollection, format: req.body.format, wkt: req.body.wkt, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
         else if (req.body.format && req.body.format == "json") {
             //Respond with JSON

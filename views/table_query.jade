@@ -53,12 +53,15 @@ block content
 				td
 					label(for='statsdef') Statistics definition
 				td
-					textarea(id='statsdef',placeholder='count:field1',name='statsdef')
+					textarea(id='statsdef',placeholder='count:field1,sum:field2',name='statsdef')
 						|#{statsdef}
-
-
-
-
+			
+			tr
+				td
+					label(for='wkt') Well Known Text (WKT) Geometry
+				td
+					textarea(id='wkt',placeholder='POLYGON((85.341 25.811,85.523 25.838,85.665 25.719,85.479 25.598,85.278 25.687,85.341 25.811))',name='wkt')
+						|#{wkt}
 		div(data-role='fieldcontain')   
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
