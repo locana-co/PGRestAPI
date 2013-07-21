@@ -16,6 +16,7 @@
     "jade": "*",
     "pg": "*",
     "flow": "*",
-    "less-middleware": "*"
+    "less-middleware": "*",
+    "node-phantom" : "*"
   }
 }

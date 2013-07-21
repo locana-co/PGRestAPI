@@ -20,6 +20,12 @@ a {
   padding: 3px 11px 5px 0;
 }
 .infoMessage {
+  background-color: #FFFFE0;
+  padding: 20px;
+  border: 1px solid #000;
+  margin-top: 40px;
+}
+.errorMessage {
   background-color: pink;
   padding: 20px;
   border: 1px solid #000;
@@ -28,4 +34,10 @@ a {
 textarea {
   width: 200px;
   height: 100px;
+}
+.preview {
+  margin-top: 50px;
+}
+#url {
+  width: 400px;
 }

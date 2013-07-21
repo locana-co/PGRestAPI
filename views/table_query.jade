@@ -42,7 +42,23 @@ block content
 						label(for='optionsRadios2') No
 						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no", checked="") No
 					-}
-		
+			
+			tr
+				td
+					span Return feature envelope(s)
+				td
+					-if(!returnGeometryEnv || returnGeometryEnv == 'no'){
+						label(for='optionsGeomEnv1') Yes
+						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv1", value="yes") Yes
+						label(for='optionsGeomEnv2') No
+						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv2", value="no", checked="") No
+					-}else{
+						label(for='optionsGeomEnv1') Yes
+						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv1", value="yes", checked="") Yes
+						label(for='optionsGeomEnv2') No
+						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv2", value="no") No
+					-}
+
 			tr
 				td
 					label(for='groupby') Group By Fields
@@ -69,6 +85,10 @@ block content
 	-if(infoMessage){
 		div.infoMessage
 			|#{infoMessage}
+	-}
+	-if(errorMessage){
+		div.errorMessage
+			|#{errorMessage}
 	-}
 
 

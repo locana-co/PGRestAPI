@@ -5,12 +5,19 @@ PGRestAPI
 
 Node.js REST API for PostGres Spatial Entities.
 
+## Dependencies
+
+PostGres w/ PostGIS
+pg
+
+
 ## For Windows Folks:
 
-Dependencies:
+if you encounter errors related to "git config returned wrong result" when installing modules, explicitly set the git.exe location like so: $ npm config set "git" "C:\path\to.exe" 
+
 On Windows with multiple versions of .NET, use:
-pg (npm install pg --msvs_version=2012)
-express (npm install express)
+npm install pg --msvs_version=2012)
+
 
 ## For Hipster Ubuntu Linux Folks:
 This "works on my machine" for Ubuntu Linux 12.04.  Contribute your changes as needed.
