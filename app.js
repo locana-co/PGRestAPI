@@ -10,7 +10,8 @@ var express = require('express')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-  , flow = require('flow');
+  , flow = require('flow')
+  , shortId = require('shortid');
 
 var app = express();
 
@@ -441,40 +442,39 @@ routes['print'] = function (req, res) {
                             }, function (err, result) {
                                 setTimeout(function () {
                                     var outputURL = req.protocol + "://" + req.get('host') + "/output/";
+                                    var filename = 'phantomoutput' + shortId.generate() + '.' + imageformat;
                                     if (result && result.clipRect) {
                                         //Clip
                                         page.set('clipRect', { width: result.clipRect.width, height: result.clipRect.height, top: result.clipRect.top, left: result.clipRect.left }, function (err) {
-                                            return page.render('output/phantomoutput.' + imageformat, function () {
+                                            return page.render('output/' + filename, function () {
                                                 console.log('Page Rendered - ' + (err || result));
                                                 ph.exit();
                                                 //Render
-                                                var imageLink = 'phantomoutput.' + imageformat;
                                                 if (format == "html") {
-                                                    res.render('print', { imageLink: imageLink, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
+                                                    res.render('print', { imageLink: filename, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
                                                 }
                                                 else if (format == "json") {
                                                     //Respond with JSON
                                                     res.header("Content-Type:", "application/json");
-                                                    res.end(JSON.stringify({ image: outputURL + imageLink }));
+                                                    res.end(JSON.stringify({ image: outputURL + filename }));
                                                 }
                                             });
                                         });
                                     }
                                     else {
                                         //Don't clip                                 
-                                        return page.render('output/phantomoutput.' + imageformat, function () {
+                                        return page.render('output/' + filename, function () {
                                             console.log('Page Rendered - ' + (err || result));
                                             ph.exit();
                                             //Render
-                                            var imageLink = 'phantomoutput.' + imageformat;
                                             if (format == "html") {
 
-                                                res.render('print', { imageLink: imageLink, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
+                                                res.render('print', { imageLink: filename, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
                                             }
                                             else if (format == "json") {
                                                 //Respond with JSON
                                                 res.header("Content-Type:", "application/json");
-                                                res.end(JSON.stringify({ image: outputURL + imageLink }));
+                                                res.end(JSON.stringify({ image: outputURL + filename }));
                                             }
                                         });
                                     }
