@@ -21,10 +21,19 @@ block content
 
 			tr
 				td
-					label(for='format') Format
+					label(for='imageformat') Image Format
+				td
+					select(id='imageformat',name='imageformat')
+						formatlist = [ 'png', 'pdf', 'jpg', 'gif']
+							for item in formatlist
+								option #{item}
+
+			tr
+				td
+					label(for='format') Response Format
 				td
 					select(id='format',name='format')
-						formatlist = [ 'png', 'pdf', 'jpg', 'gif']
+						formatlist = ['html','json']
 							for item in formatlist
 								option #{item}
 			

@@ -369,7 +369,12 @@ routes['print'] = function (req, res) {
             delay = 1000;
         }
 
-        var format = "png"; //default
+        var imageformat = "png"; //default
+        if (req.body.imageformat) {
+            imageformat = req.body.imageformat;
+        }
+
+        var format = "html"; //default
         if (req.body.format) {
             format = req.body.format;
         }
@@ -435,26 +440,42 @@ routes['print'] = function (req, res) {
 
                             }, function (err, result) {
                                 setTimeout(function () {
+                                    var outputURL = req.protocol + "://" + req.get('host') + "/output/";
                                     if (result && result.clipRect) {
                                         //Clip
                                         page.set('clipRect', { width: result.clipRect.width, height: result.clipRect.height, top: result.clipRect.top, left: result.clipRect.left }, function (err) {
-                                            return page.render('output/phantomoutput.' + format, function () {
+                                            return page.render('output/phantomoutput.' + imageformat, function () {
                                                 console.log('Page Rendered - ' + (err || result));
                                                 ph.exit();
                                                 //Render
-                                                var imageLink = 'phantomoutput.' + format;
-                                                res.render('print', { imageLink: imageLink, errorMessage: err, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
+                                                var imageLink = 'phantomoutput.' + imageformat;
+                                                if (format == "html") {
+                                                    res.render('print', { imageLink: imageLink, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
+                                                }
+                                                else if (format == "json") {
+                                                    //Respond with JSON
+                                                    res.header("Content-Type:", "application/json");
+                                                    res.end(JSON.stringify({ image: outputURL + imageLink }));
+                                                }
                                             });
                                         });
                                     }
                                     else {
                                         //Don't clip                                 
-                                        return page.render('output/phantomoutput.' + format, function () {
+                                        return page.render('output/phantomoutput.' + imageformat, function () {
                                             console.log('Page Rendered - ' + (err || result));
                                             ph.exit();
                                             //Render
-                                            var imageLink = 'phantomoutput.' + format;
-                                            res.render('print', { imageLink: imageLink, errorMessage: err, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
+                                            var imageLink = 'phantomoutput.' + imageformat;
+                                            if (format == "html") {
+
+                                                res.render('print', { imageLink: imageLink, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
+                                            }
+                                            else if (format == "json") {
+                                                //Respond with JSON
+                                                res.header("Content-Type:", "application/json");
+                                                res.end(JSON.stringify({ image: outputURL + imageLink }));
+                                            }
                                         });
                                     }
                                 }, 3000); //wait a sec
