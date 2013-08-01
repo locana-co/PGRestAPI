@@ -9,6 +9,7 @@ Node.js REST API for PostGres Spatial Entities.
 
 PostGres w/ PostGIS
 pg
+PhantomJS
 
 
 ## For Windows Folks:

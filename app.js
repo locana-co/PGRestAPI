@@ -3,15 +3,13 @@
  * Module dependencies.
  */
 var pg = require('pg');
-var phantom = require('node-phantom');
 
 var express = require('express')
   , routes = require('./routes')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-  , flow = require('flow')
-  , shortId = require('shortid');
+  , flow = require('flow');
 
 var app = express();
 
@@ -20,6 +18,7 @@ var routes = [];
 var conString = "postgres://postgres:p0stgr3s*1@localhost:5434/crs";
 
 // all environments
+app.set('ipaddr', 'localhost');
 app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
@@ -32,7 +31,6 @@ app.use(express.session());
 app.use(app.router);
 app.use(require('less-middleware')({ src: __dirname + '/public' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use("/output", express.static(path.join(__dirname, 'output')));
 
 
 // development only
@@ -44,23 +42,27 @@ if ('development' == app.get('env')) {
 
 //Get list of public base tables from postgres
 routes['listTables'] = function (req, res) {
- 
-    var client = new pg.Client(conString);
-    client.connect();
 
-    var sql = "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and table_type = 'BASE TABLE' ORDER BY table_schema,table_name;"
+    try {
+        var client = new pg.Client(conString);
+        client.connect();
 
-    var query = client.query(sql);
+        var sql = "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and table_type = 'BASE TABLE' ORDER BY table_schema,table_name;"
 
-    var table_list = [];
-    query.on('row', function (row) {
-	table_list.push({ table_name: row.table_name });
-    });
+        var query = client.query(sql);
 
-    query.on('end', function () {
-        res.render('index', {baseURL: req.url, title: 'pGIS Server', list: table_list, breadcrumbs: [{ link: "/services", name: "Home"}] })
-        client.end();
-    });
+        var table_list = [];
+        query.on('row', function (row) {
+            table_list.push({ table_name: row.table_name });
+        });
+
+        query.on('end', function () {
+            res.render('index', { baseURL: req.url, title: 'pGIS Server', list: table_list, breadcrumbs: [{ link: "/services", name: "Home" }] })
+            client.end();
+        });
+    } catch (e) {
+        res.end("out");
+    }
 };
 
 //List properties of the selected table, along with operations.
@@ -117,7 +119,7 @@ routes['tableQuery'] = flow.define(
         this.statsdef = "";
 
         //requested select fields
-        
+
         if (this.req.body.returnfields) {
             fields = this.req.body.returnfields;
         }
@@ -199,10 +201,10 @@ routes['tableQuery'] = flow.define(
                 wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
             });
             this.wkt = wkt_array;
-        } 
+        }
 
         //Add in WHERE clause, if specified
-        
+
         if (this.req.body.where) {
             this.where = " " + this.req.body.where;
         }
@@ -329,7 +331,7 @@ routes['zonalStats'] = function (req, res) {
     }
     else {
         //Render Query Form without any results.
-        res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, {link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" },{ link: "", name: "Zonal Statistics" }] })
+        res.render('zonalstatistics', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }] })
     }
 };
 
@@ -342,160 +344,6 @@ routes['onError'] = function (req, res, view, message) {
         res.render('print', { errorMessage: message, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
     }
 };
-
-routes['print'] = function (req, res) {
-    if (JSON.stringify(req.body) != '{}') {
-
-        //Gather options
-        var url = "";
-        if (req.body.url) {
-            url = req.body.url;
-        }
-        else {
-            routes['onError'](req, res, "print", "You must specify a URL.");
-        }
-
-        var delay = 1000;
-        if (req.body.delay) {
-            delay = req.body.delay;
-            if (IsNumeric(delay)) {
-                delay = parseInt(delay);
-            }
-            else {
-                delay = 1000;
-                req.params.infoMessage = "Delay was non-numeric.  Defaulting to 1000 ms";
-            }
-        }
-        else {
-            delay = 1000;
-        }
-
-        var imageformat = "png"; //default
-        if (req.body.imageformat) {
-            imageformat = req.body.imageformat;
-        }
-
-        var format = "html"; //default
-        if (req.body.format) {
-            format = req.body.format;
-        }
-
-        var selector = ""; //default - nothing
-        if (req.body.selector) {
-            selector = req.body.selector;
-        }
-
-        var codeblock = ""; //default - nothing
-        if (req.body.codeblock) {
-            codeblock = req.body.codeblock;
-        }
-
-        //DO IT
-        console.log("Creating Phantom Instance...");
-        phantom.create(function (err, ph) {
-            console.log("Creating Page Object...");
-            return ph.createPage(function (err, page) {
-                //set size
-                console.log("Setting Page size...");
-                page.set('viewportSize', { width: 1200, height: 800 }, function (err) {
-                    console.log("Opening Page...");
-                    return page.open(url, function (status) {
-                        console.log("Opened Page...");
-
-                        //Let page render before continuing
-                        setTimeout(function () {
-                            console.log("inside of settimeout");
-                            page.onConsoleMessage = function (msg) { console.log(msg); };
-                            return page.evaluate(function (args) {
-                                
-                                console.log("Codeblock: " + args.codeblock);
-                                console.log("Evaluating js...");
-                                console.log("selector: " + args.selector);
-                                console.log("args: " + args);
-
-                                //Execute any pre-rendering javascript here
-                                if (args.codeblock) {
-                                    console.log("About to execute pre-render logic.");
-                                    var preFunk;
-                                    try {
-                                        preFunk = (new Function("return function() {" + args.codeblock + "};"))();
-                                        console.log(preFunk);
-                                        preFunk();
-                                    } catch (e) {
-                                        
-                                    }
-                                    console.log("Executed pre-render logic.");
-                                }
-
-                                if (args.selector) {
-                                    console.log("Getting clip extent");
-
-                                    var clipRect = document.querySelector(args.selector).getBoundingClientRect();
-                                    console.log(clipRect);
-
-                                    return { "clipRect": clipRect };
-                                }
-                                else {
-                                    return {};
-                                }
-
-                            }, function (err, result) {
-                                setTimeout(function () {
-                                    var outputURL = req.protocol + "://" + req.get('host') + "/output/";
-                                    var filename = 'phantomoutput' + shortId.generate() + '.' + imageformat;
-                                    if (result && result.clipRect) {
-                                        //Clip
-                                        page.set('clipRect', { width: result.clipRect.width, height: result.clipRect.height, top: result.clipRect.top, left: result.clipRect.left }, function (err) {
-                                            return page.render('output/' + filename, function () {
-                                                console.log('Page Rendered - ' + (err || result));
-                                                ph.exit();
-                                                //Render
-                                                if (format == "html") {
-                                                    res.render('print', { imageLink: filename, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
-                                                }
-                                                else if (format == "json") {
-                                                    //Respond with JSON
-                                                    res.header("Content-Type:", "application/json");
-                                                    res.end(JSON.stringify({ image: outputURL + filename }));
-                                                }
-                                            });
-                                        });
-                                    }
-                                    else {
-                                        //Don't clip                                 
-                                        return page.render('output/' + filename, function () {
-                                            console.log('Page Rendered - ' + (err || result));
-                                            ph.exit();
-                                            //Render
-                                            if (format == "html") {
-
-                                                res.render('print', { imageLink: filename, errorMessage: err, imageformat: req.body.imageformat, format: req.body.format, url: req.body.url, delay: req.body.delay, selector: req.body.selector, codeblock: req.body.codeblock, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] })
-                                            }
-                                            else if (format == "json") {
-                                                //Respond with JSON
-                                                res.header("Content-Type:", "application/json");
-                                                res.end(JSON.stringify({ image: outputURL + filename }));
-                                            }
-                                        });
-                                    }
-                                }, 3000); //wait a sec
-
-
-                            }, { codeblock: codeblock, selector: selector}); //arguments to be passed to page.evaluate
-
-                        }, delay);
-                    });
-                });
-            });
-        });
-    }
-    else {
-        //Render Query Form without any results.
-        res.render('print', { breadcrumbs: [{ link: "/services", name: "Home" }, { link: "", name: "Print" }] });
-    }
-
-};
-
 
 
 
@@ -525,16 +373,10 @@ app.get('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 //ZonalStats - POST - display page with results
 app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 
-//Print API
-app.get('/print', routes['print']);
-
-//Post Options
-app.post('/print', routes['print']);
 
 
-
-http.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
+http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
+    console.log('Express server listening on IP:' + app.get('ipaddr') + ', port ' + app.get('port'));
 });
 
 
@@ -544,7 +386,7 @@ function createSelectAllStatementWithExcept(table, except_list, callback) {
 
     var client = new pg.Client(conString);
     client.connect();
-    
+
     var sql = "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = '" + table + "' AND  c.column_name NOT IN(" + except_list + ")";
 
     var query = client.query(sql);
@@ -604,7 +446,7 @@ function getGeometryFieldNames(table, callback) {
 
 
 //After getting fields for a query, finish executing it and write results accordingly.
-function completeExecuteSpatialQuery(req, res, sql, geom_fields_array){
+function completeExecuteSpatialQuery(req, res, sql, geom_fields_array) {
 
     //Setup Connection to PG
     var client = new pg.Client(conString);
@@ -681,7 +523,7 @@ function geoJSONFormatter(rows, geom_fields_array) {
     //Loop thru results
     var featureCollection = { "type": "FeatureCollection", "features": [] };
 
-    rows.forEach(function(row){
+    rows.forEach(function (row) {
         var feature = { "type": "Feature", "properties": {} };
         //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
 
@@ -726,18 +568,18 @@ function ESRIFeatureSetJSONFormatter(rows, geom_fields_array) {
             //single geometry
             if (row[geom_fields_array[0]]) {
                 //manipulate to conform
-                if(row[geom_fields_array[0]].type == "Polygon") featureSet.geometryType = "esriGeometryPolygon";
-                else if(row[geom_fields_array[0]].type == "Point") featureSet.geometryType = "esriGeometryPoint";
-                else if(row[geom_fields_array[0]].type == "Line") featureSet.geometryType = "esriGeometryLine";
-                else if(row[geom_fields_array[0]].type == "Polyline") featureSet.geometryType = "esriGeometryPolyline";
+                if (row[geom_fields_array[0]].type == "Polygon") featureSet.geometryType = "esriGeometryPolygon";
+                else if (row[geom_fields_array[0]].type == "Point") featureSet.geometryType = "esriGeometryPoint";
+                else if (row[geom_fields_array[0]].type == "Line") featureSet.geometryType = "esriGeometryLine";
+                else if (row[geom_fields_array[0]].type == "Polyline") featureSet.geometryType = "esriGeometryPolyline";
                 //TODO - add the rest
                 //TODO - support all types below
                 feature.geometry = {};
 
-                if(featureSet.geometryType = "esriGeometryPolygon"){
+                if (featureSet.geometryType = "esriGeometryPolygon") {
                     feature.geometry.rings = row[geom_fields_array[0]].coordinates;
                 }
-                else{
+                else {
                     feature.geometry = row[geom_fields_array[0]];
                 }
                 //remove the geometry property from the row object so we're just left with non-spatial properties
@@ -769,14 +611,4 @@ function IsNumeric(sText) {
         }
     }
     return IsNumber;
-}
-
-function functionFromString(funcDef) {
-    if (!funcDef) funcDef = "";
-    try {
-        return (new Function("return function() {" + funcDef + "};"))();
-    } catch (e) {
-        alert(e);
-        return (function () { });
-    }
 }

@@ -14,7 +14,7 @@ block content
 
 			tr
 				td
-					label(for='delay') Delay (how long to wait before trying to capture page state, in milliseconds)
+					label(for='delay') Page Load Delay (how long to wait before trying to capture page state, in milliseconds)
 				td
 					input(id='delay',type='text',value=delay,placeholder='3000',name='delay')
 
@@ -42,13 +42,20 @@ block content
 					label(for='selector') Selector (#myId or .myClass) to crop
 				td
 					input(id='selector',type='text',value=selector,placeholder='#mapDiv',name='selector')
-		
+			
+
 			tr
 				td
 					label(for='codeblock') Pre-execution Javascript (Code to run before the image is caputured)
 				td
 					textarea(id='codeblock',placeholder='map.setExtent(myExtent);',name='codeblock')
 						|#{codeblock}
+
+			tr
+				td
+					label(for='pedelay') Pre-execution Delay (how long to wait after running pre-execution javascript, in milliseconds)
+				td
+					input(id='pedelay',type='text',value=pedelay,placeholder='3000',name='pedelay')
 			
 
 		div(data-role='fieldcontain')   

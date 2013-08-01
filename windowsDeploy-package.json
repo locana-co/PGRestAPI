@@ -1,0 +1,26 @@
+{
+  "name": "application-name",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "preinstall": "npm i -g nodemon",
+    "start": "node_modules\\.bin\\supervisor node app.js",
+    "test": "node_modules\\.bin\\mocha -u tdd",
+    "install-windows-service": "winser -i",
+    "uninstall-windows-service": "winser -r"
+  },
+  "dependencies": {
+    "mocha": "*",
+    "chai": "*",
+    "sinon": "*",
+    "supervisor": "*",
+    "express": "3.3.4",
+    "jade": "*",
+    "pg": "*",
+    "flow": "*",
+    "less-middleware": "*",
+    "node-phantom": "*",
+    "shortid": "~2.0.0",
+    "winser": "*"
+  }
+}
