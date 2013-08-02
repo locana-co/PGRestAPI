@@ -15,7 +15,7 @@ var app = express();
 
 var routes = [];
 
-var conString = "postgres://postgres:p0stgr3s*1@localhost:5434/crs";
+var conString = "postgres://postgres:postgres@ec2-54-227-245-32.compute-1.amazonaws.com:5432/test";
 
 // all environments
 app.set('ipaddr', 'localhost');
@@ -109,10 +109,11 @@ routes['tableQuery'] = flow.define(
             res.render('table_query', { title: 'pGIS Server', table: req.params.table, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
 
-    }, function (geom_fields_array, geom_select_array) {
+    }, function (geom_fields_array, geom_select_array, geom_envelope_array) {
         //Coming from createSpatialQuerySelectStatement
         //Store the geom_fields for use later
         this.geom_fields_array = geom_fields_array;
+        this.geom_envelope_array = geom_envelope_array;
         this.where = "";
         var fields = "";
         this.groupby = "";
@@ -137,11 +138,14 @@ routes['tableQuery'] = flow.define(
         //return geom envelopes?
         if (this.returnGeometryEnvelopes == "yes") {
             //If we got some geom queries, store them here.
-            this.geometryStatement = geom_select_array.join(",");
+            if(this.geometryStatement){
+                this.geometryStatement += "," + geom_envelope_array.join(",");
+            }else{
+                this.geometryStatement = geom_envelope_array.join(",");
+            }
         }
         else {
-            this.geometryStatement = "";
-            this.geom_fields_array = []; //empty it
+            this.geom_envelope_array = []; //empty it
         }
 
         //group by? must be accompanied by some stats definitions
@@ -180,6 +184,7 @@ routes['tableQuery'] = flow.define(
                 //If we're overriding the select fields, then set returnGeometry to no. (For the time being);
                 this.geometryStatement = "";
                 this.geom_fields_array = []; //empty it
+                this.geom_envelope_array = [];
                 this.returnGeometry = "no";
             }
             else {
@@ -432,7 +437,7 @@ function getGeometryFieldNames(table, callback) {
         console.log("geom_names: " + row.column_name);
         geom_fields.push(row.column_name);
     });
-
+    0
     //Handle query error - fires before end event
     query.on('error', function (error) {
         req.params.errorMessage = error;
@@ -459,7 +464,7 @@ function completeExecuteSpatialQuery(req, res, sql, geom_fields_array) {
     //formatting
     var rows = [];
     query.on('row', function (row) {
-        rows.push(row);
+        rows.push(row);0
     });
 
     //Handle query error - fires before end event
@@ -476,7 +481,7 @@ function completeExecuteSpatialQuery(req, res, sql, geom_fields_array) {
         if (!req.body.format || req.body.format == "html") {
             var formatted = geoJSONFormatter(rows, geom_fields_array); //The page will parse the geoJson to make the HTMl
             //Render HTML page with results at bottom
-            res.render('table_query', { title: 'pGIS Server', errorMessage: req.params.errorMessage, infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: formatted, format: req.body.format, wkt: req.body.wkt, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
+            res.render('table_query', { title: 'pGIS Server', errorMessage: req.params.errorMessage, infoMessage: req.params.infoMessage, table: req.params.table, featureCollection: formatted, format: req.body.format, wkt: req.body.wkt, where: req.body.where, groupby: req.body.groupby, statsdef: req.body.statsdef, returnfields: req.body.returnfields, returnGeometry: req.body.returnGeometry, returnGeometryEnvelopes: req.body.returnGeometryEnvelopes, breadcrumbs: [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Query" }] })
         }
         else if (req.body.format && req.body.format == "GeoJSON") {
             //Respond with JSON
@@ -508,10 +513,12 @@ var createSpatialQuerySelectStatement = flow.define(
         }
         else {
             var geom_query_array = [];
+            var geom_envelope_array = []; // in case they want envelopes
             geom_fields_array.forEach(function (item) {
                 geom_query_array.push("ST_AsGeoJSON(st_geometryn(" + item + ", 1), 5)::json As " + item);
+                geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(st_geometryn(" + item + ", 1)), 5)::json As " + item + "_envelope");
             });
-            this.callback(geom_fields_array, geom_query_array);
+            this.callback(geom_fields_array, geom_query_array, geom_envelope_array);
         }
     }
  );

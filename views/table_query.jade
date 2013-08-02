@@ -47,7 +47,7 @@ block content
 				td
 					span Return feature envelope(s)
 				td
-					-if(!returnGeometryEnv || returnGeometryEnv == 'no'){
+					-if(!returnGeometryEnvelopes || returnGeometryEnvelopes == 'no'){
 						label(for='optionsGeomEnv1') Yes
 						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv1", value="yes") Yes
 						label(for='optionsGeomEnv2') No
@@ -102,7 +102,13 @@ block sidebar
 					each val, key in featureCollection.features
 						div.propertyGroup
 							each ival, ikey in val.properties
-								div.property #{ikey}: #{ival}
+								-if(ival && ival.coordinates){
+									each egval, egkey in ival
+										div.geometry #{ikey}: #{egkey}: #{egval}
+								-}else{
+									div.property #{ikey}: #{ival}
+								-}
+								
 							-if(val.geometry){
 								-if(val.geometry.geometries){
 									each mgval, mgkey in val.geometry.geometries
@@ -111,9 +117,10 @@ block sidebar
 										-}
 								-}else{
 									each gval, gkey in val.geometry
-										div.geometry #{gkey}: #{gval}
+										div.geometry geometry: #{gkey}: #{gval}
 								-}
 							-}
+							
 				-}else{
 					div.propertyGroup No results found
 				-}
