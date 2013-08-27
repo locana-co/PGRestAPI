@@ -1,0 +1,37 @@
+//Settings.js is not part of the repository.  However, it should be deployed with the application and contain deployment-specific settings.
+//there is a settings.js.example file that should match the structure and properties of this file that IS checked in to the repo.
+var settings = {}
+
+settings.pg = {};
+settings.geonames = {};
+settings.loggly = {};
+settings.application = {};
+
+//application port settings
+settings.application.port = 80;
+
+//Settings for postgres DB
+settings.pg.username = 'username';
+settings.pg.password = 'password';
+settings.pg.server = '127.0.0.1';
+settings.pg.port = '5432';
+settings.pg.database = 'test';
+
+//settings for geonames API
+settings.geonames.username = 'username';
+
+//settings for loggly - cloud based logging service
+settings.loggly.subdomain = 'mysubdomain';
+settings.loggly.username = 'username';
+settings.loggly.password = 'password';
+settings.loggly.logglyKey = "abcdefg-hijklmno-pqrstu-vwxyz";
+
+//settings for http proxy - which domains to allow
+settings.proxyOptions = {
+    allowedDomains: [
+        'foo.com ',
+		'bar.com'
+    ]
+};
+
+module.exports = settings;
