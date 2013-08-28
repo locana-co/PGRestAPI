@@ -60,7 +60,7 @@ routes['listTables'] = function (req, res) {
     args.list = [];
 
     try {
-        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and table_type = 'BASE TABLE' ORDER BY table_schema,table_name;", values: [] };
+        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (table_type = 'BASE TABLE' or table_type = 'VIEW') AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys') ORDER BY table_schema,table_name; ", values: [] };
         executePgQuery(query, function (result) {
             args.list = result.rows;
             //Render HTML page with results at bottom
@@ -445,13 +445,10 @@ routes['zonalStats'] = function (req, res) {
     //ZonalStats - POST - display page with results
     app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 
-//});
 
-
-
-http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
-    console.log('Express server listening on IP:' + app.get('ipaddr') + ', port ' + app.get('port'));
-});
+    http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
+        console.log('Express server listening on IP:' + app.get('ipaddr') + ', port ' + app.get('port'));
+    });
 
 
 
