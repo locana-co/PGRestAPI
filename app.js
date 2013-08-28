@@ -10,6 +10,7 @@ var express = require('express')
   , http = require('http')
   , path = require('path')
   , settings = require('./settings')
+  , url = require('url')
   , flow = require('flow');
 
 var app = express();
@@ -315,7 +316,6 @@ routes['tableQuery'] = flow.define(
             respond(this.req, this.res, this.args);
             return;
         }
-
     }
 );
 
@@ -420,30 +420,32 @@ routes['zonalStats'] = function (req, res) {
 
 
 
-//Define Paths
-//Root Request
-app.get('/', function (req, res) { res.redirect('/services') });
+    //Define Paths
+    //Root Request
+    app.get('/', function (req, res) { res.redirect('/services') });
 
-//List All Tables
-app.get('/services', routes['listTables']);
+    //List All Tables
+    app.get('/services', routes['listTables']);
 
-//Table Detail
-app.get('/services/:table', routes['tableDetail']);
+    //Table Detail
+    app.get('/services/:table', routes['tableDetail']);
 
-//Table Query - get - display page with default form
-app.get('/services/:table/query', routes['tableQuery']);
+    //Table Query - get - display page with default form
+    app.get('/services/:table/query', routes['tableQuery']);
 
-//When a Query gets posted - read attributes from post and render results
-app.post('/services/:table/query', routes['tableQuery']);
+    //When a Query gets posted - read attributes from post and render results
+    app.post('/services/:table/query', routes['tableQuery']);
 
-//Raster Operations Home Page - get - display page with default form
-app.get('/services/:table/rasterOps', routes['rasterOps']);
+    //Raster Operations Home Page - get - display page with default form
+    app.get('/services/:table/rasterOps', routes['rasterOps']);
 
-//ZonalStats - get - display page with default form
-app.get('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+    //ZonalStats - get - display page with default form
+    app.get('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 
-//ZonalStats - POST - display page with results
-app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+    //ZonalStats - POST - display page with results
+    app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+
+//});
 
 
 
