@@ -545,8 +545,8 @@ function geoJSONFormatter(rows, geom_fields_array) {
         if (geom_fields_array && geom_fields_array.length == 1) {
             //single geometry
             if (row[geom_fields_array[0]]) {
-                //feature.geometry = JSON.parse(row[geom_fields_array[0]]);
-                feature.geometry = row[geom_fields_array[0]];
+                feature.geometry = JSON.parse(row[geom_fields_array[0]]);
+                //feature.geometry = row[geom_fields_array[0]];
 
                 //remove the geometry property from the row object so we're just left with non-spatial properties
                 delete row[geom_fields_array[0]];
