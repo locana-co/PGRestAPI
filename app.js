@@ -516,7 +516,7 @@ var createSpatialQuerySelectStatement = flow.define(
         console.log(" in geom fields. " + geom_fields_array.length);
         if (geom_fields_array.length == 0) {
             this.callback([], []);
-        }::
+        }
         else {
             var geom_query_array = [];
             var geom_envelope_array = []; // in case they want envelopes
