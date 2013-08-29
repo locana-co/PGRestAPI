@@ -516,13 +516,13 @@ var createSpatialQuerySelectStatement = flow.define(
         console.log(" in geom fields. " + geom_fields_array.length);
         if (geom_fields_array.length == 0) {
             this.callback([], []);
-        }
+        }::
         else {
             var geom_query_array = [];
             var geom_envelope_array = []; // in case they want envelopes
             geom_fields_array.forEach(function (item) {
-                geom_query_array.push("ST_AsGeoJSON(st_geometryn(" + item + ", 1), 5)::json As " + item);
-                geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(st_geometryn(" + item + ", 1)), 5)::json As " + item + "_envelope");
+                geom_query_array.push("ST_AsGeoJSON(st_geometryn(" + item + ", 1), 5) As " + item);
+                geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(st_geometryn(" + item + ", 1)), 5) As " + item + "_envelope");
             });
             this.callback(geom_fields_array, geom_query_array, geom_envelope_array);
         }
