@@ -19,7 +19,7 @@ var app = express();
 var routes = [];
 
 //PostGres Connection String
-var conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
+global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
 
 // all environments
 app.set('ipaddr', settings.application.ip);
@@ -80,7 +80,7 @@ routes['tableDetail'] = function (req, res) {
     args.url = req.url;
     args.table_details = [];
 
-    var client = new pg.Client(conString);
+    var client = new pg.Client(global.conString);
     client.connect();
 
     var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [req.params.table] };
@@ -284,15 +284,15 @@ routes['tableQuery'] = flow.define(
                 var features = "";
 
                 //Check which format was specified
-                if (!args.format || args.format == "html") {
+                if (!args.format || args.format.toLowerCase() == "html") {
                     //Render HTML page with results at bottom
                     features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
                 }
-                else if (args.format && args.format == "GeoJSON") {
+                else if (args.format && args.format.toLowerCase() == "geojson") {
                     //Respond with JSON
                     features = geoJSONFormatter(result.rows, args.geom_fields_array);
                 }
-                else if (args.format && args.format == "esriJSON") {
+                else if (args.format && args.format.toLowerCase() == "esrijson") {
                     //Respond with esriJSON
                     features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
                 }
@@ -385,17 +385,17 @@ routes['zonalStats'] = function (req, res) {
             var features = "";
 
             //Check which format was specified
-            if (!args.format || args.format == "html") {
+            if (!args.format || args.format.toLowerCase() == "html") {
                 //Render HTML page with results at bottom
-                features = geoJSONFormatter(result.rows); //The page will parse the geoJson to make the HTMl
+                features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
             }
-            else if (args.format && args.format == "GeoJSON") {
+            else if (args.format && args.format.toLowerCase() == "geojson") {
                 //Respond with JSON
-                features = geoJSONFormatter(result.rows);
+                features = geoJSONFormatter(result.rows, args.geom_fields_array);
             }
-            else if (args.format && args.format == "esriJSON") {
+            else if (args.format && args.format.toLowerCase() == "esrijson") {
                 //Respond with esriJSON
-                features = ESRIFeatureSetJSONFormatter(result.rows);
+                features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
             }
 
             args.table = req.params.table;
@@ -458,9 +458,9 @@ routes['geoprocessing_operation'] = function (req, res) {
     args.view = "geoprocessing_operation";
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
     args.url = req.url;
+    args.featureCollection = [];
 
     if (JSON.stringify(args) != '{}') {
-
 
         if (args.name) {
             //Dynamically load the page
@@ -477,22 +477,75 @@ routes['geoprocessing_operation'] = function (req, res) {
 
             //Write out page based on dynamic inputs
             args.formfields = [];
+            args._input_arguments = [];
 
+            //See what the inputs are
+            //Also see if any of the inputs were provided as args.
             for (var key in gpOperation.inputs) {
                 if (gpOperation.inputs.hasOwnProperty(key)) {
                     args.formfields.push(key);
+                    if (args[key]) { args._input_arguments.push(key) };
                 }
             }
+
+            
+            //Now get other args (if any) and process them
+            if (args.formfields.length == args._input_arguments.length) {
+                //We've got all of the required arguments
+
+
+                gpOperation.execute(args, function (result) {
+                    //Write out results to page
+                    var features = "";
+
+                    //Check which format was specified
+                    if (!args.format || args.format.toLowerCase() == "html") {
+                        //Render HTML page with results at bottom
+                        features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
+                    }
+                    else if (args.format && args.format.toLowerCase() == "geojson") {
+                        //Respond with JSON
+                        features = geoJSONFormatter(result.rows, args.geom_fields_array);
+                    }
+                    else if (args.format && args.format.toLowerCase() == "esrijson") {
+                        //Respond with esriJSON
+                        features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+                    }
+
+                    args.view = "geoprocessing_operation";
+                    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
+                    args.title = "GeoWebServices";
+                    args.featureCollection = features;
+
+                    respond(req, res, args);
+                    return;
+                });
+
+            } else if (args._input_arguments.length > 0) {
+                //they provided some of the arguments, but not all.
+                //Render HTML page with results at bottom
+                respond(req, res, args);
+            }
+            else {
+                //They provided no arguments, so just load the empty page
+                //Render HTML page with results at bottom
+                respond(req, res, args);
+            }
+
+        }
+        else {
+            //Render HTML page with results at bottom
+            respond(req, res, args);
         }
 
-        //Otherwise, take the arguments provided and process them
-
-
+    }
+    else {
+        //Render HTML page with results at bottom
+        respond(req, res, args);
     }
 
 
-    //Render HTML page with results at bottom
-    respond(req, res, args);
+
 
 };
 
@@ -520,10 +573,6 @@ routes['geoprocessing_operation'] = function (req, res) {
     app.all('/services/geoprocessing', routes['geoprocessing_operations']);
 
     app.all('/services/geoprocessing/geoprocessing_operation', routes['geoprocessing_operation']);
-
-
-    
-
 
     http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
         console.log('Express server listening on IP:' + app.get('ipaddr') + ', port ' + app.get('port'));
@@ -556,7 +605,7 @@ function executePgQuery(query, callback) {
 
     //Just run the query
     //Setup Connection to PG
-    var client = new pg.Client(conString);
+    var client = new pg.Client(global.conString);
     client.connect();
 
     //Log the query to the console, for debugging
@@ -694,10 +743,10 @@ function ESRIFeatureSetJSONFormatter(rows, geom_fields_array) {
 
 function respond(req, res, args) {
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
-    if (!args.format || args.format == "html") {
+    if (!args.format || args.format.toLowerCase() == "html") {
         res.render(args.view, args)
     }
-    else if (args.format && (args.format == "GeoJSON" || args.format == "esriJSON")) {
+    else if (args.format && (args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson")) {
         //Responsd with GeoJSON (or JSON if there is no geo)
         res.jsonp(args.featureCollection);
     }

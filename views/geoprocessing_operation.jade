@@ -16,6 +16,15 @@ block content
 
 			-}
 
+			tr
+				td
+					label(for='format') Format
+				td
+					select(id='format',name='format')
+						formatlist = [ 'html', 'GeoJSON', 'esriJSON']
+							for item in formatlist
+								option #{item}
+
 		div(data-role='fieldcontain')   
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 

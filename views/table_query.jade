@@ -82,6 +82,10 @@ block content
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
 	
+	-if(requestSample)
+		div#requestSample
+			|#{requestSample}
+	-}
 	-if(infoMessage){
 		div.infoMessage
 			|#{infoMessage}
