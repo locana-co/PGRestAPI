@@ -1,0 +1,66 @@
+extends layout
+
+block content
+	p
+		| Enter a where clause to retrieve a subset of features from this table
+		
+	form(action='',method='post')
+		table.inputTable
+			-if(formfields){
+				each val in formfields
+					tr
+						td
+							label(for=#{val}) #{val}
+						td
+							input(id=val,type='text',value=,placeholder=val,name=val)
+
+			-}
+
+		div(data-role='fieldcontain')   
+			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
+
+	
+	-if(infoMessage){
+		div.infoMessage
+			|#{infoMessage}
+	-}
+	-if(errorMessage){
+		div.errorMessage
+			|#{errorMessage}
+	-}
+
+
+block sidebar
+	.widget
+		h1 Results
+		.results
+			- if (featureCollection){
+				-if(featureCollection.features){
+					i # records: #{featureCollection.features.length}
+					each val, key in featureCollection.features
+						div.propertyGroup
+							each ival, ikey in val.properties
+								-if(ival && ival.coordinates){
+									each egval, egkey in ival
+										div.geometry #{ikey}: #{egkey}: #{egval}
+								-}else{
+									div.property #{ikey}: #{ival}
+								-}
+								
+							-if(val.geometry){
+								-if(val.geometry.geometries){
+									each mgval, mgkey in val.geometry.geometries
+										-if(mgval.coordinates){
+											div.geometries #{mgval.type}: #{mgval.coordinates}
+										-}
+								-}else{
+									each gval, gkey in val.geometry
+										div.geometry geometry: #{gkey}: #{gval}
+								-}
+							-}
+							
+				-}else{
+					div.propertyGroup No results found
+				-}
+			-}
+			

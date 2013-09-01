@@ -11,12 +11,12 @@ var express = require('express')
   , path = require('path')
   , settings = require('./settings')
   , url = require('url')
-  , flow = require('flow');
+  , flow = require('flow')
+  , gp = require('./GPModels');
 
 var app = express();
 
 var routes = [];
-
 
 //PostGres Connection String
 var conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
@@ -36,6 +36,7 @@ app.use(express.session());
 app.use(app.router);
 app.use(require('less-middleware')({ src: __dirname + '/public' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'GPModels')));
 
 app.use(function (err, req, res, next) {
     console.error(err.stack);
@@ -54,7 +55,7 @@ if ('development' == app.get('env')) {
 //Get list of public base tables from postgres
 routes['listTables'] = function (req, res) {
     var args = {};
-    args.view = "index";
+    args.view = "table_list";
     args.breadcrumbs = [{ link: "/services", name: "Home" }];
     args.url = req.url;
     args.list = [];
@@ -418,6 +419,83 @@ routes['zonalStats'] = function (req, res) {
     }
 };
 
+//Show dynamic list of GP options
+routes['geoprocessing_operations'] = function (req, res) {
+
+    var args = {};
+    args.view = "geoprocessing_operations";
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "", name: "Geoprocessing Operations" }];
+    args.url = req.url;
+    args.opslist = [];
+
+    if (gp && gp.names) {
+        for (i = 0; i < gp.names.length; i++) {
+            args.opslist.push({name: gp.names[i], link: "geoprocessing_operation?name=" + gp.names[i]});
+        }
+    }
+
+
+
+    //Render HTML page with results at bottom
+    respond(req, res, args);
+
+};
+
+//Show specific GP operation
+routes['geoprocessing_operation'] = function (req, res) {
+    var args = {};
+
+    //Grab POST or QueryString args depending on type
+    if (req.method.toLowerCase() == "post") {
+        //If a post, then arguments will be members of the this.req.body property
+        args = req.body;
+    }
+    else if (req.method.toLowerCase() == "get") {
+        //If request is a get, then args will be members of the this.req.query property
+        args = req.query;
+    }
+
+    args.view = "geoprocessing_operation";
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
+    args.url = req.url;
+
+    if (JSON.stringify(args) != '{}') {
+
+
+        if (args.name) {
+            //Dynamically load the page
+            var gpOperation = gp.operations[args.name];
+            if (!gpOperation) {
+                //No such operation
+                var args = {};
+                args.view = "geoprocessing_operation";
+                args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
+                args.errorMessage = "No such operation.";
+                respond(req, res, args);
+                return;
+            }
+
+            //Write out page based on dynamic inputs
+            args.formfields = [];
+
+            for (var key in gpOperation.inputs) {
+                if (gpOperation.inputs.hasOwnProperty(key)) {
+                    args.formfields.push(key);
+                }
+            }
+        }
+
+        //Otherwise, take the arguments provided and process them
+
+
+    }
+
+
+    //Render HTML page with results at bottom
+    respond(req, res, args);
+
+};
+
 
 
     //Define Paths
@@ -428,22 +506,23 @@ routes['zonalStats'] = function (req, res) {
     app.get('/services', routes['listTables']);
 
     //Table Detail
-    app.get('/services/:table', routes['tableDetail']);
+    app.all('/services/tables/:table', routes['tableDetail']);
 
     //Table Query - get - display page with default form
-    app.get('/services/:table/query', routes['tableQuery']);
-
-    //When a Query gets posted - read attributes from post and render results
-    app.post('/services/:table/query', routes['tableQuery']);
+    app.all('/services/tables/:table/query', routes['tableQuery']);
 
     //Raster Operations Home Page - get - display page with default form
-    app.get('/services/:table/rasterOps', routes['rasterOps']);
+    app.all('/services/tables/:table/rasterOps', routes['rasterOps']);
 
     //ZonalStats - get - display page with default form
-    app.get('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+    app.all('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 
-    //ZonalStats - POST - display page with results
-    app.post('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+    app.all('/services/geoprocessing', routes['geoprocessing_operations']);
+
+    app.all('/services/geoprocessing/geoprocessing_operation', routes['geoprocessing_operation']);
+
+
+    
 
 
     http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {

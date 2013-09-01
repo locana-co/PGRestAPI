@@ -1,0 +1,29 @@
+extends layout
+
+block content
+	p
+		| The following geoprocessing operations are available.
+
+	table
+		thead
+			tr
+				th GP Operations
+		tbody
+			- var items = opslist
+			- each item in items
+				tr
+					td
+						a(href=url + "/" + item.link) #{item.name}
+					
+
+
+block sidebar
+	.widget
+		h1 Operations
+		p
+			a(href=url + "/query") Query
+			&nbsp;
+			- each item in items
+				-if(item.data_type == "raster"){
+					a(href=url +"/rasterOps") Raster Operations
+				-}
