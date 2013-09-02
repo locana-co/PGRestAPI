@@ -1,27 +1,31 @@
 //8.31.2013 - Ryan Whitley
 //Starting a Plug and Play GP Workflow
-var flow = require('flow');
-var pg = require('pg');
 
-//Takes in a POINT (X Y) and returns a WKT representation of the buffer.
-//Arguments are:
-//1. The POINT
-//2. Buffer Radius
 
-var Buffer = {};
+/*
+Require the modules you need here.
+They must be installed in the main application using npm install.  Will work later on making this more modular
+*/
 
-/* METADATA */
+var flow = require('flow'); //Requiring Flow module
+var pg = require('pg'); //Requiring PostGres module
 
+//Name of the GP Operation.  Should be unique and meaningful.
+var Buffer = {}; //Sample Operation named Buffer
+
+/* GP Operation Metadata - All 3 Required */
 Buffer.name = "Buffer";
 Buffer.description = "Buffers a point and returns the geometry as WKT.";
 Buffer.inputs = {};
 
-Buffer.inputs["input_geometry"] = { wkt: "", srid: ""};
-Buffer.inputs["buffer_distance"] = { value: 0, units: ""}; //how far and what units?
+
+/* GP Operation input parameters */
+Buffer.inputs["input_geometry"] = "";
+Buffer.inputs["buffer_distance"] = "";
 
 
-//Since we don't want to be writing functions, use this anonymous code block in postgres.
-Buffer.bufferQuery = "DO $$DECLARE " + 
+//Since we don't want to be writing and creating new PostGres functions from this app, use this anonymous code block in postgres.
+DissolveAndClip.GPQuery = "DO $$DECLARE " + 
 "orig_srid int; " +
 "utm_srid int; " +
 "input geometry := ST_GeomFromText('{wkt}', 4326); " +
@@ -45,19 +49,19 @@ Buffer.bufferQuery = "DO $$DECLARE " +
 "select * from _temp;"
 
 
-
+/* Operation must have an execute method.  Flow will help process asynchronous steps in a more procedural manner.  */
 Buffer.execute = flow.define(
     function (args, callback) {
         this.args = args;
         this.callback = callback;
+
         //Step 1
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (Buffer.isInputValid(args) === true) {
             Buffer.inputs["input_geometry"] = args.input_geometry;
             Buffer.inputs["buffer_distance"] = args.buffer_distance;
 
-            //Take the point and buffer it in PostGIS
-            var query = { text: "", values: []};
+            //Take the point and buffer it in PostGIS.  Replace the placeholder in the query with the passed in WKT.
             Buffer.executePgQuery(Buffer.bufferQuery.replace("{wkt}", Buffer.inputs["input_geometry"]), this);//Flow to next function when done.
 
         }
@@ -69,17 +73,18 @@ Buffer.execute = flow.define(
     },
     function (results) {
         //Step 2 - get the results and pass back to calling function
+        //results is a json object with the structure { status: <string>, rows: [<an array of json objects>]}
         this.callback(results);
     }
 )
 
-//Make sure arguments are tight before executing
+//Make sure arguments are tight
 Buffer.isInputValid = function (input) {
     //Test to see if inputs are specified
     var isValid = false;
 
     if (input) {
-        if (input["input_geometry"] && input["buffer_distance"]) {
+        if (input["input_geometry"] && input["buffer_distance"]) {  //Use whatever logic you want to make sure input is specified.  Can do numeric validation and lots of other stuff here if you want.
             //It's got everything we need.
             return true;
         }
@@ -88,7 +93,7 @@ Buffer.isInputValid = function (input) {
     return isValid;
 }
 
-
+//A helper function used to execute postgres Queries
 Buffer.executePgQuery = function(query, callback) {
     var result = { status: "success", rows: [] }; //object to store results, and whether or not we encountered an error.
 
