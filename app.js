@@ -146,7 +146,7 @@ routes['tableQuery'] = flow.define(
         this.args.statsdef = this.args.statsdef || ""; //statistics definition clause
 
         //requested select fields
-        this.args.returnfields = this.args.returnfields || ""; //default
+        this.returnfields = this.args.returnfields || ""; //return fields - copy to local variable so we don't mess with the original
 
         //return geom?
         if (this.args.returnGeometry == "yes") {
@@ -204,7 +204,7 @@ routes['tableQuery'] = flow.define(
                 statsSQLArray.push(this.args.groupby);
 
                 //We've got a new select statement. Override the old one.
-                this.args.returnfields = statsSQLArray.join(",");
+                this.returnfields = statsSQLArray.join(",");
 
                 //If we're overriding the select fields, then set returnGeometry to no. (For the time being);
                 this.args.geometryStatement = "";
@@ -254,12 +254,12 @@ routes['tableQuery'] = flow.define(
         }
 
         //provide all columns (except geometries).
-        if (this.args.returnfields.legnth == 0 || this.args.returnfields == "" || this.args.returnfields.trim() == "*") {
+        if (this.returnfields.legnth == 0 || this.returnfields == "" || this.returnfields.trim() == "*") {
             createSelectAllStatementWithExcept(this.args.table, "'" + this.args.geom_fields_array.join("','") + "'", this); //Get all fields except the no fly list
         }
         else {
             //flow to next block - pass fields
-            this(this.args.returnfields);
+            this(this.returnfields);
         }
 
     }, function (fieldList) {
