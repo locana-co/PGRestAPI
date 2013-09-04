@@ -575,7 +575,7 @@ routes['geoprocessing_operation'] = function (req, res) {
     app.all('/services/tables/:table/rasterOps', routes['rasterOps']);
 
     //ZonalStats - get - display page with default form
-    app.all('/services/:table/rasterOps/zonalstatistics', routes['zonalStats']);
+    app.all('/services/tables/:table/rasterOps/zonalstatistics', routes['zonalStats']);
 
     app.all('/services/geoprocessing', routes['geoprocessing_operations']);
 
