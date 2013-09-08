@@ -130,7 +130,7 @@ routes['tableQuery'] = flow.define(
             //Render Query Form without any results.
             this.args.table = req.params.table;
             this.args.view = "table_query";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
 
             respond(this.req, this.res, this.args);
@@ -193,7 +193,7 @@ routes['tableQuery'] = flow.define(
                 if (this.args.infoMessage) {
                     //Friendly message
                     this.args.view = "table_query";
-                    this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+                    this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
                     this.args.title = "GeoWebServices";
 
                     respond(this.req, this.res, this.args);
@@ -216,7 +216,7 @@ routes['tableQuery'] = flow.define(
                 //friendly message - exit out
                 this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
                 this.args.view = "table_query";
-                this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+                this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
                 this.args.title = "GeoWebServices";
 
                 respond(this.req, this.res, this.args);
@@ -271,7 +271,7 @@ routes['tableQuery'] = flow.define(
                 //Dynamically plug in geometry piece depending on the geom field name(s)
                 (this.args.geometryStatement ? ", " + this.args.geometryStatement : "") +
                 " FROM " +
-                this.args.table +
+                escapePostGresColumns([this.args.table]).join(",") + //escape
                 this.where +
                 (this.args.groupby ? " GROUP BY " + this.args.groupby : ""), values: []
             };
@@ -281,27 +281,36 @@ routes['tableQuery'] = flow.define(
             var res = this.res; //copy for closure.
 
             executePgQuery(query, function (result) {
-                var features = "";
+                var features = [];
 
-                //Check which format was specified
-                if (!args.format || args.format.toLowerCase() == "html") {
-                    //Render HTML page with results at bottom
-                    features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
-                }
-                else if (args.format && args.format.toLowerCase() == "geojson") {
-                    //Respond with JSON
-                    features = geoJSONFormatter(result.rows, args.geom_fields_array);
-                }
-                else if (args.format && args.format.toLowerCase() == "esrijson") {
-                    //Respond with esriJSON
-                    features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+                //check for error
+                if (result.status == "error") {
+                    //Report error and exit.
+                    args.errorMessage = result.message;
+                } else {
+                    //a-ok
+
+                    //Check which format was specified
+                    if (!args.format || args.format.toLowerCase() == "html") {
+                        //Render HTML page with results at bottom
+                        features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
+                    }
+                    else if (args.format && args.format.toLowerCase() == "geojson") {
+                        //Respond with JSON
+                        features = geoJSONFormatter(result.rows, args.geom_fields_array);
+                    }
+                    else if (args.format && args.format.toLowerCase() == "esrijson") {
+                        //Respond with esriJSON
+                        features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+                    }
+
+                    args.featureCollection = features;
                 }
 
                 args.table = req.params.table;
                 args.view = "table_query";
-                args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + args.table, name: args.table }, { link: "", name: "Query" }];
+                args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "Query" }];
                 args.title = "GeoWebServices";
-                args.featureCollection = features;
 
                 respond(req, res, args);
             });
@@ -311,7 +320,7 @@ routes['tableQuery'] = flow.define(
             //Exit.
             this.args.infoMessage = "Invalid SQL was entered. Try again.";
             this.args.view = "table_query";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
 
             respond(this.req, this.res, this.args);
@@ -328,7 +337,7 @@ routes['rasterOps'] = function (req, res) {
     var args = {};
     args.opslist = [{ link: 'zonalstatistics', name: 'Zonal Statistics' }];
     args.view = "rasterops";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
     args.title = "GeoWebServices";
 
     respond(req, res, args);
@@ -364,7 +373,7 @@ routes['zonalStats'] = function (req, res) {
             var args = {};
             args.view = "zonalstatistics";
             args.infoMessage = "You must specify an input polygon in WKT format."
-            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
+            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
             args.title = "GeoWebServices";
 
             respond(req, res, args);
@@ -400,7 +409,7 @@ routes['zonalStats'] = function (req, res) {
 
             args.table = req.params.table;
             args.view = "zonalstatistics";
-            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + args.table, name: args.table }, { link: "", name: "Query" }];
+            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "Query" }];
             args.title = "GeoWebServices";
             args.results_list = features;
 
@@ -411,7 +420,7 @@ routes['zonalStats'] = function (req, res) {
         //Render Query Form without any results.
         args.table = req.params.table;
         args.view = "zonalstatistics";
-        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/" + req.params.table, name: req.params.table }, { link: "/services/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
+        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
         args.title = "GeoWebServices";
         args.results_list = features;
 
@@ -554,7 +563,7 @@ routes['geoprocessing_operation'] = function (req, res) {
 
 
 
-};
+}
 
 
 
@@ -588,22 +597,32 @@ routes['geoprocessing_operation'] = function (req, res) {
 
 
 //pass in a table, and a comma separated list of fields to NOT select
-function createSelectAllStatementWithExcept(table, except_list, callback) {
-    var query = { text: "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN($2)", values: [table, except_list] };
-    executePgQuery(query, function (result) {
-        callback(result.rows.map(function (item) { return item.column_name; }).join(",")); //Extract column_names into array
-    });
-}
+    function createSelectAllStatementWithExcept(table, except_list, callback) {
+        var query = { text: "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN($2)", values: [table, except_list] };
+        executePgQuery(query, function (result) {
+            var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
+            //Wrap columns in double quotes
+            rows = escapePostGresColumns(rows);
+
+            //Callback
+            callback(rows.join(","));
+        });
+    }
 
 //pass in a table, get an array of geometry columns
 function getGeometryFieldNames(table, callback) {
 
-    if (table == '') callback([]); //If no table, return empty array
+        if (table == '') callback([]); //If no table, return empty array
 
-    var query = { text: "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1", values: [table] };
-    executePgQuery(query, function (result) {
-        callback(result.rows.map(function (item) { return item.column_name; })); //Extract column_names into array
-    });
+        var query = { text: "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1", values: [table] };
+        executePgQuery(query, function (result) {
+            var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
+            //Wrap columns in double quotes
+            rows = escapePostGresColumns(rows);
+
+            //Callback
+            callback(rows);
+        });
 }
 
 
@@ -616,7 +635,7 @@ function executePgQuery(query, callback) {
     client.connect();
 
     //Log the query to the console, for debugging
-    log("Executing query: " + query.text + ", " + query.values);
+    log("Executing query: " + query.text + (query.values && query.values.length > 0 ?  ", " + query.values : ""));
     var query = client.query(query);
 
     //If query was successful, this is iterating thru result rows.
@@ -629,6 +648,7 @@ function executePgQuery(query, callback) {
         //req.params.errorMessage = error;
         result.status = "error";
         result.message = error;
+        log("Error executing query: " + result.message);
     });
 
     //end is called whether successfull or if error was called.
@@ -655,9 +675,11 @@ var createSpatialQuerySelectStatement = flow.define(
         else {
             var geom_query_array = [];
             var geom_envelope_array = []; // in case they want envelopes
+
+            //Format as GeoJSON
             geom_fields_array.forEach(function (item) {
                 geom_query_array.push("ST_AsGeoJSON(st_geometryn(" + item + ", 1), 5) As " + item);
-                geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(st_geometryn(" + item + ", 1)), 5) As " + item + "_envelope");
+                geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(st_geometryn(" + item + ", 1)), 5) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
             });
             this.callback(geom_fields_array, geom_query_array, geom_envelope_array);
         }
@@ -751,7 +773,8 @@ function ESRIFeatureSetJSONFormatter(rows, geom_fields_array) {
 function respond(req, res, args) {
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
     if (!args.format || args.format.toLowerCase() == "html") {
-        res.render(args.view, args)
+        //Determine sample request based on args
+        res.render(args.view, args);
     }
     else if (args.format && (args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson")) {
         //Responsd with GeoJSON (or JSON if there is no geo)
@@ -778,7 +801,17 @@ function IsNumeric(sText) {
             IsNumber = false;
         }
     }
-    return IsNumber;
+        return IsNumber;
+}
+
+
+//Take in an array, spit out an array of escaped columns
+function escapePostGresColumns(items) {
+    //wrap all strings in double quotes
+    return items.map(function (item) {
+        //remove all quotes then wrap with quotes, just to be sure
+        return '"' + item.replace(/"/g, "") + '"';
+    });
 }
 
 function isValidSQL(item) {
@@ -797,3 +830,4 @@ function isValidSQL(item) {
     //TODO - add validation code.
 }
 
+       
