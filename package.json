@@ -4,14 +4,12 @@
   "private": true,
   "scripts": {
     "preinstall": "npm i -g nodemon",
-    "start": "node_modules\\.bin\\supervisor node app.js",
-    "test": "node_modules\\.bin\\mocha -u tdd"
+    "test": "node_modules\\.bin\\mocha --reporter spec"
   },
   "dependencies": {
     "mocha": "*",
     "chai": "*",
-    "sinon": "*",
-    "supervisor": "*",
+    "supertest": "*",
     "express": "3.3.4",
     "jade": "*",
     "pg": "*",

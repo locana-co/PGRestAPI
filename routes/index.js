@@ -1,8 +1,10 @@
 
 /*
- * GET home page.
+ * Load all routes in routes folder
  */
 
-exports.index = function(req, res){
-  res.render('index', { title: 'Express' });
+exports.attachHandlers = function attachHandlers(server) {
+
+    require('./posts')(server);
+
 };
