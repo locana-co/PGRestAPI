@@ -61,7 +61,7 @@ routes['listTables'] = function (req, res) {
     args.list = [];
 
     try {
-        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (table_type = 'BASE TABLE' or table_type = 'VIEW') AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys') ORDER BY table_schema,table_name; ", values: [] };
+        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "" ) + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") ORDER BY table_schema,table_name; ", values: [] };
         executePgQuery(query, function (result) {
             args.list = result.rows;
             //Render HTML page with results at bottom

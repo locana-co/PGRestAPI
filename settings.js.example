@@ -3,12 +3,11 @@
 var settings = {}
 
 settings.pg = {};
-settings.geonames = {};
-settings.loggly = {};
 settings.application = {};
 
 //application port settings
 settings.application.port = 80;
+settings.application.ip = "localhost";
 
 //Settings for postgres DB
 settings.pg.username = 'username';
@@ -17,21 +16,13 @@ settings.pg.server = '127.0.0.1';
 settings.pg.port = '5432';
 settings.pg.database = 'test';
 
-//settings for geonames API
-settings.geonames.username = 'username';
+//Should the API display postgres views?
+settings.displayViews = true;
 
-//settings for loggly - cloud based logging service
-settings.loggly.subdomain = 'mysubdomain';
-settings.loggly.username = 'username';
-settings.loggly.password = 'password';
-settings.loggly.logglyKey = "abcdefg-hijklmno-pqrstu-vwxyz";
+//Should the API display postgres tables?
+settings.displayTables = true;
 
-//settings for http proxy - which domains to allow
-settings.proxyOptions = {
-    allowedDomains: [
-        'foo.com ',
-		'bar.com'
-    ]
-};
+//Should the API hide any postgres tables or views?
+settings.pg.noFlyList = ["att_0"];
 
 module.exports = settings;
