@@ -293,15 +293,15 @@ routes['tableQuery'] = flow.define(
                     //Check which format was specified
                     if (!args.format || args.format.toLowerCase() == "html") {
                         //Render HTML page with results at bottom
-                        features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
+                        features = geoJSONFormatter(result.rows, unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
                     }
                     else if (args.format && args.format.toLowerCase() == "geojson") {
                         //Respond with JSON
-                        features = geoJSONFormatter(result.rows, args.geom_fields_array);
+                        features = geoJSONFormatter(result.rows, unEscapePostGresColumns(args.geom_fields_array));
                     }
                     else if (args.format && args.format.toLowerCase() == "esrijson") {
                         //Respond with esriJSON
-                        features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+                        features = ESRIFeatureSetJSONFormatter(result.rows, unEscapePostGresColumns(args.geom_fields_array));
                     }
 
                     args.featureCollection = features;
@@ -811,6 +811,15 @@ function escapePostGresColumns(items) {
     return items.map(function (item) {
         //remove all quotes then wrap with quotes, just to be sure
         return '"' + item.replace(/"/g, "") + '"';
+    });
+}
+
+//Take in an array, spit out an array of unescaped columns
+function unEscapePostGresColumns(items) {
+    //remove all double quotes from strings
+    return items.map(function (item) {
+        //remove all quotes
+        return item.replace(/"/g, "");
     });
 }
 
