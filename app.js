@@ -54,16 +54,27 @@ if ('development' == app.get('env')) {
 
 //Get list of public base tables from postgres
 routes['listTables'] = function (req, res) {
-    var args = {};
+
+    //Grab POST or QueryString args depending on type
+    if (req.method.toLowerCase() == "post") {
+        //If a post, then arguments will be members of the this.req.body property
+        args = req.body;
+    }
+    else if (req.method.toLowerCase() == "get") {
+        //If request is a get, then args will be members of the this.req.query property
+        args = req.query;
+    }
+
     args.view = "table_list";
     args.breadcrumbs = [{ link: "/services", name: "Home" }];
     args.url = req.url;
     args.list = [];
 
     try {
-        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "" ) + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") ORDER BY table_schema,table_name; ", values: [] };
+        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "" ) + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
         executePgQuery(query, function (result) {
-            args.list = result.rows;
+            args.featureCollection = result.rows.map(function (item) { return item.table_name; }); //Get array of table names
+            debugger;
             //Render HTML page with results at bottom
             respond(req, res, args);
         });
@@ -572,7 +583,7 @@ routes['geoprocessing_operation'] = function (req, res) {
     app.get('/', function (req, res) { res.redirect('/services') });
 
     //List All Tables
-    app.get('/services', routes['listTables']);
+    app.all('/services', routes['listTables']);
 
     //Table Detail
     app.all('/services/tables/:table', routes['tableDetail']);
@@ -776,7 +787,7 @@ function respond(req, res, args) {
         //Determine sample request based on args
         res.render(args.view, args);
     }
-    else if (args.format && (args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson")) {
+    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson")) {
         //Responsd with GeoJSON (or JSON if there is no geo)
         res.jsonp(args.featureCollection);
     }
