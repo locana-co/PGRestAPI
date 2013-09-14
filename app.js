@@ -55,6 +55,8 @@ if ('development' == app.get('env')) {
 //Get list of public base tables from postgres
 routes['listTables'] = function (req, res) {
 
+    var args = {};
+
     //Grab POST or QueryString args depending on type
     if (req.method.toLowerCase() == "post") {
         //If a post, then arguments will be members of the this.req.body property
@@ -68,7 +70,6 @@ routes['listTables'] = function (req, res) {
     args.view = "table_list";
     args.breadcrumbs = [{ link: "/services", name: "Home" }];
     args.url = req.url;
-    args.list = [];
 
     try {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "" ) + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
@@ -90,9 +91,6 @@ routes['tableDetail'] = function (req, res) {
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "", name: req.params.table }];
     args.url = req.url;
     args.table_details = [];
-
-    var client = new pg.Client(global.conString);
-    client.connect();
 
     var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [req.params.table] };
 
@@ -266,7 +264,7 @@ routes['tableQuery'] = flow.define(
 
         //provide all columns (except geometries).
         if (this.returnfields.legnth == 0 || this.returnfields == "" || this.returnfields.trim() == "*") {
-            createSelectAllStatementWithExcept(this.args.table, "'" + this.args.geom_fields_array.join("','") + "'", this); //Get all fields except the no fly list
+            createSelectAllStatementWithExcept(this.args.table, unEscapePostGresColumns(geom_fields_array).join(","), this); //Get all fields except the no fly list
         }
         else {
             //flow to next block - pass fields
@@ -570,10 +568,6 @@ routes['geoprocessing_operation'] = function (req, res) {
         //Render HTML page with results at bottom
         respond(req, res, args);
     }
-
-
-
-
 }
 
 
@@ -609,9 +603,10 @@ routes['geoprocessing_operation'] = function (req, res) {
 
 //pass in a table, and a comma separated list of fields to NOT select
     function createSelectAllStatementWithExcept(table, except_list, callback) {
-        var query = { text: "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN($2)", values: [table, except_list] };
+        var query = { text: "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN ($2)", values: [table, except_list] };
         executePgQuery(query, function (result) {
             var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
+
             //Wrap columns in double quotes
             rows = escapePostGresColumns(rows);
 
@@ -671,7 +666,6 @@ function executePgQuery(query, callback) {
 }
 
 var createSpatialQuerySelectStatement = flow.define(
-    //If the querystring is empty, just show the regular HTML form.
 
     function (table, callback) {
         this.callback = callback;
