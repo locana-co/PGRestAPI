@@ -847,5 +847,3 @@ function isValidSQL(item) {
     return true;
     //TODO - add validation code.
 }
-
-       

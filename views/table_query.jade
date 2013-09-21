@@ -82,9 +82,35 @@ block content
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
 	
-	-if(requestSample){
+	- var requestSample = []
+	-if(where){
+		- requestSample.push("where=" + where)
+
+	-if(returnfields){
+		- requestSample.push("returnfields=" + returnfields)
+	
+	-if(format){
+		- requestSample.push("format=" + format)
+
+	-if(returnGeometry){
+		- requestSample.push("returnGeometry=" + returnGeometry)
+
+	-if(returnGeometryEnvelopes){
+		- requestSample.push("returnGeometryEnvelopes=" + returnGeometryEnvelopes)
+
+	-if(groupby){
+		- requestSample.push("groupby=" + groupby)
+
+	-if(statsdef){
+		- requestSample.push("statsdef=" + statsdef)
+
+	-if(wkt){
+		- requestSample.push("wkt=" + wkt)
+
+
+	-if(requestSample.length > 0){
 		div#requestSample
-			|#{requestSample}
+			|#{requestSample.join("&")}
 	-}
 	-if(infoMessage){
 		div.infoMessage
