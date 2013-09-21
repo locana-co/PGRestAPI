@@ -785,6 +785,10 @@ function respond(req, res, args) {
         //Responsd with GeoJSON (or JSON if there is no geo)
         res.jsonp(args.featureCollection);
     }
+	else{
+		//If unrecognized format is specified
+		res.jsonp(args.featureCollection);
+	}
 }
 
 //Utilities
