@@ -83,35 +83,37 @@ block content
 
 	
 	- var requestSample = []
-	-if(where){
-		- requestSample.push("where=" + where)
+	-if(where)
+		- requestSample.push("where=" + encodeURIComponent(where))
 
-	-if(returnfields){
-		- requestSample.push("returnfields=" + returnfields)
+	-if(returnfields)
+		- requestSample.push("returnfields=" + encodeURIComponent(returnfields))
 	
-	-if(format){
-		- requestSample.push("format=" + format)
+	-if(format)
+		- requestSample.push("format=" + encodeURIComponent(format))
 
-	-if(returnGeometry){
-		- requestSample.push("returnGeometry=" + returnGeometry)
+	-if(returnGeometry)
+		- requestSample.push("returnGeometry=" + encodeURIComponent(returnGeometry))
 
-	-if(returnGeometryEnvelopes){
-		- requestSample.push("returnGeometryEnvelopes=" + returnGeometryEnvelopes)
+	-if(returnGeometryEnvelopes)
+		- requestSample.push("returnGeometryEnvelopes=" + encodeURIComponent(returnGeometryEnvelopes))
 
-	-if(groupby){
-		- requestSample.push("groupby=" + groupby)
+	-if(groupby)
+		- requestSample.push("groupby=" + encodeURIComponent(groupby))
 
-	-if(statsdef){
-		- requestSample.push("statsdef=" + statsdef)
+	-if(statsdef)
+		- requestSample.push("statsdef=" + encodeURIComponent(statsdef))
 
-	-if(wkt){
-		- requestSample.push("wkt=" + wkt)
+	-if(wkt)
+		- requestSample.push("wkt=" + encodeURIComponent(wkt))
 
 
 	-if(requestSample.length > 0){
+		h3: |Request Sample
 		div#requestSample
-			|#{requestSample.join("&")}
+			|#{"http://" + host + path + "?" + requestSample.join("&")}
 	-}
+
 	-if(infoMessage){
 		div.infoMessage
 			|#{infoMessage}

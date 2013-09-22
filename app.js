@@ -130,6 +130,8 @@ routes['tableQuery'] = flow.define(
             this.args.returnGeometry = this.args.returnGeometry || "no"; //default
             this.args.returnGeometryEnvelopes = this.args.returnGeometryEnvelopes || "no"; //default
             this.args.table = req.params.table;
+            this.args.path = req.path;
+            this.args.host = req.headers.host;
 
             //either way, get the spatial columns so we can exclude them from the query
             createSpatialQuerySelectStatement(this.args.table, this);
