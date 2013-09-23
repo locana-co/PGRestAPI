@@ -51,6 +51,26 @@ if ('development' == app.get('env')) {
 }
 
 //Define Routes
+//List services
+routes['services'] = function (req, res) {
+
+    var args = {};
+
+    args.view = "services";
+    args.breadcrumbs = [{ link: "/services", name: "Home" }];
+    args.path = req.path;
+    args.host = req.headers.host;
+
+    //object with available services
+    var opslist = [
+        { link: 'tables', name: 'Table List' },
+        { link: 'geoprocessing', name: 'Geoprocessing Operations' }
+    ];
+
+    //send to view
+    res.render('services', { opslist: opslist, breadcrumbs: [{ link: "", name: "Services" }] })
+
+}
 
 //Get list of public base tables from postgres
 routes['listTables'] = function (req, res) {
@@ -68,8 +88,9 @@ routes['listTables'] = function (req, res) {
     }
 
     args.view = "table_list";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }];
-    args.url = req.url;
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
+    args.path = req.path;
+    args.host = req.headers.host;
 
     try {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "" ) + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
@@ -88,7 +109,7 @@ routes['listTables'] = function (req, res) {
 routes['tableDetail'] = function (req, res) {
     var args = {};
     args.view = "table_details";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "", name: req.params.table }];
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" },{ link: "/services/tables", name: "Table List" },{ link: "", name: req.params.table }];
     args.url = req.url;
     args.table_details = [];
 
@@ -132,6 +153,8 @@ routes['tableQuery'] = flow.define(
             this.args.table = req.params.table;
             this.args.path = req.path;
             this.args.host = req.headers.host;
+            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.view = "table_query";
 
             //either way, get the spatial columns so we can exclude them from the query
             createSpatialQuerySelectStatement(this.args.table, this);
@@ -141,7 +164,7 @@ routes['tableQuery'] = flow.define(
             //Render Query Form without any results.
             this.args.table = req.params.table;
             this.args.view = "table_query";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
 
             respond(this.req, this.res, this.args);
@@ -203,10 +226,6 @@ routes['tableQuery'] = flow.define(
 
                 if (this.args.infoMessage) {
                     //Friendly message
-                    this.args.view = "table_query";
-                    this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
-                    this.args.title = "GeoWebServices";
-
                     respond(this.req, this.res, this.args);
                     return;
                 }
@@ -226,9 +245,6 @@ routes['tableQuery'] = flow.define(
             else {
                 //friendly message - exit out
                 this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
-                this.args.view = "table_query";
-                this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
-                this.args.title = "GeoWebServices";
 
                 respond(this.req, this.res, this.args);
                 return;
@@ -318,11 +334,6 @@ routes['tableQuery'] = flow.define(
                     args.featureCollection = features;
                 }
 
-                args.table = req.params.table;
-                args.view = "table_query";
-                args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "Query" }];
-                args.title = "GeoWebServices";
-
                 respond(req, res, args);
             });
         }
@@ -330,9 +341,6 @@ routes['tableQuery'] = flow.define(
             //Invalid SQL was entered by user.
             //Exit.
             this.args.infoMessage = "Invalid SQL was entered. Try again.";
-            this.args.view = "table_query";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
-            this.args.title = "GeoWebServices";
 
             respond(this.req, this.res, this.args);
             return;
@@ -444,7 +452,7 @@ routes['geoprocessing_operations'] = function (req, res) {
 
     var args = {};
     args.view = "geoprocessing_operations";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "", name: "Geoprocessing Operations" }];
+    args.breadcrumbs = [{ link: "/services", name: "Home" },{ link: "/services", name: "Services" }, { link: "", name: "Geoprocessing Operations" }];
     args.url = req.url;
     args.opslist = [];
 
@@ -453,8 +461,6 @@ routes['geoprocessing_operations'] = function (req, res) {
             args.opslist.push({name: gp.names[i], link: "geoprocessing_operation?name=" + gp.names[i]});
         }
     }
-
-
 
     //Render HTML page with results at bottom
     respond(req, res, args);
@@ -476,21 +482,22 @@ routes['geoprocessing_operation'] = function (req, res) {
     }
 
     args.view = "geoprocessing_operation";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
-    args.url = req.url;
+    args.breadcrumbs = [{ link: "/services", name: "Home" },{ link: "/services", name: "Services" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
     args.featureCollection = [];
 
     if (JSON.stringify(args) != '{}') {
 
         if (args.name) {
             //Dynamically load the page
-            var gpOperation = gp.operations[args.name];
+            var gpOperation = gp.operations[args.name.toLowerCase()]; //always lower names.
             if (!gpOperation) {
                 //No such operation
                 var args = {};
                 args.view = "geoprocessing_operation";
-                args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: gpOperation.name }];
+                args.breadcrumbs = [{ link: "/services", name: "Home" },{ link: "/services", name: "Services" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }];
                 args.errorMessage = "No such operation.";
+                args.path = req.path;
+                args.host = req.headers.host;
                 respond(req, res, args);
                 return;
             }
@@ -500,8 +507,9 @@ routes['geoprocessing_operation'] = function (req, res) {
             args._input_arguments = [];
             args._input_values = [];
             args.description = gpOperation.description;
-            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: gpOperation.name }];
-
+            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: gpOperation.name }];
+            args.path = req.path;
+            args.host = req.headers.host;
 
             //See what the inputs are
             //Also see if any of the inputs were provided as args.
@@ -540,8 +548,6 @@ routes['geoprocessing_operation'] = function (req, res) {
                     }
 
                     args.view = "geoprocessing_operation";
-                    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: gpOperation.name }];
-                    args.title = "GeoWebServices";
                     args.featureCollection = features;
 
                     respond(req, res, args);
@@ -579,7 +585,10 @@ routes['geoprocessing_operation'] = function (req, res) {
     app.get('/', function (req, res) { res.redirect('/services') });
 
     //List All Tables
-    app.all('/services', routes['listTables']);
+    app.all('/services', routes['services']);
+
+    //List All Tables
+    app.all('/services/tables', routes['listTables']);
 
     //Table Detail
     app.all('/services/tables/:table', routes['tableDetail']);

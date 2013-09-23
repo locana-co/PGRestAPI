@@ -11,8 +11,9 @@ var GP = { operations: {}, names: [] };
 require("fs").readdirSync(__dirname).forEach(function (file) {
     if (file != "index.js" && file != "GeoOperation.js.example") {
         var operation = require(__dirname + "/" + file);
-        GP.names.push(operation.name);
-        GP.operations[operation.name] = operation;
+        var name = operation.name.toLowerCase(); //Lower name
+        GP.names.push(name);
+        GP.operations[name] = operation;
     }
 });
 

@@ -6,8 +6,13 @@ block content
 		
 	form(action='',method='post')
 		table.inputTable
-			-if(_input_values && _input_values.length > 0){
+			- var requestSample = []
+			- if (name) {
+				- requestSample.push("name=" + encodeURIComponent(name))
+			- }
+			- if(_input_values && _input_values.length > 0){
 				each item in _input_values
+					- requestSample.push(item.name + "=" + encodeURIComponent(item.value))
 					tr
 						td
 							label(for=item.key) #{item.name}
@@ -42,6 +47,13 @@ block content
 		div(data-role='fieldcontain')   
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
+
+	-if(requestSample.length > 0){
+		
+		h3: |Request Sample
+		div#requestSample
+			|#{"http://" + host + path + "?" + requestSample.join("&")}
+	-}
 	
 	-if(infoMessage){
 		div.infoMessage

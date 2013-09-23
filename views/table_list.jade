@@ -13,6 +13,17 @@ block content
 				tr
 					td
 						a(href="/services/tables/" + item) #{item}
+
+	- var requestSample = []
+	-if(search)
+		- requestSample.push("search=" + encodeURIComponent(search))
+
+
+	-if(requestSample.length > 0){
+		h3: |Request Sample
+		div#requestSample
+			|#{"http://" + host + path + "?" + requestSample.join("&")}
+	-}
 						
 
 

@@ -41,9 +41,7 @@ textarea {
 #url {
   width: 400px;
 }
-
 #requestSample {
-    margin: 15px 0;
-    padding: 10px;
-    background-color: rgb(144, 255, 148);
+  background-color: #00f57f;
+  padding: 15px;
 }

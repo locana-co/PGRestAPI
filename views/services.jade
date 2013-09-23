@@ -1,0 +1,17 @@
+extends layout
+
+block content
+	p
+		| Service Endpoints
+
+	table
+		thead
+			tr
+				th Services
+		tbody
+			- var items = opslist
+			- each item in items
+				tr
+					td
+						a(href="/services/" + item.link) #{item.name}
+					
