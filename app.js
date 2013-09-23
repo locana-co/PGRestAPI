@@ -96,7 +96,7 @@ routes['listTables'] = function (req, res) {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "" ) + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
         executePgQuery(query, function (result) {
             args.featureCollection = result.rows.map(function (item) { return item.table_name; }); //Get array of table names
-            debugger;
+
             //Render HTML page with results at bottom
             respond(req, res, args);
         });
@@ -144,7 +144,6 @@ routes['tableQuery'] = flow.define(
             this.args = req.query;
         }
 
-
         // arguments passed to renameAndStat() will pass through to this first function
         if (JSON.stringify(this.args) != '{}') {
             //See if they want geometry
@@ -157,7 +156,7 @@ routes['tableQuery'] = flow.define(
             this.args.view = "table_query";
 
             //either way, get the spatial columns so we can exclude them from the query
-            createSpatialQuerySelectStatement(this.args.table, this);
+            createSpatialQuerySelectStatement(this.args.table, this.args.outputsrid, this);
         }
         else {
             //If the querystring is empty, just show the regular HTML form.
@@ -627,7 +626,7 @@ routes['geoprocessing_operation'] = function (req, res) {
     }
 
 //pass in a table, get an array of geometry columns
-function getGeometryFieldNames(table, callback) {
+    function getGeometryFieldNames(table, callback) {
 
         if (table == '') callback([]); //If no table, return empty array
 
@@ -678,8 +677,9 @@ function executePgQuery(query, callback) {
 
 var createSpatialQuerySelectStatement = flow.define(
 
-    function (table, callback) {
+    function (table, outputsrid, callback) {
         this.callback = callback;
+        this.outputsrid = outputsrid;
         getGeometryFieldNames(table, this);
     },
     function (geom_fields_array) {
@@ -691,12 +691,22 @@ var createSpatialQuerySelectStatement = flow.define(
         else {
             var geom_query_array = [];
             var geom_envelope_array = []; // in case they want envelopes
-
+            var outputsrid = this.outputsrid;
+           
             //Format as GeoJSON
-            geom_fields_array.forEach(function (item) {
-                geom_query_array.push("ST_AsGeoJSON(st_geometryn(" + item + ", 1), 5) As " + item);
-                geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(st_geometryn(" + item + ", 1)), 5) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
-            });
+            if (this.outputsrid) {
+                geom_fields_array.forEach(function (item) {
+                    geom_query_array.push("ST_AsGeoJSON(ST_Transform(" + item + ", " + outputsrid + ")) As " + item);
+                    geom_envelope_array.push("ST_AsGeoJSON(ST_Transform(ST_Envelope(" + item + "), " + outputsrid + ")) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
+                });
+            }
+            else {
+                geom_fields_array.forEach(function (item) {
+                    geom_query_array.push("ST_AsGeoJSON(" + item + ") As " + item);
+                    geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(" + item + ")) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
+                });
+            }
+
             this.callback(geom_fields_array, geom_query_array, geom_envelope_array);
         }
     }
