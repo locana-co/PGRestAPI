@@ -25,7 +25,7 @@ block content
 					select(id='format',name='format')
 						formatlist = [ 'html', 'GeoJSON', 'esriJSON']
 							for item in formatlist
-								option #{item}
+								option(value=item, selected=(item==stattype))=item
 			tr
 				td
 					span Return geometry

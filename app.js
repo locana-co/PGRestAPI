@@ -390,6 +390,7 @@ routes['zonalStats'] = flow.define(
             this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
             this.args.path = req.path;
             this.args.host = req.headers.host;
+            this.args.featureCollection = {};
 
             var statType = (req.body.statType ? req.body.statType : "sum");
 
@@ -398,7 +399,7 @@ routes['zonalStats'] = flow.define(
             if (this.args.wkt) wkt = " " + this.args.wkt;
 
             if (wkt.length == 0) {
-                this.args.infoMessage = "You must specify an input geometry in WKT format."
+                this.args.errorMessage = "You must specify an input geometry in WKT format."
                 respond(this.req, this.res, this.args);
                 return;
             }
@@ -456,6 +457,7 @@ routes['zonalStats'] = flow.define(
                         "utm_srid int; " +
                         "input geometry := ST_GeomFromText('" + this.args.wkt + "', 4326); " + //TODO: make the input SRID dymamic.
                         "geomgeog geometry; " +
+                        "buffer geometry; " + 
                         "zone int; " +
                         "pref int; " +
                         "BEGIN " +
@@ -469,12 +471,14 @@ routes['zonalStats'] = flow.define(
                         "orig_srid:= ST_SRID(input); " +
                         "utm_srid:= zone+pref; " +
 
+                        "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326); " + 
+
                         "drop table if exists _zstemp; " +  //TODO: Add session ID (or something) to make sure this is dynamic.
                         "create temporary table _zstemp as " +
 
-                        "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326), true)))." + this.args.stattype + ") as  " + this.args.stattype + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+                        "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + ", ST_ASGeoJSON(buffer) as geom " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
                         " FROM " + this.args.table +
-                        " WHERE ST_Intersects(ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326)," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+                        " WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
 
                         "END$$; " +
                         "select * from _zstemp;", values: []
@@ -497,15 +501,15 @@ routes['zonalStats'] = flow.define(
                     //Check which format was specified
                     if (!args.format || args.format.toLowerCase() == "html") {
                         //Render HTML page with results at bottom
-                        features = geoJSONFormatter(result.rows, []); //The page will parse the geoJson to make the HTMl
+                        features = geoJSONFormatter(result.rows, ["geom"]); //The page will parse the geoJson to make the HTMl
                     }
                     else if (args.format && args.format.toLowerCase() == "geojson") {
                         //Respond with JSON
-                        features = geoJSONFormatter(result.rows, []);
+                        features = geoJSONFormatter(result.rows, ["geom"]);
                     }
                     else if (args.format && args.format.toLowerCase() == "esrijson") {
                         //Respond with esriJSON
-                        features = ESRIFeatureSetJSONFormatter(result.rows, []);
+                        features = ESRIFeatureSetJSONFormatter(result.rows, ["geom"]);
                     }
 
                     args.featureCollection = features;
@@ -894,11 +898,21 @@ function respond(req, res, args) {
     }
     else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson")) {
         //Responsd with GeoJSON (or JSON if there is no geo)
-        res.jsonp(args.featureCollection);
+        if (args.errorMessage) {
+            res.jsonp({ error: args.errorMessage });
+        }
+        else {
+            res.jsonp(args.featureCollection);
+        }
     }
 	else{
 		//If unrecognized format is specified
-		res.jsonp(args.featureCollection);
+        if (args.errorMessage) {
+            res.jsonp({ error: args.errorMessage });
+        }
+        else {
+            res.jsonp(args.featureCollection);
+        }
 	}
 }
 
