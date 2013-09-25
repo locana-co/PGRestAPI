@@ -357,94 +357,166 @@ routes['rasterOps'] = function (req, res) {
     args.view = "rasterops";
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
     args.title = "GeoWebServices";
+    args.path = req.path;
+    args.host = req.headers.host;
 
     respond(req, res, args);
 };
 
 //Allow for Zonal Statistics Definition
-routes['zonalStats'] = function (req, res) {
+routes['zonalStats'] = flow.define(
     //If the querystring is empty, just show the regular HTML form.
-    var args = {};
 
-    //Grab POST or QueryString args depending on type
-    if (req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
-        args = req.body;
-    }
-    else if (req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
-        args = req.query;
-    }
+    function (req, res) {
+        this.req = req;
+        this.res = res;
 
-    if (JSON.stringify(args) != '{}') {
+        this.args = {};
 
-        args.table = req.params.table;
-
-        var statType = (req.body.statType ? req.body.statType : "sum");
-
-        //Add in WKT, if specified
-        var wkt = ""; //create internal var so we don't alter the original variable.
-        if (args.wkt) wkt = " " + args.wkt;
-        
-        if (wkt.length == 0) {
-            //Respond with friendly message
-            var args = {};
-            args.view = "zonalstatistics";
-            args.infoMessage = "You must specify an input polygon in WKT format."
-            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
-            args.title = "GeoWebServices";
-
-            respond(req, res, args);
-            return;
+        //Grab POST or QueryString args depending on type
+        if (req.method.toLowerCase() == "post") {
+            //If a post, then arguments will be members of the this.req.body property
+            this.args = req.body;
+        }
+        else if (req.method.toLowerCase() == "get") {
+            //If request is a get, then args will be members of the this.req.query property
+            this.args = req.query;
         }
 
-        //build SQL query for zonal stats - TODOD: make rast name dynamic
-        var query = {
-            text: "SELECT SUM((ST_SummaryStats(ST_Clip(rast,1,ST_GeomFromText('" +
-            req.body.wkt +
-            "', 4326))))." + statType + ")" +
-            "FROM " + args.table +
-            " WHERE ST_Intersects(ST_GeomFromText('" + req.body.wkt +
-            "', 4326),rast)", values: []
-        };
+        if (JSON.stringify(this.args) != '{}') {
 
-        executePgQuery(query, function (result) {
-            var features = "";
+            this.args.table = req.params.table;
+            this.args.view = "zonalstatistics";
+            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
+            this.args.path = req.path;
+            this.args.host = req.headers.host;
 
-            //Check which format was specified
-            if (!args.format || args.format.toLowerCase() == "html") {
-                //Render HTML page with results at bottom
-                features = geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
+            var statType = (req.body.statType ? req.body.statType : "sum");
+
+            //Add in WKT, if specified
+            var wkt = ""; //create internal var so we don't alter the original variable.
+            if (this.args.wkt) wkt = " " + this.args.wkt;
+
+            if (wkt.length == 0) {
+                this.args.infoMessage = "You must specify an input geometry in WKT format."
+                respond(this.req, this.res, this.args);
+                return;
             }
-            else if (args.format && args.format.toLowerCase() == "geojson") {
-                //Respond with JSON
-                features = geoJSONFormatter(result.rows, args.geom_fields_array);
-            }
-            else if (args.format && args.format.toLowerCase() == "esrijson") {
-                //Respond with esriJSON
-                features = ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+            
+            if (this.args.wkt.toLowerCase().indexOf('point') == 0) {
+                //if a point geom, then buffer is mandatory
+                
+                if (!this.args.bufferdistance) {
+                    //Tell them that you're setting it to a default, but continue with the operation (happens in next flow)
+                    this.args.infoMessage = "Point geometries need to have a buffer set. Default buffer of 500 meters was used."
+                }
             }
 
-            args.table = req.params.table;
-            args.view = "zonalstatistics";
-            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "Query" }];
-            args.title = "GeoWebServices";
-            args.results_list = features;
 
-            respond(req, res, args);
-        });      
+            //Dynamically fetch the raster name for this table.
+            getRasterColumnName(this.args.table, this);
+        }
+        else {
+            //Render Query Form without any results.
+            this.args.table = this.req.params.table;
+            this.args.view = "zonalstatistics";
+            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "/services/tables/" + this.args.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
+            this.args.title = "GeoWebServices";
+
+            respond(this.req, this.res, this.args);
+        }
+    },
+    function (raster_column_name) {
+        //Coming back from getRasterColumnName.  Should return a string. Assuming just 1 raster column per table.
+
+        //var query = {
+        //    text: "SELECT SUM((ST_SummaryStats(ST_Clip(rast,1,ST_GeomFromText('" +
+        //    req.body.wkt +
+        //    "', 4326), true)))." + statType + ")" +
+        //    "FROM " + args.table +
+        //    " WHERE ST_Intersects(ST_GeomFromText('" + req.body.wkt +
+        //    "', 4326),rast)", values: []
+        //};
+
+        if (raster_column_name) {
+            var bufferdistance = 500; //default if distance is not numeric or not specified
+
+            if (this.args.bufferdistance && IsNumeric(this.args.bufferdistance)) {
+                bufferdistance = this.args.bufferdistance;
+            }
+            else {
+                //set it as an output parameter to be written to template
+                this.args.bufferdistance = bufferdistance;
+            }
+
+
+            var query = {
+                text: "DO $$DECLARE " +
+                        "orig_srid int; " +
+                        "utm_srid int; " +
+                        "input geometry := ST_GeomFromText('" + this.args.wkt + "', 4326); " + //TODO: make the input SRID dymamic.
+                        "geomgeog geometry; " +
+                        "zone int; " +
+                        "pref int; " +
+                        "BEGIN " +
+                        "geomgeog:= ST_Transform(input,4326); " +
+                        "IF (ST_Y(geomgeog))>0 THEN " +
+                        "pref:=32600; " +
+                        "ELSE " +
+                        "pref:=32700; " +
+                        "END IF; " +
+                        "zone:=floor((ST_X(geomgeog)+180)/6)+1; " +
+                        "orig_srid:= ST_SRID(input); " +
+                        "utm_srid:= zone+pref; " +
+
+                        "drop table if exists _zstemp; " +  //TODO: Add session ID (or something) to make sure this is dynamic.
+                        "create temporary table _zstemp as " +
+
+                        "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326), true)))." + this.args.stattype + ") as  " + this.args.stattype + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+                        " FROM " + this.args.table +
+                        " WHERE ST_Intersects(ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326)," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+
+                        "END$$; " +
+                        "select * from _zstemp;", values: []
+            };
+
+            var args = this.args; //copy for closure.
+            var req = this.req; //copy for closure.
+            var res = this.res; //copy for closure.
+
+            executePgQuery(query, function (result) {
+               
+                if (result.status == "error") {
+                    //Report error and exit.
+                    args.errorMessage = result.message;
+
+                } else {
+ 
+                    var features = "";
+
+                    //Check which format was specified
+                    if (!args.format || args.format.toLowerCase() == "html") {
+                        //Render HTML page with results at bottom
+                        features = geoJSONFormatter(result.rows, []); //The page will parse the geoJson to make the HTMl
+                    }
+                    else if (args.format && args.format.toLowerCase() == "geojson") {
+                        //Respond with JSON
+                        features = geoJSONFormatter(result.rows, []);
+                    }
+                    else if (args.format && args.format.toLowerCase() == "esrijson") {
+                        //Respond with esriJSON
+                        features = ESRIFeatureSetJSONFormatter(result.rows, []);
+                    }
+
+                    args.featureCollection = features;
+                }
+
+                respond(req, res, args);
+            });
+        }
     }
-    else {
-        //Render Query Form without any results.
-        args.table = req.params.table;
-        args.view = "zonalstatistics";
-        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
-        args.title = "GeoWebServices";
-        args.results_list = features;
+);
 
-        respond(req, res, args);
-    }
-};
 
 //Show dynamic list of GP options
 routes['geoprocessing_operations'] = function (req, res) {
@@ -639,7 +711,24 @@ routes['geoprocessing_operation'] = function (req, res) {
             //Callback
             callback(rows);
         });
-}
+    }
+
+
+//pass in a table, get an array of geometry columns
+    function getRasterColumnName(table, callback){
+        if (table == '') callback([]); //If no table, return empty array
+
+        var query = { text: "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'raster') AND table_name = $1", values: [table] };
+        executePgQuery(query, function (result) {
+            var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
+            
+            //Wrap columns in double quotes
+            rows = escapePostGresColumns(rows);
+
+            //Callback
+            callback(rows);
+        });
+    }
 
 
 function executePgQuery(query, callback) {
@@ -722,6 +811,7 @@ function geoJSONFormatter(rows, geom_fields_array) {
     var featureCollection = { "type": "FeatureCollection", "features": [] };
 
     rows.forEach(function (row) {
+
         var feature = { "type": "Feature", "properties": {} };
         //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
 

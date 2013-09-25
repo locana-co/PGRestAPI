@@ -20,7 +20,7 @@ block content
 
 
 	-if(requestSample.length > 0){
-		h3: |Request Sample
+		h2: |Request Sample
 		div#requestSample
 			|#{"http://" + host + path + "?" + requestSample.join("&")}
 	-}

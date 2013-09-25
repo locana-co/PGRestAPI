@@ -1,32 +1,31 @@
 extends layout
 
 block content
-	p #{table}: Zonal Statistics
 	p
 		| Define an area for which to get zonal statistics
 	form(action='',method='post')
-
-
-		div(data-role='fieldcontain')
-			fieldset(data-role='controlgroup')
-				label(for='stattype') Summary Statistic
+		table.inputTable
+			tr
+				td
+					label(for='stattype') Summary Statistic
+				td
 					select(id='stattype',name='stattype')
 						summarylist = [ 'sum', 'min', 'max','mean', 'stddev', 'count']
 							for item in summarylist
-								option #{item}
-		div(data-role='fieldcontain')
-			fieldset(data-role='controlgroup')
-				label(for='where') Where
-					input(id='where',type='text',value=where,placeholder='where',name='where')
-		div(data-role='fieldcontain')
-			fieldset(data-role='controlgroup')
-				label(for='wkt') Well Known Text (WKT) Polygon
-					textarea(id='wkt',placeholder='wkt',name='wkt')
-						|POLYGON((80.647 23.232,81.965 22.260,81.526 19.799,79.417 20.952,80.647 23.232))
-		-if (message){
-			.red message
-		-}			
+								option(value=item, selected=(item==stattype))=item
 
+			tr
+				td
+					label(for='wkt') Well Known Text (WKT) Geometry
+				td
+					textarea(id='wkt',placeholder='POINT(32.320919 1.521428)',name='wkt')
+						|#{wkt}
+
+			tr
+				td
+					label(for='bufferdistance') Buffer Distance (meters)
+				td
+					input(id='bufferdistance',type='text',value=bufferdistance,placeholder='1000',name='bufferdistance')
 
 		div(data-role='fieldcontain')   
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
@@ -45,16 +44,46 @@ block content
 		-}
 
 
+
+		- var requestSample = []
+		-if(stattype)
+			- requestSample.push("stattype=" + encodeURIComponent(stattype))
+
+		-if(wkt)
+			- requestSample.push("wkt=" + encodeURIComponent(wkt))
+	
+		-if(bufferdistance)
+			- requestSample.push("bufferdistance=" + encodeURIComponent(bufferdistance))
+
+		-if(format)
+			- requestSample.push("format=" + encodeURIComponent(format))
+
+
+		-if(requestSample.length > 0){
+			h2: |Request Sample
+			div#requestSample
+				|#{"http://" + host + path + "?" + requestSample.join("&")}
+		-}
+
+
+		-if(infoMessage){
+			div.infoMessage
+				|#{infoMessage}
+		-}
+
+		-if(errorMessage){
+			div.errorMessage
+				|#{errorMessage}
+		-}
+
 block sidebar
 	.widget
-		h1 Results
+		h2 Results
 		.results
-			- if (query_results){
-				each row in query_results
-					-if(row.sum){
-						div.geometry #{row.sum}
-					-}else{
-						div.propertyGroup No results found
-					-}
+			- if (featureCollection && featureCollection.features){
+				each row in featureCollection.features
+					each val, key in row.properties
+						div.property #{key}: #{val}
+							
 			-}
 			

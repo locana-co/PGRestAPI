@@ -1,3 +1,7 @@
+@messageBorder: 1px solid #000;
+
+
+
 body {
   padding: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
@@ -27,14 +31,14 @@ a {
 .infoMessage {
 	background-color: #FFFFE0;
 	padding: 20px;
-	border: 1px solid #000;
+	border: @messageBorder;
 	margin-top: 40px;
 }
 
 .errorMessage {
 	background-color: pink;
 	padding: 20px;
-	border: 1px solid #000;
+	border: @messageBorder;
 	margin-top: 40px;
 }
 
@@ -56,4 +60,5 @@ textarea{
 #requestSample {
     background-color: rgb(0, 245, 127);
     padding: 15px;
+    border: @messageBorder;
 }

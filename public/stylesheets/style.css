@@ -22,13 +22,13 @@ a {
 .infoMessage {
   background-color: #FFFFE0;
   padding: 20px;
-  border: 1px solid #000;
+  border: 1px solid #000000;
   margin-top: 40px;
 }
 .errorMessage {
   background-color: pink;
   padding: 20px;
-  border: 1px solid #000;
+  border: 1px solid #000000;
   margin-top: 40px;
 }
 textarea {
@@ -44,4 +44,5 @@ textarea {
 #requestSample {
   background-color: #00f57f;
   padding: 15px;
+  border: 1px solid #000000;
 }

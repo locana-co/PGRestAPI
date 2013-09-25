@@ -114,7 +114,7 @@ block content
 
 
 	-if(requestSample.length > 0){
-		h3: |Request Sample
+		h2: |Request Sample
 		div#requestSample
 			|#{"http://" + host + path + "?" + requestSample.join("&")}
 	-}
@@ -131,7 +131,7 @@ block content
 
 block sidebar
 	.widget
-		h1 Results
+		h2 Results
 		.results
 			- if (featureCollection){
 				-if(featureCollection.features){
