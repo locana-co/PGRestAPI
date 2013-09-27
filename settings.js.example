@@ -25,4 +25,10 @@ settings.displayTables = true;
 //Should the API hide any postgres tables or views?
 settings.pg.noFlyList = ["att_0"];
 
+//Where to write out TopoJSON files?
+settings.application.topoJsonOutputFolder = "/public/topojson/output/";
+
+//Where to write out GeoJSON files?
+settings.application.geoJsonOutputFolder = "/public/geojson/output/";
+
 module.exports = settings;

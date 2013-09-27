@@ -25,4 +25,6 @@ block sidebar
 			- each item in items
 				-if(item.data_type == "raster"){
 					a(href=url +"/rasterOps") Raster Operations
+				-}else if(item.data_type == "geometry"){
+					a(href=url + "/topojson") TopoJSON
 				-}

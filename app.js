@@ -431,6 +431,7 @@ routes['rasterOps'] = function (req, res) {
 
 
 //list topojson files for a particular dataset, and let user create new ones.
+//TODO - Add FLOW here.
 routes['topojson'] = function (req, res) {
 
     var args = {};
@@ -445,66 +446,110 @@ routes['topojson'] = function (req, res) {
         args = req.query;
     }
 
-
-
     if (JSON.stringify(args) != '{}') {
         args.view = "topojson_list";
-        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Tile List" }];
+        args.table = req.params.table;
+        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "TopoJSON" }];
         args.path = req.path;
         args.host = req.headers.host;
-        args.table = req.params.table;
         args.files = [];
+
 
         if (args.topofilename) {
             //Make the File if flag was sent
-            makeGeoJSONFile(args.table, args.topofilename, function (filename, filepath) {
-                console.log("Made it out - " + filename);
 
-                args.infoMessage = "Created file - " + filename;
+            //First - check to see if table has a subfolder on disk
+            fs.exists("." + settings.application.topoJsonOutputFolder + args.table, function (exists) {
+                if (exists === false) {
+                    console.log("folder doesn't exist");
 
-                //Now turn file into TopoJSON - pass in original file, topo file, callback
-                geoJSONToTopoJSON(filename, "topo_" + filename, function (stdout) {
-                    console.log("Finished making Topo File.");
+                    //make it
 
-                    //Find all existing topojson files in the public/topojson/output folder
-                    fs.readdirSync("./public/topojson/output").forEach(function (file) {
-                        if (file.indexOf("topo_") == 0) {
-                            args.files.push({ link: "/public/topojson/output/" + file, name: file });
-                        }
+                    fs.mkdirSync("." + settings.application.topoJsonOutputFolder + args.table); //Synch
+                    fs.mkdirSync("." + settings.application.geoJsonOutputFolder + args.table); //Synch
+
+                    //made directory for table
+                    console.log('made new directory - ' + args.table);
+
+                    //Make the Geo File
+                    makeGeoJSONFile(args.table, args.topofilename, function (filename, filepath) {
+
+                        args.infoMessage = "Created file - " + filename;
+
+                        //Now turn file into TopoJSON - pass in original file, topo file, callback
+                        geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function (stdout) {
+                            console.log("Finished making Topo File.");
+
+                            //Find all existing topojson files in the public/topojson/output folder
+                            fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
+                                if (file.indexOf("topo_") == 0) {
+                                    args.files.push({ link: settings.application.topoJsonOutputFolder + args.table + "/" + file, name: file });
+                                }
+                            });
+
+                            args.infoMessage = stdout;
+                            respond(req, res, args);
+                        })
                     });
-                    
-                    args.infoMessage = stdout;
-                    respond(req, res, args);
-                })
+
+                }
+                else {
+                    //Table's folder already exists, write out GeoJSON, then Topo.  TODO - make this use FLOW so we're not repeating code.
+                    //Make the Geo File
+                    makeGeoJSONFile(args.table, args.topofilename, function (filename, filepath) {
+
+                        args.infoMessage = "Created file - " + filename;
+
+                        //Now turn file into TopoJSON - pass in original file, topo file, callback
+                        geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function (stdout) {
+                            console.log("Finished making Topo File.");
+
+                            //Find all existing topojson files in the public/topojson/output folder
+                            fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
+                                if (file.indexOf("topo_") == 0) {
+                                    args.files.push({ link: settings.application.topoJsonOutputFolder + args.table + "/" + file, name: file });
+                                }
+                            });
+
+                            args.infoMessage = stdout;
+                            respond(req, res, args);
+                        })
+                    });
+                }
             });
+
         }
         else {
             //Expecting a topofilename
             respond(req, res, args);
         }
-
-
-        //dir_list(function (dir_list_output) {
-        //    args.result = dir_list_output; //get directory listing
-        //    respond(req, res, args);
-        //});
-
     }
     else {
         //Respond with list.
         args.view = "topojson_list";
-        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Tile List" }];
+        args.table = req.params.table;
+        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "TopoJSON" }];
         args.path = req.path;
         args.host = req.headers.host;
-        args.table = req.params.table;
         args.files = [];
 
-        //Find all existing topojson files in the public/topojson/output folder
-        fs.readdirSync("./public/topojson/output").forEach(function (file) {
-            if (file.indexOf("topo_") == 0) {
-                args.files.push({link: "/public/topojson/output/" + file, name: file});
+        //First - check to see if table has a subfolder on disk
+        fs.exists("." + settings.application.topoJsonOutputFolder + args.table, function (exists) {
+            if (exists === true) {
+                //Find all existing topojson files in the public/topojson/output folder
+                fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
+                    if (file.indexOf("topo_") == 0) {
+                        args.files.push({ link: settings.application.topoJsonOutputFolder + file, name: file });
+                    }
+                });
+                respond(req, res, args);
+            }
+            else {
+                respond(req, res, args);
             }
         });
+
+
 
         respond(req, res, args);
     }
@@ -1132,31 +1177,26 @@ function isValidSQL(item) {
 
 
 ///TopoJSON functions - TODO - move to a separate module.
-function dir_list(callback) {
-    var sys = require('sys');
-    var exec = require('child_process').exec
-    child = exec('dir', function (error, stdout, stderr) {
-        callback(stdout);
-    });
-}
 
 //example
 //topojson -o output.json input.json
-function geoJSONToTopoJSON(geojsonfile, topojsonfile, callback) {
+function geoJSONToTopoJSON(table, geojsonfile, topojsonfile, callback) {
     var filename = geojsonfile.split(".")[0];
-    var outputPath = __dirname + "/public/topojson/output/";
+    var outputPath = __dirname + settings.application.topoJsonOutputFolder + table + "/";
+    var geoJsonPath = __dirname + settings.application.geoJsonOutputFolder + table + "/";
     var sys = require('sys');
     var exec = require('child_process').exec
-    console.log("About to execute: " + 'topojson -o ' + outputPath + topojsonfile + " " + outputPath + geojsonfile);
-    child = exec('topojson -o ' + outputPath + topojsonfile + " " + outputPath + geojsonfile, function (error, stdout, stderr) {
+    console.log("About to execute: " + 'topojson -o ' + outputPath + topojsonfile + " " + geoJsonPath + geojsonfile);
+    child = exec('topojson -o ' + outputPath + topojsonfile + " " + geoJsonPath + geojsonfile, function (error, stdout, stderr) {
         callback(stdout);
     });
 }
 
+//Query table's rest endpoint, write out GeoJSON file.
 function makeGeoJSONFile(table, filename, callback) {
     //Grab GeoJSON from our own rest service for this table.
     var options = {
-        host: "localhost",
+        host: "localhost", //TODO - make this point to the environment variable to get the right IP
         path: "/services/tables/" + table + "/query?where=1%3D1&format=geojson&returnGeometry=yes&returnGeometryEnvelopes=no",
         port: 3000
     };
@@ -1171,22 +1211,15 @@ function makeGeoJSONFile(table, filename, callback) {
 
         //the whole response has been recieved, so we just print it out here
         response.on('end', function () {
-            //var obj = JSON.parse(str.join(""));
-            ////This is an array of tilestream layers.  break it apart so it's easier to parse for the UI
-            //args.featureCollection = [];
-            //obj.forEach(function (layer) {
-
-            //});
-            //Make anew directory for this table
-
-
+            console.log("ended API response");
             //Write out a GeoJSON file to disk - remove all whitespace
-            fs.writeFile("./public/topojson/output/" + filename + '.json', str.join("").replace(/\s+/g, ''), function (err) {
+            var geoJsonOutFile = filename + '.json';
+            fs.writeFile("." + settings.application.geoJsonOutputFolder + table + "/" + geoJsonOutFile, str.join("").replace(/\s+/g, ''), function (err) {
                 if (err) throw err;
-                console.log('It\'s saved!');
-
+                console.log("created GeoJSON file.");
+                //TODO - return object with error so we can handle it from the caller
                 //return filename, filepath
-                callback(filename+'.json',"/public/topojson/output/" + filename + '.json');
+                callback(geoJsonOutFile, settings.application.geoJsonOutputFolder + table + "/" + geoJsonOutFile);
             });
         });
     }).end();
