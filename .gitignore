@@ -17,3 +17,4 @@ node_modules/
 npm-debug.log
 
 public/topojson/output/
+public/geojson/output/
