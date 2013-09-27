@@ -1,8 +1,9 @@
 {
-  "name": "application-name",
+  "name": "PGRestAPI",
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "start": "node app.js",
     "preinstall": "npm i -g nodemon",
     "test": "node_modules\\.bin\\mocha --reporter spec"
   },
@@ -16,6 +17,7 @@
     "flow": "*",
     "less-middleware": "*",
     "node-phantom": "*",
-    "shortid": "~2.0.0"
+    "shortid": "~2.0.0",
+    "topojson": "*"
   }
 }

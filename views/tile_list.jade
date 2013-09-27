@@ -1,0 +1,21 @@
+extends layout
+
+block content
+	p
+		| Tilestream Layers
+
+	table
+		thead
+			tr
+				th Name
+		tbody
+			- each item in featureCollection
+				tr
+					td
+						a(href=item.preview, target='_blank') #{item.name}
+
+						
+
+
+block sidebar
+	.widget

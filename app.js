@@ -65,7 +65,13 @@ routes['services'] = function (req, res) {
     var opslist = [
         { link: 'tables', name: 'Table List' },
         { link: 'geoprocessing', name: 'Geoprocessing Operations' }
+        
     ];
+
+    if (settings.tilestream && settings.tilestream.host && settings.tilestream.path) {
+        //Add tilestream url if it's in settings file
+        opslist.push({ link: 'tiles', name: 'Tilestream Layers' });
+    }
 
     //send to view
     res.render('services', { opslist: opslist, breadcrumbs: [{ link: "", name: "Services" }] })
@@ -100,6 +106,64 @@ routes['listTables'] = function (req, res) {
             //Render HTML page with results at bottom
             respond(req, res, args);
         });
+    } catch (e) {
+        respond(req, res, args);
+    }
+};
+
+
+//Get list of tilestream layers  (if provided) from the tilestream API
+routes['listTiles'] = function (req, res) {
+
+    var args = {};
+
+    //Grab POST or QueryString args depending on type
+    if (req.method.toLowerCase() == "post") {
+        //If a post, then arguments will be members of the this.req.body property
+        args = req.body;
+    }
+    else if (req.method.toLowerCase() == "get") {
+        //If request is a get, then args will be members of the this.req.query property
+        args = req.query;
+    }
+
+    args.view = "tile_list";
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Tile List" }];
+    args.path = req.path;
+    args.host = req.headers.host;
+
+    try {
+        var options = {
+            host: settings.tilestream.host,
+            path: settings.tilestream.path
+        };
+
+
+        //add port if specified
+        if (settings.tilestream.port) options.port = settings.tilestream.port;
+
+        http.request(options, function (response) {
+            var str = '';
+
+            //another chunk of data has been recieved, so append it to `str`
+            response.on('data', function (chunk) {
+                str += chunk;
+            });
+
+            //the whole response has been recieved, so we just print it out here
+            response.on('end', function () {
+                var obj = JSON.parse(str);
+                //This is an array of tilestream layers.  break it apart so it's easier to parse for the UI
+                args.featureCollection = [];
+                obj.forEach(function (layer) {
+                    args.featureCollection.push({ name: layer.name, preview: "http://" + settings.tilestream.host + ":" + (settings.tilestream.port ? settings.tilestream.port : 80) + "/#!/map/" + layer.name, });
+                });
+
+                respond(req, res, args);
+
+            });
+        }).end();
+
     } catch (e) {
         respond(req, res, args);
     }
@@ -664,6 +728,12 @@ routes['geoprocessing_operation'] = function (req, res) {
 
     //List All Tables
     app.all('/services/tables', routes['listTables']);
+
+    //If tilestream endpoint is provided
+    if (settings.tilestream && settings.tilestream.host && settings.tilestream.path) {
+        //List All TileStream
+        app.all('/services/tiles', routes['listTiles']);
+    }
 
     //Table Detail
     app.all('/services/tables/:table', routes['tableDetail']);
