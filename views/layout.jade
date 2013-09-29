@@ -3,9 +3,18 @@ html
 	head
 		title #{title}
 		link(rel='stylesheet', href='/stylesheets/style.css')
+		-if(css){
+			-each csslink in css 
+				link(rel='stylesheet', href= csslink)
+		-}
+		-if(scripts){
+		-each script in scripts 
+			script(type='text/javascript', src= script)
+	
+		-}	
 	body
 		header
-			h2 pGIS Server
+			h2 PGRestAPI
 		div.breadcrumbs
 			-if(breadcrumbs){
 				each crumb in breadcrumbs

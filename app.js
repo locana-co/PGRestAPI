@@ -318,13 +318,15 @@ routes['tableQuery'] = flow.define(
 
         //Add in WKT Geometry to WHERE clause , if specified
         //For now, assuming 4326.  TODO
+        
         if (this.args.wkt) {
             //For each geometry in the table, give an intersects clause
+            var wkt = this.args.wkt;
             var wkt_array = [];
             this.args.geom_fields_array.forEach(function (item) {
-                wkt_array.push("ST_Intersects(ST_GeomFromText('" + this.args.wkt + "', 4326)," + item + ")");
+                wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
             });
-            this.args.wkt = wkt_array;
+            this.wkt = wkt_array;
         }
 
         //Add in WHERE clause, if specified.  Don't alter the original incoming paramter.  Create this.where to hold modifications
@@ -332,13 +334,13 @@ routes['tableQuery'] = flow.define(
         
         if (this.where.length > 0) {
             this.where = " WHERE " + this.where;
-            if (this.args.wkt) {
-                this.where += " AND (" + this.args.wkt.join(" OR ") + ")";
+            if (this.wkt) {
+                this.where += " AND (" + this.wkt.join(" OR ") + ")";
             }
         }
         else {
-            if (this.args.wkt) {
-                this.where += " WHERE (" + this.args.wkt.join(" OR ") + ")";
+            if (this.wkt) {
+                this.where += " WHERE (" + this.wkt.join(" OR ") + ")";
             }
             else {
                 this.where = " WHERE 1=1";
@@ -397,6 +399,8 @@ routes['tableQuery'] = flow.define(
                     }
 
                     args.featureCollection = features;
+                    args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://codeorigin.jquery.com/jquery-1.10.2.min.js']; //Load external scripts for map preview
+                    args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
                 }
 
                 respond(req, res, args);
