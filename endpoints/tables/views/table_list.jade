@@ -1,4 +1,4 @@
-extends layout
+extends ../../../shared_views/layout
 
 block content
 	p
@@ -9,10 +9,12 @@ block content
 			tr
 				th Name
 		tbody
-			- each item in featureCollection
-				tr
-					td
-						a(href="/services/tables/" + item) #{item}
+			- if(featureCollection){
+				- each item in featureCollection
+					tr
+						td
+							a(href="/services/tables/" + item) #{item}
+			-}
 
 	- var requestSample = []
 	-if(search)
@@ -23,6 +25,15 @@ block content
 		h2: |Request Sample
 		div#requestSample
 			|#{"http://" + host + path + "?" + requestSample.join("&")}
+	-}
+
+	-if(infoMessage){
+		div.infoMessage
+			|#{infoMessage}
+	-}
+	-if(errorMessage){
+		div.errorMessage
+			|#{errorMessage}
 	-}
 						
 

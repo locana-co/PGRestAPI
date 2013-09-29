@@ -4,6 +4,7 @@ PGRestAPI
 ## Overview
 
 Node.js REST API for PostGres Spatial Entities.
+Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-node-js-express-app-the-right-way/
 
 ## Dependencies
 
@@ -91,7 +92,7 @@ Congratulations!  Everything you need should be installed.  Celebrate by having 
 ![Mou icon](http://173.201.28.147/pgRESTAPI/chubbs.JPG)
 
 
-###Running pgREST API yo …
+###Install PgRest API yo …
 
 * Create a target directory you will clone to e.g. .../Chubbs/pgRESTAPI
 * Open terminal and cd to your target directory 
@@ -99,13 +100,55 @@ Congratulations!  Everything you need should be installed.  Celebrate by having 
 * cd to PGRestAPI
 * Execute ...
 
-    `npm install`
-    
-* Open PGRestAPI/app.js and change the connection string to your spatial database
-* Execute ...
+    npm install
+
+(If you're developing and want changes to automatically restart your service, install nodemon)
+	npm install nodemon -g
 
 
-    `node app`
 
-* Go to http://[server]:[port]/services
+### Create a settings.js file
+Specify IP, Ports, Passwords and other settings in a file called settings.js.
+An example has been provided - settings.js.example.
+Settings.js must be filled out with valid settings for the application to run.
 
+#Running as Services
+
+###To Run as a Windows Service
+When starting as a windows service, install winser
+	
+	npm install -g winser
+
+
+modify the package.json:  
+
+	"scripts": {
+		"start" : "node app.js",
+		"install-windows-service": "winser -i",
+		"uninstall-windows-service": "winser -r"
+	}
+
+Install the app as a service
+	
+	npm run-script install-windows-service
+
+To Uninstall the service
+
+	npm run-script uninstall-windows-service
+
+Open windows task manager, find 'app'(or whatever the name property is in package.json), right click and start the service.
+
+
+### On Ubuntu 12 and 13
+install forever module
+
+	sudo npm install -g forever
+
+### Run
+	sudo forever start app.js
+
+### Restarting
+	sudo forever restart 0
+
+### Stopping
+	sudo forever stop 0

@@ -1,1 +1,0 @@
-nodemon app.js
