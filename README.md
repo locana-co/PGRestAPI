@@ -22,10 +22,6 @@ npm install pg --msvs_version=2012
 ## For Hipster Ubuntu Linux Folks:
 This "works on my machine" for Ubuntu Linux 12.04.  Contribute your changes as needed.
 
-###Install Apache yo …
-
-    sudo apt-get install apache2
-
 ###Install Git yo …
 
 	sudo apt-get update
