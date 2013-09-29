@@ -7,7 +7,8 @@ var express = require('express'),
 
 //The next requires are specific to this module only
 var flow = require('flow'),
-    fs = require("fs");
+    fs = require("fs"),
+    http = require('http');
 
 var app = module.exports = express();
 app.set('views', __dirname + '/views');
@@ -226,7 +227,7 @@ app.all('/services/tables/:table/query', flow.define(
 
         //provide all columns (except geometries).
         if (this.returnfields.legnth == 0 || this.returnfields == "" || this.returnfields.trim() == "*") {
-            createSelectAllStatementWithExcept(this.args.table, unEscapePostGresColumns(geom_fields_array).join(","), this); //Get all fields except the no fly list
+            createSelectAllStatementWithExcept(this.args.table, common.unEscapePostGresColumns(geom_fields_array).join(","), this); //Get all fields except the no fly list
         }
         else {
             //flow to next block - pass fields
@@ -242,7 +243,7 @@ app.all('/services/tables/:table/query', flow.define(
                 //Dynamically plug in geometry piece depending on the geom field name(s)
                 (this.args.geometryStatement ? ", " + this.args.geometryStatement : "") +
                 " FROM " +
-                escapePostGresColumns([this.args.table]).join(",") + //escape
+                common.escapePostGresColumns([this.args.table]).join(",") + //escape
                 this.where +
                 (this.args.groupby ? " GROUP BY " + this.args.groupby : ""), values: []
             };
@@ -264,15 +265,15 @@ app.all('/services/tables/:table/query', flow.define(
                     //Check which format was specified
                     if (!args.format || args.format.toLowerCase() == "html") {
                         //Render HTML page with results at bottom
-                        features = common.formatters.geoJSONFormatter(result.rows, unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
+                        features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
                     }
                     else if (args.format && args.format.toLowerCase() == "geojson") {
                         //Respond with JSON
-                        features = common.formatters.geoJSONFormatter(result.rows, unEscapePostGresColumns(args.geom_fields_array));
+                        features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
                     }
                     else if (args.format && args.format.toLowerCase() == "esrijson") {
                         //Respond with esriJSON
-                        features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, unEscapePostGresColumns(args.geom_fields_array));
+                        features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
                     }
 
                     args.featureCollection = features;
@@ -599,7 +600,7 @@ function createSelectAllStatementWithExcept(table, except_list, callback) {
         var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
 
         //Wrap columns in double quotes
-        rows = escapePostGresColumns(rows);
+        rows = common.escapePostGresColumns(rows);
 
         //Callback
         callback(rows.join(","));
@@ -653,7 +654,7 @@ function getGeometryFieldNames(table, callback) {
     common.executePgQuery(query, function (result) {
         var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
         //Wrap columns in double quotes
-        rows = escapePostGresColumns(rows);
+        rows = common.escapePostGresColumns(rows);
 
         //Callback
         callback(rows);
@@ -669,7 +670,7 @@ function getRasterColumnName(table, callback) {
         var rows = result.rows.map(function (item) { return item.column_name; }); //Get array of column names
 
         //Wrap columns in double quotes
-        rows = escapePostGresColumns(rows);
+        rows = common.escapePostGresColumns(rows);
 
         //Callback
         callback(rows);
