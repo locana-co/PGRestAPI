@@ -89,6 +89,7 @@ Congratulations!  Everything you need should be installed.  Celebrate by having 
     npm install
 
 (If you're developing and want changes to automatically restart your service, install nodemon)
+
 	npm install nodemon -g
 
 
