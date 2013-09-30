@@ -9,21 +9,18 @@ block content
 			tr
 				th Columns
 		tbody
-			- each item in featureCollection
-				tr
-					td= item.column_name + " (" + item.data_type + ")"
-					-if(item.data_type == "raster") 
+			-if(featureCollection && featureCollection.columns){
+				- each item in featureCollection.columns
+					tr
+						td= item.column_name + " (" + item.data_type + ")"
+						-if(item.data_type == "raster") 
+			-}
 
 
 block sidebar
 	.widget
 		h2 Operations
-		p
-			a(href=url + "/query") Query
-			&nbsp;
-			- each item in items
-				-if(item.data_type == "raster"){
-					a(href=url +"/rasterOps") Raster Operations
-				-}else if(item.data_type == "geometry"){
-					a(href=url + "/topojson") TopoJSON
-				-}
+		div.links
+			- each operation in featureCollection.supportedOperations
+				a(href=operation.link) #{operation.name}
+				

@@ -71,11 +71,28 @@ app.all('/services/tables/:table', function (req, res) {
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: req.params.table }];
     args.url = req.url;
     args.table_details = [];
+    args.fullURL = "http://" + req.headers.host + req.path; //TODO - make the protocol dynamic
 
     var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [req.params.table] };
 
     common.executePgQuery(query, function (result) {
-        args.featureCollection = result.rows;
+        //TODO: handle errors here
+
+        args.featureCollection = {};
+        args.featureCollection.columns = result.rows;
+        //Add supported operations in a property
+        args.featureCollection.supportedOperations = [];
+        args.featureCollection.supportedOperations.push({ link: args.fullURL + "/query", name: "Query" });
+        
+        result.rows.forEach(function (item) {
+            if (item.data_type == "raster") {
+                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/rasterOps", name: "Raster Operations" });
+            }
+            else if (item.data_type == "geometry") {
+                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/topojson", name: "TopoJSON" });
+            }
+        });
+
         //Render HTML page with results at bottom
         common.respond(req, res, args);
     });
