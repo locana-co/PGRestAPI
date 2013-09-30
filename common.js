@@ -181,15 +181,19 @@ common.formatters.ESRIFeatureSetJSONFormatter = function (rows, geom_fields_arra
                 else if (row[geom_fields_array[0]].type == "Point") featureSet.geometryType = "esriGeometryPoint";
                 else if (row[geom_fields_array[0]].type == "Line") featureSet.geometryType = "esriGeometryLine";
                 else if (row[geom_fields_array[0]].type == "Polyline") featureSet.geometryType = "esriGeometryPolyline";
+                else if (row[geom_fields_array[0]].type == "MultiPolygon") featureSet.geometryType = "esriGeometryPolygon";
+
                 //TODO - add the rest
                 //TODO - support all types below
                 feature.geometry = {};
 
+                var rowGeom = JSON.parse(row[geom_fields_array[0]]);
+
                 if (featureSet.geometryType = "esriGeometryPolygon") {
-                    feature.geometry.rings = row[geom_fields_array[0]].coordinates;
+                    feature.geometry.rings = rowGeom.coordinates;
                 }
                 else {
-                    feature.geometry = row[geom_fields_array[0]];
+                    feature.geometry = rowGeom;
                 }
                 //remove the geometry property from the row object so we're just left with non-spatial properties
                 delete row[geom_fields_array[0]];
