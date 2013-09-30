@@ -30,10 +30,13 @@ app.all('/services/tables', function (req, res) {
         args = req.query;
     }
 
-    args.view = "table_list";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
-    args.path = req.path;
-    args.host = req.headers.host;
+
+        args.view = "table_list";
+        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
+        args.path = req.path;
+        args.host = req.headers.host;
+
+
 
     try {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
@@ -45,7 +48,6 @@ app.all('/services/tables', function (req, res) {
             common.respond(req, res, args);
         });
     } catch (e) {
-        debugger;
         args.errorMessage = e.text;
         common.respond(req, res, args);
     }
@@ -54,6 +56,17 @@ app.all('/services/tables', function (req, res) {
 //Table Detail
 app.all('/services/tables/:table', function (req, res) {
     var args = {};
+
+    //Grab POST or QueryString args depending on type
+    if (req.method.toLowerCase() == "post") {
+        //If a post, then arguments will be members of the this.req.body property
+        args = req.body;
+    }
+    else if (req.method.toLowerCase() == "get") {
+        //If request is a get, then args will be members of the this.req.query property
+        args = req.query;
+    }
+
     args.view = "table_details";
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: req.params.table }];
     args.url = req.url;
@@ -62,7 +75,7 @@ app.all('/services/tables/:table', function (req, res) {
     var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [req.params.table] };
 
     common.executePgQuery(query, function (result) {
-        args.table_details = result.rows;
+        args.featureCollection = result.rows;
         //Render HTML page with results at bottom
         common.respond(req, res, args);
     });

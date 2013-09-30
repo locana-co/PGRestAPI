@@ -10,7 +10,7 @@ common.respond = function (req, res, args) {
         //Determine sample request based on args
         res.render(args.view, args);
     }
-    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson")) {
+    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
         //Responsd with GeoJSON (or JSON if there is no geo)
         if (args.errorMessage) {
             res.jsonp({ error: args.errorMessage });
@@ -188,7 +188,6 @@ common.formatters.ESRIFeatureSetJSONFormatter = function (rows, geom_fields_arra
                 feature.geometry = {};
 
                 var rowGeom = JSON.parse(row[geom_fields_array[0]]);
-
                 if (featureSet.geometryType = "esriGeometryPolygon") {
                     feature.geometry.rings = rowGeom.coordinates;
                 }

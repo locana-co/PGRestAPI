@@ -9,8 +9,7 @@ block content
 			tr
 				th Columns
 		tbody
-			- var items = table_details
-			- each item in items
+			- each item in featureCollection
 				tr
 					td= item.column_name + " (" + item.data_type + ")"
 					-if(item.data_type == "raster") 
