@@ -151,6 +151,7 @@ app.all('/services/tables/:table/query', flow.define(
         this.where = this.args.where || ""; //where clause - copy to local variable
         this.args.groupby = this.args.groupby || ""; //group by fields
         this.args.statsdef = this.args.statsdef || ""; //statistics definition clause
+        this.limit = this.args.limit || settings.pg.featureLimit || 1000;
 
         //requested select fields
         this.returnfields = this.args.returnfields || ""; //return fields - copy to local variable so we don't mess with the original
@@ -275,7 +276,8 @@ app.all('/services/tables/:table/query', flow.define(
                 " FROM " +
                 common.escapePostGresColumns([this.args.table]).join(",") + //escape
                 this.where +
-                (this.args.groupby ? " GROUP BY " + this.args.groupby : ""), values: []
+                (this.args.groupby ? " GROUP BY " + this.args.groupby : "")+
+                (this.limit && common.IsNumeric(this.limit) ? " LIMIT " + this.limit : ""), values: []
             };
 
             var args = this.args; //copy for closure.

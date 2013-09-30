@@ -74,7 +74,8 @@ common.IsNumeric = function (sText) {
     var ValidChars = "0123456789";
     var IsNumber = true;
     var Char;
-    sText.replace(/\s+/g, '')
+    
+    sText.toString().replace(/\s+/g, '')
 
     for (i = 0; i < sText.length && IsNumber == true; i++) {
         Char = sText.charAt(i);
