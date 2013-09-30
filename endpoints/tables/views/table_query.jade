@@ -120,6 +120,9 @@ block content
 	-if(wkt)
 		- requestSample.push("wkt=" + encodeURIComponent(wkt))
 
+	-if(limit)
+		- requestSample.push("limit=" + encodeURIComponent(limit))
+
 
 	-if(requestSample.length > 0){
 		h2: |Request Sample
