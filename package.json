@@ -5,19 +5,20 @@
   "scripts": {
     "start": "node app.js",
     "preinstall": "npm i -g nodemon",
-    "test": "node_modules\\.bin\\mocha --reporter spec"
+    "test": "node_modules\\.bin\\mocha -u tdd"
   },
   "dependencies": {
     "mocha": "*",
+	"sinon": "*",
     "chai": "*",
+	"express-mock-request": "*",
+	"geojson-validation": "*",
     "supertest": "*",
     "express": "3.3.4",
     "jade": "*",
     "pg": "*",
     "flow": "*",
     "less-middleware": "*",
-    "node-phantom": "*",
-    "shortid": "~2.0.0",
     "topojson": "*"
   }
 }
