@@ -4,6 +4,7 @@ var settings = {}
 
 settings.pg = {};
 settings.application = {};
+settings.tilestream = {};
 
 //application port settings
 settings.application.port = 80;
@@ -15,6 +16,11 @@ settings.pg.password = 'password';
 settings.pg.server = '127.0.0.1';
 settings.pg.port = '5432';
 settings.pg.database = 'test';
+settings.pg.featureLimit = 1000; //how many features to return by default
+
+settings.tilestream.host = "54.212.254.185";
+settings.tilestream.path = "/api/Tileset";
+settings.tilestream.port = "8888";
 
 //Should the API display postgres views?
 settings.displayViews = true;
@@ -30,5 +36,9 @@ settings.application.topoJsonOutputFolder = "/public/topojson/output/";
 
 //Where to write out GeoJSON files?
 settings.application.geoJsonOutputFolder = "/public/geojson/output/";
+
+//Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
+settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
+settings.application.publicport = "80";
 
 module.exports = settings;

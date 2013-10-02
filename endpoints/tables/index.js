@@ -33,7 +33,7 @@ app.all('/services/tables', function (req, res) {
     args.view = "table_list";
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
     args.path = req.path;
-    args.host = req.headers.host;
+    args.host = settings.application.publichost || req.headers.host;
 
     try {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
@@ -68,7 +68,7 @@ app.all('/services/tables/:table', function (req, res) {
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: req.params.table }];
     args.url = req.url;
     args.table_details = [];
-    args.fullURL = "http://" + req.headers.host + req.path; //TODO - make the protocol dynamic
+    args.fullURL = "http://" + (settings.application.publichost || req.headers.host) + req.path; //TODO - make the protocol dynamic
 
     var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [req.params.table] };
 
@@ -122,7 +122,7 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.returnGeometryEnvelopes = this.args.returnGeometryEnvelopes || "no"; //default
             this.args.table = req.params.table;
             this.args.path = req.path;
-            this.args.host = req.headers.host;
+            this.args.host = settings.application.publichost || req.headers.host;
             this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.view = "table_query";
 
