@@ -30,13 +30,10 @@ app.all('/services/tables', function (req, res) {
         args = req.query;
     }
 
-
-        args.view = "table_list";
-        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
-        args.path = req.path;
-        args.host = req.headers.host;
-
-
+    args.view = "table_list";
+    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
+    args.path = req.path;
+    args.host = req.headers.host;
 
     try {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
@@ -191,7 +188,9 @@ app.all('/services/tables/:table/query', flow.define(
 
                 statsDefArray.forEach(function (def) {
                     if (def.split(":").length == 2) {
-                        statsSQLArray.push(def.split(":")[0].toLowerCase() + "(" + def.split(":")[1] + ")");
+                        var operation = def.split(":")[0].toLowerCase();
+                        var column = def.split(":")[1];
+                        statsSQLArray.push(operation + "(" + column + ") as " + operation + "_"  + column );
                     }
                     else {
                         this.args.infoMessage = "must have 2 arguments for a stats definition, such as -  sum:columnname";
