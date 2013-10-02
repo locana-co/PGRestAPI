@@ -45,6 +45,7 @@ textarea {
   background-color: #00f57f;
   padding: 15px;
   border: 1px solid #000000;
+  word-wrap: break-word;
 }
 .links a {
   margin-right: 10px;
