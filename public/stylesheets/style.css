@@ -47,6 +47,9 @@ textarea {
   border: 1px solid #000000;
   word-wrap: break-word;
 }
+#topofilename {
+  background-color: #D5D5D5;
+}
 .links a {
   margin-right: 10px;
 }
