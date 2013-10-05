@@ -51,49 +51,109 @@ app.all('/services/tables', function (req, res) {
 });
 
 //Table Detail
-app.all('/services/tables/:table', function (req, res) {
-    var args = {};
+app.all('/services/tables/:table', flow.define(
+    //If the querystring is empty, just show the regular HTML form.
 
-    //Grab POST or QueryString args depending on type
-    if (req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
-        args = req.body;
-    }
-    else if (req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
-        args = req.query;
-    }
+    function (req, res) {
+        this.req = req;
+        this.res = res;
 
-    args.view = "table_details";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: req.params.table }];
-    args.url = req.url;
-    args.table_details = [];
-    args.fullURL = "http://" + (settings.application.publichost || req.headers.host) + req.path; //TODO - make the protocol dynamic
+        this.args = {};
 
-    var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [req.params.table] };
+        //Grab POST or QueryString args depending on type
+        if (this.req.method.toLowerCase() == "post") {
+            //If a post, then arguments will be members of the this.req.body property
+            this.args = this.req.body;
+        }
+        else if (this.req.method.toLowerCase() == "get") {
+            //If request is a get, then args will be members of the this.req.query property
+            this.args = this.req.query;
+        }
 
-    common.executePgQuery(query, function (result) {
+        this.args.table = this.req.params.table;
+        this.args.view = "table_details";
+        this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: this.args.table }];
+        this.args.url = this.req.url;
+        this.args.table_details = [];
+        this.args.fullURL = "http://" + (settings.application.publichost || this.req.headers.host) + this.req.path; //TODO - make the protocol dynamic
+
+        var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [this.args.table] };
+        common.executePgQuery(query, this);
+
+    },
+    function (result) {
+        //coming back executePgQuery
         //TODO: handle errors here
 
-        args.featureCollection = {};
-        args.featureCollection.columns = result.rows;
-        //Add supported operations in a property
-        args.featureCollection.supportedOperations = [];
-        args.featureCollection.supportedOperations.push({ link: args.fullURL + "/query", name: "Query" });
-        
-        result.rows.forEach(function (item) {
-            if (item.data_type == "raster") {
-                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/rasterOps", name: "Raster Operations" });
+        //check for error
+        if (result.status == "error") {
+            //Report error and exit.
+            this.args.errorMessage = result.message;
+            this(); //go to next flow
+        }
+        else if (result && result.rows && result.rows.length > 0) {
+
+            this.args.featureCollection = {};
+            this.args.featureCollection.columns = result.rows;
+            //Add supported operations in a property
+            this.args.featureCollection.supportedOperations = [];
+            this.args.featureCollection.supportedOperations.push({ link: this.args.fullURL + "/query", name: "Query" });
+
+            var rasterOrGeometry = { present: false, name: "" };
+
+            var args = this.args; //copy for closure
+
+            result.rows.forEach(function (item) {
+                if (item.data_type == "raster") {
+                    args.featureCollection.supportedOperations.push({ link: args.fullURL + "/rasterOps", name: "Raster Operations" });
+                    rasterOrGeometry.present = true;
+                    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
+                }
+                else if (item.data_type == "geometry") {
+                    args.featureCollection.supportedOperations.push({ link: args.fullURL + "/topojson", name: "TopoJSON" });
+                    rasterOrGeometry.present = true;
+                    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
+                }
+            });
+
+            this.args = args;  //update this.args property
+
+            //If there's a geom or raster column, then check for SRID
+            if (rasterOrGeometry.present === true) {
+                //check SRID
+                var query = { text: "select ST_SRID(" + rasterOrGeometry.name + ") as SRID FROM " + this.args.table + " LIMIT 1;", values: [] };
+                common.executePgQuery(query, this);
             }
-            else if (item.data_type == "geometry") {
-                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/topojson", name: "TopoJSON" });
+        }
+        else {
+            //unknown table, or no columns?
+            this(); //go to next flow
+        }
+    },
+    function (result) {
+        //Coming from SRID check
+        if (result && result.status && result.status == "error") {
+            //Report error and exit.
+            this.args.errorMessage = result.message;
+        }
+        else if (result && result.rows && result.rows.length > 0) {
+            //Get SRID
+            if (result.rows[0].srid == 0 || result.rows[0].srid == "0") {
+                this.args.infoMessage = "Warning:  this table's SRID is 0.  Projections and other operations will not function propertly until you <a href='http://postgis.net/docs/UpdateGeometrySRID.html' target='_blank'>set the SRID</a>.";
             }
-        });
+            else {
+                this.args.infoMessage = "SRID is " + result.rows[0].srid;
+            }
+        }
+        else {
+            //no match found.
+            this.args.infoMessage = "Couldn't find inforamtion for this table.";
+        }
 
         //Render HTML page with results at bottom
-        common.respond(req, res, args);
-    });
-});
+        common.respond(this.req, this.res, this.args);
+    }
+));
 
 //Table Query - get - display page with default form
 app.all('/services/tables/:table/query', flow.define(
@@ -600,6 +660,7 @@ app.all('/services/tables/:table/topojson', function (req, res) {
         args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + args.table, name: args.table }, { link: "", name: "TopoJSON" }];
         args.path = req.path;
         args.host = req.headers.host;
+
         args.files = [];
 
         //First - check to see if table has a subfolder on disk

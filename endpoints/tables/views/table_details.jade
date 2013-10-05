@@ -14,13 +14,28 @@ block content
 					tr
 						td= item.column_name + " (" + item.data_type + ")"
 						-if(item.data_type == "raster") 
+			-}else{
+				p
+					| No information found for this table.
 			-}
+
+
+	-if(infoMessage){
+		div.infoMessage
+			|!{infoMessage}
+	-}
+	-if(errorMessage){
+		div.errorMessage
+			|#{errorMessage}
+	-}
 
 
 block sidebar
 	.widget
 		h2 Operations
 		div.links
-			- each operation in featureCollection.supportedOperations
-				a(href=operation.link) #{operation.name}
+			- if(featureCollection && featureCollection.supportedOperations){
+				- each operation in featureCollection.supportedOperations
+					a(href=operation.link) #{operation.name}
+			-}
 				
