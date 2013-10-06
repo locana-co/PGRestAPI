@@ -561,8 +561,7 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
     }
 ));
 
-//list topojson files for a particular dataset, and let user create new ones.
-//TODO - Add FLOW here.
+//list topojson files for a particular dataset, and let user create a new one.
 app.all('/services/tables/:table/topojson', flow.define(
 //If the querystring is empty, just show the regular HTML form.
 
