@@ -590,11 +590,11 @@ app.all('/services/tables/:table/topojson', function (req, res) {
 
             //First - check to see if table has a subfolder on disk
             fs.exists("." + settings.application.topoJsonOutputFolder + args.table, function (exists) {
+                debugger;
                 if (exists === false) {
                     console.log("folder doesn't exist");
 
                     //make it
-
                     fs.mkdirSync("." + settings.application.topoJsonOutputFolder + args.table); //Synch
                     fs.mkdirSync("." + settings.application.geoJsonOutputFolder + args.table); //Synch
 
@@ -602,50 +602,66 @@ app.all('/services/tables/:table/topojson', function (req, res) {
                     console.log('made new directory - ' + args.table);
 
                     //Make the Geo File
-                    makeGeoJSONFile(args.table, args.topofilename, function (filename, filepath) {
-
-                        args.infoMessage = "Created file - " + filename;
-
-                        //Now turn file into TopoJSON - pass in original file, topo file, callback
-                        geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function (stdout) {
-                            console.log("Finished making Topo File.");
-
-                            //Find all existing topojson files in the public/topojson/output folder
-                            fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
-                                if (file.indexOf("topo_") == 0) {
-                                    args.files.push({ link: settings.application.topoJsonOutputFolder + args.table + "/" + file, name: file });
-                                }
-                            });
-
-                            args.infoMessage = stdout;
+                    makeGeoJSONFile(args.table, args.topofilename, function (error, filename, filepath) {
+                        if (error) {
+                            args.infoMessage = error.message;
                             common.respond(req, res, args);
-                        })
+                            return;
+                        }
+                        else {
+
+                            args.infoMessage = "Created file - " + filename;
+
+                            //Now turn file into TopoJSON - pass in original file, topo file, callback
+                            geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function (stdout) {
+                                console.log("Finished making Topo File.");
+
+                                //Find all existing topojson files in the public/topojson/output folder
+                                fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
+                                    if (file.indexOf("topo_") == 0) {
+                                        args.files.push({ link: settings.application.topoJsonOutputFolder + args.table + "/" + file, name: file });
+                                    }
+                                });
+
+                                args.infoMessage = stdout;
+                                common.respond(req, res, args);
+                            });
+                        } //End  if error
+
                     });
 
                 }
                 else {
                     //Table's folder already exists, write out GeoJSON, then Topo.  TODO - make this use FLOW so we're not repeating code.
                     //Make the Geo File
-                    makeGeoJSONFile(args.table, args.topofilename, function (filename, filepath) {
+                    makeGeoJSONFile(args.table, args.topofilename, function (error, filename, filepath) {
 
-                        args.infoMessage = "Created file - " + filename;
-
-                        //Now turn file into TopoJSON - pass in original file, topo file, callback
-                        geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function (stdout) {
-                            console.log("Finished making Topo File.");
-
-                            //Find all existing topojson files in the public/topojson/output folder
-                            fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
-                                if (file.indexOf("topo_") == 0) {
-                                    args.files.push({ link: settings.application.topoJsonOutputFolder + args.table + "/" + file, name: file });
-                                }
-                            });
-
-                            args.infoMessage = stdout;
+                        if (error) {
+                            args.infoMessage = error.message;
                             common.respond(req, res, args);
-                        })
+                            return;
+                        }
+                        else {
+                            args.infoMessage = "Created file - " + filename;
+
+                            //Now turn file into TopoJSON - pass in original file, topo file, callback
+                            geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function (stdout) {
+                                console.log("Finished making Topo File.");
+
+                                //Find all existing topojson files in the public/topojson/output folder
+                                fs.readdirSync("." + settings.application.topoJsonOutputFolder + args.table).forEach(function (file) {
+                                    if (file.indexOf("topo_") == 0) {
+                                        args.files.push({ link: settings.application.topoJsonOutputFolder + args.table + "/" + file, name: file });
+                                    }
+                                });
+
+                                args.infoMessage = stdout;
+                                common.respond(req, res, args);
+
+                            })
+                        }  //end if error
                     });
-                }
+                } //end if exists
             });
 
         }
@@ -782,6 +798,7 @@ function geoJSONToTopoJSON(table, geojsonfile, topojsonfile, callback) {
     var exec = require('child_process').exec
     console.log("About to execute: " + 'topojson -o ' + outputPath + topojsonfile + " " + geoJsonPath + geojsonfile);
     child = exec('topojson -o ' + outputPath + topojsonfile + " " + geoJsonPath + geojsonfile, function (error, stdout, stderr) {
+        if(error)
         callback(stdout);
     });
 }
@@ -809,11 +826,15 @@ function makeGeoJSONFile(table, filename, callback) {
             //Write out a GeoJSON file to disk - remove all whitespace
             var geoJsonOutFile = filename + '.json';
             fs.writeFile("." + settings.application.geoJsonOutputFolder + table + "/" + geoJsonOutFile, str.join("").replace(/\s+/g, ''), function (err) {
-                if (err) throw err;
-                console.log("created GeoJSON file.");
-                //TODO - return object with error so we can handle it from the caller
-                //return filename, filepath
-                callback(geoJsonOutFile, settings.application.geoJsonOutputFolder + table + "/" + geoJsonOutFile);
+                if (err) {
+                    console.log(err.message);
+                }
+                else {
+                    console.log("created GeoJSON file.");
+                }
+
+                //pass back err, even if null
+                callback(err, geoJsonOutFile, settings.application.geoJsonOutputFolder + table + "/" + geoJsonOutFile);
             });
         });
     }).end();
