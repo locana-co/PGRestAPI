@@ -11,7 +11,11 @@ var flow = require('flow'),
     http = require("http"),
     path = require("path");
 
+var nodetiles = require('../../endpoints/nodetiles');
+
 var app = module.exports = express();
+
+app.use(nodetiles.app);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 
@@ -359,10 +363,16 @@ app.all('/services/tables/:table/query', flow.define(
                     if (!args.format || args.format.toLowerCase() == "html") {
                         //Render HTML page with results at bottom
                         features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
+
+                        //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
+                        nodetiles.createGeoJSONEndpoint(features, args.table, "4326", "style.mss");
                     }
                     else if (args.format && args.format.toLowerCase() == "geojson") {
                         //Respond with JSON
                         features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
+
+                        //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
+                        nodetiles.createGeoJSONEndpoint(features, args.table, "4326", "style.mss");
                     }
                     else if (args.format && args.format.toLowerCase() == "esrijson") {
                         //Respond with esriJSON
