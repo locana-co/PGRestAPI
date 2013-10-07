@@ -1,0 +1,17 @@
+So...just struggled to install this thing.
+Today, installed node-gyp -g:   npm install -g node-gyp, from https://github.com/LearnBoost/node-canvas/wiki/Installation---Windows
+Struggled with installing node/canvas separately.  Didn't work.
+
+tried installing nodetiles-core.  Error (solution below would fix this, tho)
+then tried installing nodetiles-init.  Same error as above (Module._Extensions...blah not found)
+
+Solution was to Copy all the .dlls in C:\GTK\bin, as well as IEShims.dll from C:\Program Files (x86)\Internet Explorer, into node_modules\canvas\build\Release seems to be a workaround.
+From here.
+https://github.com/LearnBoost/node-canvas/issues/191
+
+For PGRestAPI and Windows, I'd suggest cloning nodetiles-core (https://github.com/nodetiles/nodetiles-core), 
+Installing Cairo all-in-one (I did x32, then deleted and tried x64) to C:/GTK (this is important) (http://ftp.gnome.org/pub/gnome/binaries/win64/gtk+/2.22/gtk+-bundle_2.22.1-20101229_win64.zip)
+
+Copy dlls from C:\GTK\bin to nodetiles-core\node_modules\canvas\build\Release.
+
+Build using npm install in nodetiles-core, then copy nodetiles-core folder to PGRestAPI/node_modules

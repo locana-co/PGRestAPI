@@ -1,0 +1,27 @@
+{
+  "name": "nodetiles-server-example",
+  "version": "0.0.1",
+  "description": "Joyful map rendering with Node.js.",
+  "contributors": [ 
+    {
+      "name": "Rob Bracket",
+      "email": "rob@codeforamerica.org"
+    },
+    {
+      "name": "Ben Sheldon",
+      "email": "ben@codeforamerica.org"
+    }, 
+    {
+      "name": "Alex Yule",
+      "email": "alexy@codeforamerica.org"
+    }
+  ],
+  "engines": {
+    "node": "0.8.x",
+    "npm":  "1.1.x"
+  },
+  "dependencies": {
+    "express": "3.x",
+    "nodetiles-core": "~0.0.2"
+  }
+}

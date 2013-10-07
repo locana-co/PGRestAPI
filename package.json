@@ -19,6 +19,7 @@
     "pg": "*",
     "flow": "*",
     "less-middleware": "*",
-    "topojson": "*"
+    "topojson": "*",
+	"nodetiles-core": "~0.0.2"
   }
 }
