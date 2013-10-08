@@ -8,11 +8,12 @@ Map {
   /* background-image: "grid.png"; */
 }
 
-#world {
+#world, #default {
   line-color: lighten(yellow, 30%);
   line-width: 2;
   polygon-fill: yellow;
 }
+
 #example {
   line-color: lighten(@text,20%);
   line-width: 3;

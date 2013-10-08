@@ -7,6 +7,7 @@ var express = require('express'),
 
 //Module-specific requires:
 var nodetiles = require('nodetiles-core'),
+    nodetilespostGIS = require('nodetiles-postgis'),
     GeoJsonSource = nodetiles.datasources.GeoJson,
     DynamicGeoJsonSource = nodetiles.datasources.DynamicGeoJson,
     ShpSource = nodetiles.datasources.Shp,
@@ -33,17 +34,47 @@ var app = exports.app = express();
 
 //app.set('views', __dirname + '/views');
 //app.set('view engine', 'jade');
+exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFile) {
+    var name;
+
+    if (!cartoCssFile) {
+        cartoCssFile = "style.mss"; //Default
+        name = "default"; //A default class for CartoCSS, only used if a style file isn't passed in
+    }
+
+    /* Create your map context */
+    var map = new nodetiles.Map();
+
+    map.assetsPath = path.join(__dirname, "cartocss"); //This is the cartoCSS path
+
+
+    /* Add some data from PostGIS! */
+    map.addData(new nodetilespostGIS({
+        connectionString: global.conString,
+        tableName: table,
+        geomField: geom_field,
+        projection: "EPSG:" + epsgSRID,
+        name: name //if this is empty, the table name will be used as the class selector
+    }));
+
+    map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
+
+
+    app.use('/services/nodetiles/' + table + '/tiles', nodetiles.route.tilePng({ map: map })); // tile.png
+    console.log("Created dynamic service: " + '/services/nodetiles/' + table + '/tiles');
+}
 
 //This should take in a geoJSON object and create a new route on the fly - return the URL?
-exports.createGeoJSONEndpoint = function (geoJSON, name, srid, cartoCssFile) {
+exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoCssFile) {
     var map = new nodetiles.Map();
+
     map.assetsPath = path.join(__dirname, "cartocss"); //This is the cartoCSS path
 
     //Adding a static GeoJSON file
     map.addData(new DynamicGeoJsonSource({
         name: "world", //same name used in cartoCSS class (#world)
         geoJSONObject: geoJSON,
-        projection: "EPSG:" + srid
+        projection: "EPSG:" + epsgSRID
     }));
 
     map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));

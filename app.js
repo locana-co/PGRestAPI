@@ -48,7 +48,7 @@ var services = require('./endpoints/services');
 app.use(services);
 
 var tables = require('./endpoints/tables');
-app.use(tables);
+app.use(tables.app);
 
 var tiles = require('./endpoints/tiles');
 app.use(tiles);
@@ -56,8 +56,10 @@ app.use(tiles);
 var geoprocessing = require('./endpoints/geoprocessing');
 app.use(geoprocessing);
 
-//var nodetiles = require('./endpoints/nodetiles');
-//app.use(nodetiles);
+var nodetiles = require('./endpoints/nodetiles');
+app.use(nodetiles.app);
+
+
 
 //Create web server
 http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
@@ -66,9 +68,26 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
     if (app.get('ipaddr')) {
         startMessage += ' on IP:' + app.get('ipaddr') + ', ';
     }
-    startMessage += 'port ' + app.get('port');
+    startMessage += ' on port ' + app.get('port');
 
     console.log(startMessage);
+});
+
+
+//look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
+//on startup.  Probably move this to a 'startup' module
+tables.findSpatialTables(function (error, tables) {
+    if (error) {
+
+    }
+    else {
+        if (tables && tables.length > 0) {
+            tables.forEach(function (item) {
+                //Spin up a route to serve dynamic tiles for this table
+                nodetiles.createPGTileRenderer(item.table, item.geometry_column, item.srid, null);
+            });
+        }
+    }
 });
 
 

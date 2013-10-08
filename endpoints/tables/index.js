@@ -13,7 +13,7 @@ var flow = require('flow'),
 
 var nodetiles = require('../../endpoints/nodetiles');
 
-var app = module.exports = express();
+var app = exports.app = express();
 
 app.use(nodetiles.app);
 app.set('views', __dirname + '/views');
@@ -365,14 +365,14 @@ app.all('/services/tables/:table/query', flow.define(
                         features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
 
                         //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
-                        nodetiles.createGeoJSONEndpoint(features, args.table, "4326", "style.mss");
+                        nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
                     }
                     else if (args.format && args.format.toLowerCase() == "geojson") {
                         //Respond with JSON
                         features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
 
                         //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
-                        nodetiles.createGeoJSONEndpoint(features, args.table, "4326", "style.mss");
+                        nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
                     }
                     else if (args.format && args.format.toLowerCase() == "esrijson") {
                         //Respond with esriJSON
@@ -841,4 +841,28 @@ function makeGeoJSONFile(table, filename, callback) {
             });
         });
     }).end();
+}
+
+//Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
+exports.findSpatialTables = function (callback) {
+    var spatialTables = [];
+    var error;
+
+    var query = { text: "select * from geometry_columns", values: [] }; //TODO - add options to specify schema and database.  Right now it will read all
+    common.executePgQuery(query, function (result) {
+        if (result.status == "error") {
+            //Report error and exit.
+            error = result.message;
+            console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + result.message);
+        } else {
+            //Add to list of tables.
+            result.rows.forEach(function (item) {
+                spatialTables.push({ table: item.f_table_name, geometry_column:item.f_geometry_column, srid: item.srid });
+            });
+        }
+
+        //return to sender
+        callback(error, spatialTables);
+    });
+
 }
