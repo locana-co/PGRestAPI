@@ -358,7 +358,6 @@ app.all('/services/tables/:table/query', flow.define(
                     args.errorMessage = result.message;
                 } else {
                     //a-ok
-
                     //Check which format was specified
                     if (!args.format || args.format.toLowerCase() == "html") {
                         //Render HTML page with results at bottom
