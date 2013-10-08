@@ -4,6 +4,17 @@ PGRestAPI
 ## Overview
 
 Node.js REST API for PostGres Spatial Entities.
+
+Update the configuration file to point to your PostGIS instance.
+
+You'll get a REST API that supports:
+* Dynamic Tiled Map Services for spatial tables and views
+* Query endpoint for each table and view - return GeoJSON, esriJSON.  With UI for trying out queries.
+* Geoprocessing Framework - (You still have to know how to write PostGIS logic, but...)
+* Reflection of TileStream API
+* TopoJSON file creation for each table or view
+
+Express, Jade and general structure based on:
 Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-node-js-express-app-the-right-way/
 
 ## Dependencies
