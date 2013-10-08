@@ -365,14 +365,14 @@ app.all('/services/tables/:table/query', flow.define(
                         features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
 
                         //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
-                        nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
+                        //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
                     }
                     else if (args.format && args.format.toLowerCase() == "geojson") {
                         //Respond with JSON
                         features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
 
                         //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
-                        nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
+                        //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
                     }
                     else if (args.format && args.format.toLowerCase() == "esrijson") {
                         //Respond with esriJSON
