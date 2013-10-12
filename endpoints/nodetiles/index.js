@@ -7,7 +7,7 @@ var express = require('express'),
 
 //Module-specific requires:
 var nodetiles = require('nodetiles-core'),
-    nodetilespostGIS = require('nodetiles-postgis'),
+    nodetilespostGIS = require('../../lib/nodetiles-postgis'),
     GeoJsonSource = nodetiles.datasources.GeoJson,
     DynamicGeoJsonSource = nodetiles.datasources.DynamicGeoJson,
     ShpSource = nodetiles.datasources.Shp,
