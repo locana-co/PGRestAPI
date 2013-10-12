@@ -1,0 +1,37 @@
+{
+  "name": "nodetiles-postgis",
+  "version": "0.1.0",
+  "description": "A PostGIS data source for Nodetiles.",
+  "main": "PostGIS.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nodetiles/nodetiles-postgis.git"
+  },
+  "keywords": [
+    "nodetiles",
+    "postgres",
+    "postgis",
+    "database"
+  ],
+  "author": {
+    "name": "Alex Yule",
+    "email": "alexy@codeforamerica.org"
+  },
+  "contributors": [
+    {
+      "name": "Rob Bracket",
+      "email": "rob@codeforamerica.org"
+    },
+    {
+      "name": "Ben Sheldon",
+      "email": "ben@codeforamerica.org"
+    }
+  ],
+  "license": "BSD",
+  "dependencies": {
+    "lodash": "~1.2"
+  }
+}

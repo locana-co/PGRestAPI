@@ -9,7 +9,8 @@ var express = require('express'),
 var flow = require('flow'),
     fs = require("fs"),
     http = require("http"),
-    path = require("path");
+    path = require("path"),
+    blower = require("../../lib/datablower");
 
 var nodetiles = require('../../endpoints/nodetiles');
 
@@ -89,7 +90,7 @@ app.all('/services/tables/:table', flow.define(
     function (result) {
         //coming back executePgQuery
         //TODO: handle errors here
-
+       
         //check for error
         if (result.status == "error") {
             //Report error and exit.
@@ -180,6 +181,8 @@ app.all('/services/tables/:table/query', flow.define(
             //If request is a get, then args will be members of the this.req.query property
             this.args = req.query;
         }
+
+        debugger;
 
         // arguments passed to renameAndStat() will pass through to this first function
         if (JSON.stringify(this.args) != '{}') {
@@ -703,6 +706,22 @@ app.all('/services/tables/:table/topojson', flow.define(
         });
     }
 ));
+
+
+//Test blower route
+app.all("/services/blower", function (req, res) {
+    blower.blow(null, null, function (err, result) {
+        //Handle err
+
+        //then
+        res.jsonp(result);
+    });
+});
+
+
+
+
+
 
 
 //pass in a table, and a comma separated list of fields to NOT select
