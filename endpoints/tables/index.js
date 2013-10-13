@@ -116,6 +116,7 @@ app.all('/services/tables/:table', flow.define(
                     rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
                 }
                 else if (item.data_type == "geometry") {
+                    args.featureCollection.supportedOperations.push({ link: args.fullURL + "/dynamicMapLanding", name: "Dynamic Map Service" });
                     args.featureCollection.supportedOperations.push({ link: args.fullURL + "/topojson", name: "TopoJSON" });
                     rasterOrGeometry.present = true;
                     rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
@@ -181,8 +182,6 @@ app.all('/services/tables/:table/query', flow.define(
             //If request is a get, then args will be members of the this.req.query property
             this.args = req.query;
         }
-
-        debugger;
 
         // arguments passed to renameAndStat() will pass through to this first function
         if (JSON.stringify(this.args) != '{}') {
@@ -704,6 +703,76 @@ app.all('/services/tables/:table/topojson', flow.define(
                 });
             } //End  if error
         });
+    }
+));
+
+//Show users about a table's dynamic map service, along with a preview
+app.all('/services/tables/:table/dynamicMapLanding', flow.define(
+    
+    function (req, res) {
+        this.args = {};
+        this.req = req;
+        this.res = res;
+
+        //Grab POST or QueryString args depending on type
+        if (this.req.method.toLowerCase() == "post") {
+            //If a post, then arguments will be members of the this.req.body property
+            this.args = this.req.body;
+        }
+        else if (this.req.method.toLowerCase() == "get") {
+            //If request is a get, then args will be members of the this.req.query property
+            this.args = this.req.query;
+        }
+
+        this.args.view = "table_dynamic_map";
+        this.args.table = this.req.params.table;
+        this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
+        this.args.path = this.req.path;
+        this.args.host = settings.application.publichost || this.req.headers.host;
+
+        //Get geometry names
+        getGeometryFieldNames(this.args.table, this);
+
+    }, function (geom_fields_array) {
+        
+        //coming back from getGeometryFieldNames
+        //for now, assume just 1 geometry.  TODO
+        if (geom_fields_array.length > 0) {
+            //Check for layer extent
+            var query = { text: "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";", values: [] };
+            common.executePgQuery(query, this);
+        } 
+        else {
+            //No geom column or no extent or something.
+            this.args.errorMessage = "Problem getting the geom column for this table.";
+            common.respond(this.req, this.res, this.args);
+            return;
+        }
+    },
+    function (result) {
+        
+        if (result.status == "error") {
+            this.args.errorMessage = "Problem getting the extent for this table.";
+        }
+        else {
+
+            var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")","").split(","); //Should be BOX(XMIN YMIN, XMAX YMAX)
+            this.args.xmin = bboxArray[0].split(" ")[0];
+            this.args.ymin = bboxArray[0].split(" ")[1];
+            this.args.xmax = bboxArray[1].split(" ")[0];
+            this.args.ymax = bboxArray[1].split(" ")[1];
+
+            //Write out the details for this map service
+            this.args.featureCollection = [];
+            this.args.featureCollection.push({ name: "Map Service Endpoint", link: "http://" + this.args.host + "/services/tables/" + this.args.table + "/dynamicMap" });
+            this.args.extent = result.rows[0];
+
+            //load leaflet and jquery
+            this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://codeorigin.jquery.com/jquery-1.10.2.min.js']; //Load external scripts for map preview
+            this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+        }
+
+        common.respond(this.req, this.res, this.args);
     }
 ));
 

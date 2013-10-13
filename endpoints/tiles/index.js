@@ -58,7 +58,7 @@ if (settings.tilestream && settings.tilestream.host && settings.tilestream.path)
                     //This is an array of tilestream layers.  break it apart so it's easier to parse for the UI
                     args.featureCollection = [];
                     obj.forEach(function (layer) {
-                        args.featureCollection.push({ name: layer.name, preview: "http://" + settings.tilestream.host + ":" + (settings.tilestream.port ? settings.tilestream.port : 80) + "/#!/map/" + layer.name, });
+                        args.featureCollection.push({ name: layer.name, preview: "http://" + settings.tilestream.host + ":" + (settings.tilestream.port ? settings.tilestream.port : 80) + "/#!/map/" + layer.name });
                     });
 
                     common.respond(req, res, args);

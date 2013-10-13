@@ -60,8 +60,8 @@ exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFi
     map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
 
 
-    app.use('/services/nodetiles/' + table + '/tiles', nodetiles.route.tilePng({ map: map })); // tile.png
-    console.log("Created dynamic service: " + '/services/nodetiles/' + table + '/tiles');
+    app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng({ map: map })); // tile.png
+    console.log("Created dynamic service: " + '/services/tables/' + table + '/dynamicMap');
 }
 
 //This should take in a geoJSON object and create a new route on the fly - return the URL?
@@ -93,23 +93,23 @@ exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoC
 //
 // Configure Express routes
 // 
-app.configure('development', function () {
-    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+//app.configure('development', function () {
+//    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 
-    // Backbone routing
-    app.use('/services/nodetiles/assets', express.static(__dirname + '/assets'));
-});
+//    // Backbone routing
+//    app.use('/services/nodetiles/assets', express.static(__dirname + '/assets'));
+//});
 
-app.configure('production', function () {
-    app.use(express.errorHandler());
-    io.set('log level', 1); // reduce logging
+//app.configure('production', function () {
+//    app.use(express.errorHandler());
+//    io.set('log level', 1); // reduce logging
 
-    // Backbone routing: compilation step is included in `npm install` script
-    app.use('/services/nodetiles/app', express.static(__dirname + '/dist/release'));
-    app.use('/services/nodetiles/assets/js/libs', express.static(__dirname + '/dist/release'));
-    app.use('/services/nodetiles/assets/css', express.static(__dirname + '/dist/release'));
-    app.use(express.static(__dirname + '/public'));
-});
+//    // Backbone routing: compilation step is included in `npm install` script
+//    app.use('/services/nodetiles/app', express.static(__dirname + '/dist/release'));
+//    app.use('/services/nodetiles/assets/js/libs', express.static(__dirname + '/dist/release'));
+//    app.use('/services/nodetiles/assets/css', express.static(__dirname + '/dist/release'));
+//    app.use(express.static(__dirname + '/public'));
+//});
 
 
 //// 1. Serve Index.html

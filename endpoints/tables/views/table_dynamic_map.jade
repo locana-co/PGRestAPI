@@ -1,0 +1,69 @@
+extends ../../../shared_views/layout
+
+block content
+	p
+		| Dynamic Map Service
+
+	table
+		thead
+			tr
+				th Name
+		tbody
+			- if(featureCollection){
+				- each item in featureCollection
+					tr
+						td
+							a(href=item.link) #{item.name}
+			-}
+
+	- var requestSample = []
+	-if(search)
+		- requestSample.push("search=" + encodeURIComponent(search))
+
+
+	-if(requestSample.length > 0){
+		h2: |Request Sample
+		div#requestSample
+			|#{"http://" + host + path + "?" + requestSample.join("&")}
+	-}
+
+	-if(infoMessage){
+		div.infoMessage
+			|#{infoMessage}
+	-}
+	-if(errorMessage){
+		div.errorMessage
+			|#{errorMessage}
+	-}
+						
+
+
+block sidebar
+	.widget
+		h2 Map Preview
+		.results
+			- if (featureCollection && featureCollection.length > 0){
+				script.
+					var mapUrl = "#{featureCollection[0].link}";
+					var XMIN = #{xmin};
+					var YMIN = #{ymin};
+					var XMAX = #{xmax};
+					var YMAX = #{ymax};
+
+				//Map Div
+				div#map(style='height:400px;width:400px;')
+
+				//Load Leaflet
+				script.
+					var map = L.map('map');
+					var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
+					
+					L.tileLayer('http://{s}.tile.cloudmade.com/54e5fa0fc8e84581aa5dcb2cf29ca3af/1960/256/{z}/{x}/{y}.png').addTo(map);
+
+					//Add preview
+					L.tileLayer(mapUrl + '/{z}/{x}/{y}.png').addTo(map);
+
+					// zoom the map to the rectangle bounds
+					map.fitBounds(bounds);
+					
+			-}
