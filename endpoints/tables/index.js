@@ -726,7 +726,7 @@ app.all('/services/tables/:table/dynamicMapLanding', flow.define(
 
         this.args.view = "table_dynamic_map";
         this.args.table = this.req.params.table;
-        this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
+        this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables/", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
         this.args.path = this.req.path;
         this.args.host = settings.application.publichost || this.req.headers.host;
 

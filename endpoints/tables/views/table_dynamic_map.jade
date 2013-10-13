@@ -4,17 +4,18 @@ block content
 	p
 		| Dynamic Map Service
 
-	table
-		thead
-			tr
-				th Name
-		tbody
-			- if(featureCollection){
-				- each item in featureCollection
-					tr
-						td
-							a(href=item.link) #{item.name}
-			-}
+	- if (featureCollection && featureCollection.length > 0){
+		h3 Leaflet Example
+		pre.codePreview
+			|//Create a leaflet map
+			|var map = L.map('map');
+			|&nbsp;
+			|//Add the tiled layer
+			|L.tileLayer('#{featureCollection[0].link}/{z}/{x}/{y}.png').addTo(map);
+		div.helpLink 
+			|Get more help with 
+			a(href='http://leafletjs.com/',target='_blank') Leaflet 
+	-}
 
 	- var requestSample = []
 	-if(search)
