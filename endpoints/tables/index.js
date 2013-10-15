@@ -149,7 +149,7 @@ app.all('/services/tables/:table', flow.define(
                 this.args.infoMessage = "Warning:  this table's SRID is 0.  Projections and other operations will not function propertly until you <a href='http://postgis.net/docs/UpdateGeometrySRID.html' target='_blank'>set the SRID</a>.";
             }
             else {
-                this.args.infoMessage = "SRID is " + result.rows[0].srid;
+                this.args.SRID = result.rows[0].srid; //Use the SRID
             }
         }
         else {

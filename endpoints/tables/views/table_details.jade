@@ -15,10 +15,15 @@ block content
 						td= item.column_name + " (" + item.data_type + ")"
 						-if(item.data_type == "raster") 
 			-}else{
-				p
-					| No information found for this table.
+				tr
+					td 
+						| No information found for this table.
 			-}
-
+	
+	-if(SRID){
+		p(style="color:green")
+			| SRID is #{SRID}
+	-}
 
 	-if(infoMessage){
 		div.infoMessage
