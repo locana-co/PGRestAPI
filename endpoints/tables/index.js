@@ -493,7 +493,7 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
         if (raster_column_name) {
             var bufferdistance = 500; //default if distance is not numeric or not specified
 
-            if (this.args.bufferdistance && IsNumeric(this.args.bufferdistance)) {
+            if (this.args.bufferdistance && common.IsNumeric(this.args.bufferdistance)) {
                 bufferdistance = this.args.bufferdistance;
             }
             else {
