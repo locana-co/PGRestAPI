@@ -57,3 +57,8 @@ pre {
   background-color: lightgray;
   padding: 20px;
 }
+.breadcrumbs {
+  padding: 10px;
+  background-color: #f2f2f2;
+  border: 1px solid #888;
+}

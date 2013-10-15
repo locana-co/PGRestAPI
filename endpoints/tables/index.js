@@ -630,19 +630,24 @@ app.all('/services/tables/:table/topojson', flow.define(
             console.log(settings.application.topoJsonOutputFolder);
             console.log(this.args.table);
             //Find all existing topojson files in the public/topojson/output folder
+            
+            console.log("checking for folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
 
-            fs.existsSync("." + settings.application.topoJsonOutputFolder + this.args.table, function (exists) {
+            fs.exists(this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table, function (exists) {
                 if (exists === true) {
-                    fs.readdirSync(path.join(this.rootRelativePath, settings.application.topoJsonOutputFolder, this.args.table)).forEach(function (file) {
+                    fs.readdirSync(path.join(".", settings.application.topoJsonOutputFolder, args.table)).forEach(function (file) {
                         if (file.indexOf("topo_") == 0) {
                             args.files.push({ link: settings.application.topoJsonOutputFolder + file, name: file });
                         }
                     });
+                    common.respond(req, res, args);
+
+                }
+                else {
+                    //Doesn't exist
+                    common.respond(req, res, args);
                 }
             });
-            
-            common.respond(req, res, args);
-
         }
     },
     function (exists) {
