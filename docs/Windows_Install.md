@@ -14,7 +14,7 @@ PGRestAPI - Windows Installation
 Download the windows node installation package and run: http://nodejs.org/dist/v0.10.21/x64/node-v0.10.21-x64.msi
 
 ###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
-Create a 'PGRestAPI' directory
+Create a 'PGRestAPI' directory, then:
   
     git clone https://github.com/spatialdev/PGRestAPI.git
 
@@ -28,23 +28,24 @@ from the console:
     npm install
 
 ###Create PostGreSQL Read Only User
-To grant read-only permissions for a user (assuming your user is already created):
--- Grant access to current tables and views
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO <username>;
--- Now make sure that's also available on new tables and views by default
-ALTER DEFAULT PRIVILEGES
-    IN SCHEMA public -- omit this line to make a default across all schemas
-    GRANT SELECT
-ON TABLES 
-TO <username>;
+To grant read-only permissions for a user (assuming your user is already created):  
 
--- Now do the same for sequences
-GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA public TO <username>;
-ALTER DEFAULT PRIVILEGES
-    IN SCHEMA public -- omit this line to make a default across all schemas
-    GRANT SELECT, USAGE
-ON SEQUENCES 
-TO <username>;
+	-- Grant access to current tables and views
+	GRANT SELECT ON ALL TABLES IN SCHEMA public TO <username>;
+	-- Now make sure that's also available on new tables and views by default
+	ALTER DEFAULT PRIVILEGES
+		IN SCHEMA public -- omit this line to make a default across all schemas
+		GRANT SELECT
+	ON TABLES 
+	TO <username>;
+
+	-- Now do the same for sequences
+	GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA public TO <username>;
+	ALTER DEFAULT PRIVILEGES
+		IN SCHEMA public -- omit this line to make a default across all schemas
+		GRANT SELECT, USAGE
+	ON SEQUENCES 
+	TO <username>;
 
 ###Create settings.js file
 Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
@@ -57,6 +58,7 @@ Copy the settings.js.example file and update the postgres server name, port and 
 	settings.pg.database = 'test';
 
 If you're using TileStream to serve static map caches, you can reference that instance:
+
 	settings.tilestream.host = "54.212.254.185";
 	settings.tilestream.path = "/api/Tileset";
 	settings.tilestream.port = "8888";
