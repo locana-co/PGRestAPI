@@ -14,7 +14,7 @@ PGRestAPI - Windows Installation
 Download the windows node installation package and run: http://nodejs.org/dist/v0.10.21/x64/node-v0.10.21-x64.msi
 
 ###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
-Create a 'PGRestAPI' directory
+Create a 'PGRestAPI' directory  
 	git clone https://github.com/spatialdev/PGRestAPI.git
 
 -or-
