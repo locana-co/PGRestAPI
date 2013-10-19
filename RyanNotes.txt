@@ -1,4 +1,4 @@
-So...just struggled to install this thing.
+Installing nodetiles-core on Windows;
 Today, installed node-gyp -g:   npm install -g node-gyp, from https://github.com/LearnBoost/node-canvas/wiki/Installation---Windows
 Struggled with installing node/canvas separately.  Didn't work.
 
