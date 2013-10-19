@@ -14,16 +14,18 @@ PGRestAPI - Windows Installation
 Download the windows node installation package and run: http://nodejs.org/dist/v0.10.21/x64/node-v0.10.21-x64.msi
 
 ###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
-Create a 'PGRestAPI' directory  
-	git clone https://github.com/spatialdev/PGRestAPI.git
+Create a 'PGRestAPI' directory
+  
+    git clone https://github.com/spatialdev/PGRestAPI.git
 
 -or-
 
 extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip
 
 ###Navigate to PGRestAPI folder, and npm install
-from the console:
-	npm install
+from the console:  
+
+    npm install
 
 ###Create PostGreSQL Read Only User
 To grant read-only permissions for a user (assuming your user is already created):
