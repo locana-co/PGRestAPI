@@ -7,95 +7,98 @@ PGRestAPI - Windows Installation
 * topojson
 * Cairo - You need to [download](http://www.gtk.org/download/index.php) and install Cairo in order to use the [nodetiles](https://github.com/nodetiles/nodetiles-core) dynamic tile rendering functionality.
 * nodetiles-core (on Windows, cloned and built on it's own, then copied to PGRestAPI/node_modules folder)
-* nodetiles-postgis (on Windows, cloned and copied to PGRestAPI/node_modules folder.  navigate to the nodetiles_postgis foder, then npm install)
 
-if you encounter errors related to "git config returned wrong result" when installing modules, explicitly set the git.exe location like so: $ npm config set "git" "C:\path\to.exe" 
+(Assumes you've got a PostGreSQL 9.1+ and PostGIS 2.0+ is installed somewhere)
 
-On Windows with multiple versions of .NET, use:
-npm install pg --msvs_version=2012
+###Install Node.js 0.10.x (0.10.15 when this project started)
+Download the windows node installation package and run: http://nodejs.org/dist/v0.10.21/x64/node-v0.10.21-x64.msi
 
+###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
+Create a 'PGRestAPI' directory
+git clone https://github.com/spatialdev/PGRestAPI.git
+-or-
+extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip
 
-## For Hipster Ubuntu Linux Folks:
-This "works on my machine" for Ubuntu Linux 12.04.  Contribute your changes as needed.
+###Navigate to PGRestAPI folder, and npm install
+from the console:
+	npm install
 
-###Install Git yo …
+###Create PostGreSQL Read Only User
+To grant read-only permissions for a user (assuming your user is already created):
+-- Grant access to current tables and views
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO <username>;
+-- Now make sure that's also available on new tables and views by default
+ALTER DEFAULT PRIVILEGES
+    IN SCHEMA public -- omit this line to make a default across all schemas
+    GRANT SELECT
+ON TABLES 
+TO <username>;
 
-	sudo apt-get update
-	
-	sudo apt-get install libcurl4-gnutls-dev libexpat1-dev gettext libz-dev libssl-dev build-essential
-	
-	wget http://git-core.googlecode.com/files/git-1.8.1.2.tar.gz
-	
-	tar -zxf git-1.8.1.2.tar.gz
-	
-	cd git-1.8.1.2
-	
-	sudo make prefix=/usr/local install
-	
-###Install Postgres and Postgis yo …
+-- Now do the same for sequences
+GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA public TO <username>;
+ALTER DEFAULT PRIVILEGES
+    IN SCHEMA public -- omit this line to make a default across all schemas
+    GRANT SELECT, USAGE
+ON SEQUENCES 
+TO <username>;
 
-	sudo apt-get install python-software-properties
-	
-	sudo apt-add-repository ppa:ubuntugis/ppa
-	
-	sudo apt-get update
-	
-	sudo apt-get install postgresql-9.1-postgis
-	
-	sudo passwd postgres
-	
-	sudo apt-get install pgadmin3
-	
-	sudo apt-get install python-psycopg2
-	
-	sudo apt-get install libpq-dev
-	
-	
-###Install Node yo …
+###Create settings.js file
+Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
+*For security reasons, it is recommended that you use a READ ONLY PostGreSQL User.*
 
-	sudo apt-get update
-	sudo apt-get upgrade
-	sudo apt-get install g++ curl libssl-dev apache2-utils git-core
-	sudo apt-get install make
-	sudo apt-get install python-software-properties
-	sudo add-apt-repository ppa:chris-lea/node.js
-	sudo apt-get update 
-	sudo apt-get install nodejs
+	settings.pg.username = 'username';
+	settings.pg.password = 'password';
+	settings.pg.server = '127.0.0.1';
+	settings.pg.port = '5432';
+	settings.pg.database = 'test';
 
-	cd /tmp 
-	git clone http://github.com/isaacs/npm.git 
-	cd npm 
-	sudo make install
-	
-###Install local instance of pancakes yo …
+If you're using TileStream to serve static map caches, you can reference that instance:
+	settings.tilestream.host = "54.212.254.185";
+	settings.tilestream.path = "/api/Tileset";
+	settings.tilestream.port = "8888";
 
-Congratulations!  Everything you need should be installed.  Celebrate by having some Pancakes …
+Specify whether to show PostGreSQL Views and Tables:
 
-![Mou icon](http://173.201.28.147/pgRESTAPI/chubbs.JPG)
+	//Should the API display postgres views?
+	settings.displayViews = true;
+
+	//Should the API display postgres tables?
+	settings.displayTables = true;
+
+If there are tables are views you don't want published, add them to the 'noFlyList' array:
+
+	//Should the API hide any postgres tables or views?
+	settings.pg.noFlyList = ["att_0", "table_1"];
 
 
-###Install PgRest API yo …
+Leave the TopoJSON and GeoJSON output folders as they are.
 
-* Create a target directory you will clone to e.g. .../Chubbs/pgRESTAPI
-* Open terminal and cd to your target directory 
-* Clone this repo
-* cd to PGRestAPI
-* Execute ...
+On my windows installation, I use IIS URL Rewrite module to forward requests from a static IP or domain to "localhost:3000" (my node server and port).
+These config sections help node write out fully qualified URLs using the external IP or domain rather than localhost:3000
 
-    npm install
-
-(If you're developing and want changes to automatically restart your service, install nodemon)
-
-	npm install nodemon -g
+	//Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
+	settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
+	settings.application.publicport = "80";
 
 
 
-### Create a settings.js file
-Specify IP, Ports, Passwords and other settings in a file called settings.js.
-An example has been provided - settings.js.example.
-Settings.js must be filled out with valid settings for the application to run.
+###Install topojson module globally
+    npm install -g topojson
 
-#Running as Services
+###For development purposes, install nodemon
+	npm install -g nodemon
+
+
+###Installing Cairo (for dynamic map tile capability)
+Cairo - You need to [download](http://www.gtk.org/download/index.php) and install Cairo in order to use the [nodetiles](https://github.com/nodetiles/nodetiles-core) dynamic tile rendering functionality.
+
+
+
+###Installing nodetiles-core
+nodetiles-core (on Windows, cloned and built on it's own, then copied to PGRestAPI/node_modules folder)
+
+
+
 
 ###To Run as a Windows Service
 When starting as a windows service, install winser
@@ -122,16 +125,10 @@ To Uninstall the service
 Open windows task manager, find 'app'(or whatever the name property is in package.json), right click and start the service.
 
 
-### On Ubuntu 12 and 13
-install forever module
 
-	sudo npm install -g forever
 
-### Run
-	sudo forever start app.js
+if you encounter errors related to "git config returned wrong result" when installing modules, explicitly set the git.exe location like so: $ npm config set "git" "C:\path\to.exe" 
 
-### Restarting
-	sudo forever restart 0
+On Windows with multiple versions of .NET, use:
+npm install pg --msvs_version=2012
 
-### Stopping
-	sudo forever stop 0
