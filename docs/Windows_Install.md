@@ -20,7 +20,7 @@ Create a 'PGRestAPI' directory, then:
 
 -or-
 
-extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip
+extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) and copy to PGRestAPI folder
 
 ###Navigate to PGRestAPI folder, and npm install
 from the console:  
@@ -28,7 +28,7 @@ from the console:
     npm install
 
 **This may fail due to a compilation error in the node_canvas module.  If this is the case, clone or copy the nodetiles-core module to a separate folder.
-Then follow the instructions below for "Installing Cairo" and "Installing nodetiles-core", then return to this step adn run "npm install"
+Then follow the instructions below for "Installing Cairo" and "Installing nodetiles-core", then return to this step and run "npm install"
 
 ###Create PostGreSQL Read Only User
 To grant read-only permissions for a user (assuming your user is already created):  
@@ -159,3 +159,8 @@ On a single Windows machine with multiple versions of .NET (2012 and 2010 for ex
 
 ...when installing modules or this project when using npm.  This tells npm which version of .NET to use when compiling modules that require it.
 
+###Install local instance of pancakes yo …
+
+Congratulations!  Everything you need should be installed.  Celebrate by having some Pancakes …
+
+![Mou icon](http://173.201.28.147/pgRESTAPI/chubbs.JPG)
