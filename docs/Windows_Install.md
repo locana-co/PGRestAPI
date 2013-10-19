@@ -15,8 +15,10 @@ Download the windows node installation package and run: http://nodejs.org/dist/v
 
 ###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
 Create a 'PGRestAPI' directory
-git clone https://github.com/spatialdev/PGRestAPI.git
+	git clone https://github.com/spatialdev/PGRestAPI.git
+
 -or-
+
 extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip
 
 ###Navigate to PGRestAPI folder, and npm install
