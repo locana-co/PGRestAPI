@@ -10,6 +10,7 @@ var pg = require('pg');
 
 var Buffer = {};
 
+
 /* METADATA */
 
 Buffer.name = "Buffer";
@@ -46,6 +47,8 @@ Buffer.bufferQuery = "DO $$DECLARE " +
 
 
 
+
+
 Buffer.execute = flow.define(
     function (args, callback) {
         this.args = args;
@@ -58,7 +61,7 @@ Buffer.execute = flow.define(
 
             //Take the point and buffer it in PostGIS
             var query = { text: "", values: []};
-            Buffer.executePgQuery(Buffer.bufferQuery.replace("{wkt}", Buffer.inputs["input_geometry"]), this);//Flow to next function when done.
+            common.executePgQuery(Buffer.bufferQuery.replace("{wkt}", Buffer.inputs["input_geometry"]), this);//Flow to next function when done.
 
         }
         else {
@@ -89,35 +92,6 @@ Buffer.isInputValid = function (input) {
 }
 
 
-Buffer.executePgQuery = function(query, callback) {
-    var result = { status: "success", rows: [] }; //object to store results, and whether or not we encountered an error.
-
-    //Just run the query
-    //Setup Connection to PG
-    var client = new pg.Client(global.conString); //global.conString stores the default connection string to postgres.  Change it if you want to connect to a different DB.
-    client.connect();
-
-    var query = client.query(query);
-
-    //If query was successful, this is iterating thru result rows.
-    query.on('row', function (row) {
-        result.rows.push(row);
-    });
-
-    //Handle query error - fires before end event
-    query.on('error', function (error) {
-        //req.params.errorMessage = error;
-        result.status = "error";
-        result.message = error;
-    });
-
-    //end is called whether successfull or if error was called.
-    query.on('end', function () {
-        //End PG connection
-        client.end();
-        callback(result); //pass back result to calling function
-    });
-}
 
 
 module.exports = Buffer;
