@@ -17,6 +17,12 @@ You'll get a REST API that supports:
 Express, Jade and general structure based on:
 Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-node-js-express-app-the-right-way/
 
+##Installation
+
+* [Ubuntu 12 and 13](../blob/docs/docs/Ubuntu_Install.md)
+* [Windows](../blob/docs/docs/Windows_Install.md)
+* [OSX](../blob/docs/docs/OSX_Install.md)
+
 ## Dependencies
 
 * PostGres 9.1 + w/ PostGIS 2.0 +
