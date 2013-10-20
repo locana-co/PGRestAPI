@@ -29,7 +29,6 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 ###Home Screen:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/services.png "Services Screen")
-<img src="https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/services.png" alt="Services Screen" style="width: 389px;"/>
 
 ###Table/View List:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/tablelist.png "Table List Screen")
