@@ -27,26 +27,27 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 ##Screenshots
 
-Home Screen:
+###Home Screen:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/services.png "Services Screen")
+<img src="https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/services.png" alt="Services Screen" style="width: 389px;"/>
 
-Table/View List:
+###Table/View List:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/tablelist.png "Table List Screen")
 
-Table Details:
+###Table Details:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/tabledetail.png "Table List Screen")
 
-Query Endpoint:
+###Query Endpoint:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/query.png "Query Endpoint")
 
-Query Endpoint Results:
+###Query Endpoint Results:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/query2.png "Query Endpoint Results")
 
-Dynamic Service Endpoint:
+###Dynamic Service Endpoint:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/dynamic.png "Dynamic Map endpoint")
 
-Geoprocessing Tool - Buffer:
+###Geoprocessing Tool - Buffer:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/gpbuffer.png "GP Buffer")
 
-Raster Operations - Zonal Statistics:
+###Raster Operations - Zonal Statistics:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/docs/docs/screens/raster.png "Raster Zonal Statistics")
