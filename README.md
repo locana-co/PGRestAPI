@@ -19,9 +19,9 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 ##Installation
 
-* [Ubuntu 12 and 13](../blob/docs/docs/Ubuntu_Install.md)
-* [Windows](../blob/docs/docs/Windows_Install.md)
-* [OSX](../blob/docs/docs/OSX_Install.md)
+* [Ubuntu 12 and 13](blob/docs/docs/Ubuntu_Install.md)
+* [Windows](blob/docs/docs/Windows_Install.md)
+* [OSX](blob/docs/docs/OSX_Install.md)
 
 ## Dependencies
 
