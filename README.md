@@ -28,25 +28,25 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 ##Screenshots
 
 Home Screen:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/services.png "Services Screen")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/services.png "Services Screen")
 
 Table/View List:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/tablelist.png "Table List Screen")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/tablelist.png "Table List Screen")
 
 Table Details:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/tabledetail.png "Table List Screen")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/tabledetail.png "Table List Screen")
 
 Query Endpoint:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/query.png "Query Endpoint")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/query.png "Query Endpoint")
 
 Query Endpoint Results:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/query2.png "Query Endpoint Results")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/query2.png "Query Endpoint Results")
 
 Dynamic Service Endpoint:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/dynamic.png "Dynamic Map endpoint")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/dynamic.png "Dynamic Map endpoint")
 
 Geoprocessing Tool - Buffer:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/gpbuffer.png "GP Buffer")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/gpbuffer.png "GP Buffer")
 
 Raster Operations - Zonal Statistics:
-![alt text](https://github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/raster.png "Raster Zonal Statistics")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/blob/docs/docs/screens/raster.png "Raster Zonal Statistics")
