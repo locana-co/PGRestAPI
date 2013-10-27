@@ -59,6 +59,8 @@ app.use(geoprocessing);
 var nodetiles = require('./endpoints/nodetiles');
 app.use(nodetiles.app);
 
+var utilities = require('./endpoints/utilities');
+app.use(utilities);
 
 
 //Create web server

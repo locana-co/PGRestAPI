@@ -25,7 +25,9 @@ app.all('/services', function (req, res) {
     //object with available services
     var opslist = [
         { link: 'tables', name: 'Table List' },
-        { link: 'geoprocessing', name: 'Geoprocessing Operations' }
+        { link: 'geoprocessing', name: 'Geoprocessing Operations' },
+        { link: 'utilities', name: 'Utilities' }
+
 
     ];
 
@@ -33,6 +35,8 @@ app.all('/services', function (req, res) {
         //Add tilestream url if it's in settings file
         opslist.push({ link: 'tiles', name: 'Tilestream Layers' });
     }
+
+
 
     //send to view
     res.render('services', { opslist: opslist, breadcrumbs: [{ link: "", name: "Services" }] });
