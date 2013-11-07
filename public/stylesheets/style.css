@@ -18,6 +18,9 @@ a:hover {
   background-color: #fff;
   padding: 20px;
 }
+.section {
+  margin: 40px 0px;
+}
 /*Code Block*/
 .headingTitle {
   font-weight: bold;
@@ -42,20 +45,26 @@ a:hover {
 }
 .littleSpace {
   margin-left: 40px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.spacer {
+  height: 20px;
 }
 .propertyGroup {
   margin: 10px 0;
 }
 .inputTable {
-  background-color: #E5EFF7;
   padding: 5px;
   margin: 10px 0px 3px;
-  border: #000 1px solid;
 }
 .inputTable td {
   font-size: 0.90em;
   margin: 0px 0px 3px;
   padding: 3px 11px 5px 0;
+}
+.inputTable td label {
+  float: right;
 }
 .infoMessage {
   background-color: #FFFFE0;
@@ -88,8 +97,16 @@ textarea {
 #topofilename {
   background-color: #D5D5D5;
 }
+.links a:hover {
+  background-color: #c2c2c2;
+  text-decoration: none;
+}
 .links a {
   margin-right: 10px;
+  padding: 10px 20px;
+  border: 1px solid #1b75ba;
+  display: inline-block;
+  cursor: pointer;
 }
 pre {
   background-color: lightgray;
@@ -105,4 +122,28 @@ pre {
 }
 .container th {
   text-align: left;
+}
+::-webkit-input-placeholder {
+  /* WebKit browsers */
+
+  color: #999;
+  background-color: #f1f1f1;
+}
+:-moz-placeholder {
+  /* Mozilla Firefox 4 to 18 */
+
+  color: #999;
+  background-color: #f1f1f1;
+}
+::-moz-placeholder {
+  /* Mozilla Firefox 19+ */
+
+  color: #999;
+  background-color: #f1f1f1;
+}
+:-ms-input-placeholder {
+  /* Internet Explorer 10+ */
+
+  color: #999;
+  background-color: #f1f1f1;
 }

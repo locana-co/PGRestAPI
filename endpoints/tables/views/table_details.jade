@@ -1,24 +1,36 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| Below is a list of columns and column data types for this table
+	h2 #{table}
 
-	table
-		thead
-			tr
-				th Columns
-		tbody
-			-if(featureCollection && featureCollection.columns){
-				- each item in featureCollection.columns
-					tr
-						td= item.column_name + " (" + item.data_type + ")"
-						-if(item.data_type == "raster") 
-			-}else{
-				tr
-					td 
-						| No information found for this table.
+	div.section
+		div.codeBlockWrapper
+			div.headingTitle Code Block
+			span Click to view the sample code
+			div.sampleCodeButtonWrapper
+				div.sampleCodeButton Sample Code
+
+	div.section
+		div.headingTitle Operations
+		div.links
+			- if(featureCollection && featureCollection.supportedOperations){
+				- each operation in featureCollection.supportedOperations
+					a(href=operation.link) #{operation.name}
 			-}
+
+	div.section
+		div.headingTitle Columns
+		span Below is a list of columns and column data types for this table.
+
+		div.spacer
+
+		-if(featureCollection && featureCollection.columns){
+			- each item in featureCollection.columns
+				div.littleSpace= item.column_name + " (" + item.data_type + ")"
+				-if(item.data_type == "raster") 
+		-}else{
+			div.littlespace No information found for this table.
+		-}
 	
 	-if(SRID){
 		p(style="color:green")
@@ -37,10 +49,6 @@ block content
 
 block sidebar
 	.widget
-		h2 Operations
-		div.links
-			- if(featureCollection && featureCollection.supportedOperations){
-				- each operation in featureCollection.supportedOperations
-					a(href=operation.link) #{operation.name}
-			-}
+	
+
 				

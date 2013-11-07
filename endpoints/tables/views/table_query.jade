@@ -1,8 +1,18 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| Enter a where clause to retrieve a subset of features from this table
+	h2 Query
+
+	div.section
+		div.codeBlockWrapper
+			div.headingTitle Code Block
+			span Click to view the sample code
+			div.sampleCodeButtonWrapper
+				div.sampleCodeButton Sample Code
+
+	div.section
+		div.headingTitle Entry Fields
+		dev Enter a where clause to retrieve a subset of features from this table
 	form(action='',method='post',id='queryForm')
 		table.inputTable
 			tr
@@ -28,33 +38,33 @@ block content
 								option(value=item, selected=(item==stattype))=item
 			tr
 				td
-					span Return geometry
+					label Return geometry
 				td
 					-if(!returnGeometry || returnGeometry == 'yes'){
-						label(for='optionsRadios1') Yes
+						span(for='optionsRadios1') Yes
 						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes", checked="") Yes
-						label(for='optionsRadios2') No
+						span(for='optionsRadios2') No
 						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no") No
 					-}else{
-						label(for='optionsRadios1') Yes
+						span(for='optionsRadios1') Yes
 						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes") Yes
-						label(for='optionsRadios2') No
+						span(for='optionsRadios2') No
 						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no", checked="") No
 					-}
 			
 			tr
 				td
-					span Return feature envelope(s)
+					label Return feature envelope(s)
 				td
 					-if(!returnGeometryEnvelopes || returnGeometryEnvelopes == 'no'){
-						label(for='optionsGeomEnv1') Yes
+						span(for='optionsGeomEnv1') Yes
 						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv1", value="yes") Yes
-						label(for='optionsGeomEnv2') No
+						span(for='optionsGeomEnv2') No
 						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv2", value="no", checked="") No
 					-}else{
-						label(for='optionsGeomEnv1') Yes
+						span(for='optionsGeomEnv1') Yes
 						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv1", value="yes", checked="") Yes
-						label(for='optionsGeomEnv2') No
+						span(for='optionsGeomEnv2') No
 						input(type="radio", name="returnGeometryEnvelopes", id="optionsGeomEnv2", value="no") No
 					-}
 
