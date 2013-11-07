@@ -1,9 +1,47 @@
 body {
   padding: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background: url(../img/bg_thatch.png) repeat;
 }
 a {
-  color: #00B7FF;
+  color: #808083;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+.header {
+  background-color: #fff;
+  padding: 20px;
+}
+.container {
+  background-color: #fff;
+  padding: 20px;
+}
+/*Code Block*/
+.headingTitle {
+  font-weight: bold;
+  font-size: 16px;
+}
+.sampleCodeButtonWrapper {
+  margin: 15px 40px;
+}
+.sampleCodeButton {
+  padding: 10px 20px;
+  border: 1px solid #1b75ba;
+  display: inline-block;
+  cursor: pointer;
+}
+.sampleCodeButton:hover {
+  background-color: #c2c2c2;
+}
+/*End Code Block*/
+.bigSpace {
+  margin-top: 20px;
+  margin-left: 40px;
+}
+.littleSpace {
+  margin-left: 40px;
 }
 .propertyGroup {
   margin: 10px 0;
@@ -58,9 +96,9 @@ pre {
   padding: 20px;
 }
 .breadcrumbs {
-  padding: 10px;
-  background-color: #f2f2f2;
-  border: 1px solid #888;
+  padding: 10px 20px;
+  background-color: #fff;
+  margin: 14px 0;
 }
 .container table {
   margin-top: 25px;

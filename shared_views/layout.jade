@@ -1,7 +1,7 @@
 doctype 5
 html
 	head
-		title #{title}
+		title PGRestAPI
 		link(rel='stylesheet', href='/stylesheets/style.css')
 		-if(css){
 			-each csslink in css 
@@ -13,7 +13,7 @@ html
 	
 		-}	
 	body
-		header
+		div.header
 			h2 PGRestAPI
 		div.breadcrumbs
 			-if(breadcrumbs){

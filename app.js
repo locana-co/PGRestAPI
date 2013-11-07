@@ -44,8 +44,8 @@ app.use(function (err, req, res, next) {
 
 //pull in routes
 //TODO - Loop thru endpoints folder and require everything in there
-var services = require('./endpoints/services');
-app.use(services);
+//var services = require('./endpoints/services');
+//app.use(services);
 
 var tables = require('./endpoints/tables');
 app.use(tables.app);
@@ -75,6 +75,9 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
     console.log(startMessage);
 });
 
+//Root Request - show table list
+app.get('/', function (req, res) { res.redirect('/services/tables') });
+
 
 //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
 //on startup.  Probably move this to a 'startup' module
@@ -91,7 +94,3 @@ tables.findSpatialTables(function (error, tables) {
         }
     }
 });
-
-
-
-

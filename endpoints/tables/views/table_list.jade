@@ -1,20 +1,29 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| Table Listing
+	h2 Table Listing
 
-	table
-		thead
-			tr
-				th Name
-		tbody
-			- if(featureCollection){
-				- each item in featureCollection
-					tr
-						td
+	div.codeBlockWrapper
+		div.headingTitle Code Block
+		span Click to view the sample code
+		div.sampleCodeButtonWrapper
+			div.sampleCodeButton Sample Code
+	
+	div.headingTitle Table name
+	span A list of your PostGres Tables
+	- if(featureCollection){
+		- var currentLetter = "";
+		- var wroteItOut = "";
+			- each item in featureCollection
+				- if(currentLetter != item.substring(0,1)){
+					- currentLetter = item.substring(0,1)
+						div.bigSpace
 							a(href="/services/tables/" + item) #{item}
-			-}
+				-} else{
+					div.littleSpace
+						a(href="/services/tables/" + item) #{item}
+				-}	
+	-}
 
 	- var requestSample = []
 	-if(search)
