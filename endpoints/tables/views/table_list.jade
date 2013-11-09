@@ -2,14 +2,8 @@ extends ../../../shared_views/layout
 
 block content
 	h2 Table Listing
-
-	div.codeBlockWrapper
-		div.headingTitle Code Block
-		span Click to view the sample code
-		div.sampleCodeButtonWrapper
-			div.sampleCodeButton Sample Code
 	
-	div.headingTitle Table name
+	
 	span A list of your PostGres Tables
 	- if(featureCollection){
 		- var currentLetter = "";
@@ -25,16 +19,39 @@ block content
 				-}	
 	-}
 
-	- var requestSample = []
+
+
+
+	h3 Code Sample
+	span Here's how to hit this endpoint programatically to get an array of these table names
+
+	h4 POST
+	pre.codePreview
+		|//define POST arguments
+		|var postArgs = {
+		|    format: 'geojson'
+		|};
+		|&nbsp;
+		|//jQuery JSONP POST
+		|$.getJSON('#{link}?callback=?', postArgs).done(function (data) {
+		|    //Callback on success
+		|    console.log(data);
+		|})
+
+
+	- var requestSample = ["format=geojson"]
 	-if(search)
 		- requestSample.push("search=" + encodeURIComponent(search))
+	h4 GET
+	pre.codePreview
+		|#{"http://" + host + path + "?" + requestSample.join("&")}
 
 
-	-if(requestSample.length > 0){
-		h2: |Request Sample
-		div#requestSample
-			|#{"http://" + host + path + "?" + requestSample.join("&")}
-	-}
+	- var optionalSample = ["format=geojson","search=a"]
+	h3 Optional Search
+	span To filter the tables, use a partial search term. For example, to only show tables starting with the letter 'a' using a GET method, append search=a
+	pre.codePreview
+		|#{"http://" + host + path + "?" + optionalSample.join("&")}
 
 	-if(infoMessage){
 		div.infoMessage

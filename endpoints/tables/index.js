@@ -40,6 +40,7 @@ app.all('/services/tables', function (req, res) {
     args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
     args.path = req.path;
     args.host = settings.application.publichost || req.headers.host;
+    args.link = "http://" + args.host + "/services/tables";
 
     try {
         var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
@@ -79,9 +80,12 @@ app.all('/services/tables/:table', flow.define(
         this.args.table = this.req.params.table;
         this.args.view = "table_details";
         this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: this.args.table }];
+        this.args.host = settings.application.publichost || req.headers.host;
         this.args.url = this.req.url;
         this.args.table_details = [];
         this.args.fullURL = "http://" + (settings.application.publichost || this.req.headers.host) + this.req.path; //TODO - make the protocol dynamic
+        this.args.link = "http://" + this.args.host + "/services/tables/" + this.args.table;
+
 
         var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [this.args.table] };
         common.executePgQuery(query, this);

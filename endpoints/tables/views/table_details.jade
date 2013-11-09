@@ -4,13 +4,6 @@ block content
 	h2 #{table}
 
 	div.section
-		div.codeBlockWrapper
-			div.headingTitle Code Block
-			span Click to view the sample code
-			div.sampleCodeButtonWrapper
-				div.sampleCodeButton Sample Code
-
-	div.section
 		div.headingTitle Operations
 		div.links
 			- if(featureCollection && featureCollection.supportedOperations){
@@ -36,6 +29,60 @@ block content
 		p(style="color:green")
 			| SRID is #{SRID}
 	-}
+
+
+	div.section
+		h3 Code Sample
+		span Here's how to hit this endpoint programatically to get an array of these table names
+
+		h4 POST
+		pre.codePreview
+			|//define POST arguments
+			|var postArgs = {
+			|    format: 'geojson'
+			|};
+			|&nbsp;
+			|//jQuery JSONP POST
+			|$.getJSON('#{link}?callback=?', postArgs).done(function (data) {
+			|    //Callback on success
+			|    console.log(data);
+			|})
+
+	- var requestSample = ["format=geojson"]
+	-if(search)
+		- requestSample.push("search=" + encodeURIComponent(search))
+	h4 GET
+	pre.codePreview
+		|#{link + "?" + requestSample.join("&")}
+
+	h4 GeoJSON Response
+	pre.codePreview
+		|{
+		|   "columns": [
+		|     {
+		|          "column_name": "gid",
+		|          "data_type": "integer"
+		|     },
+		|     {
+		|          "column_name": "longitude",
+		|          "data_type": "numeric"
+		|     }
+		|  ]
+		|  "supportedOperations": [
+		|     {
+		|          "link": "http://localhost:3000/services/tables/nigeria_hexbins/query",
+		|          "name": "Query"
+		|     },
+		|     {
+		|          "link": "http://localhost:3000/services/tables/nigeria_hexbins/dynamicMapLanding",
+		|          "name": "Dynamic Map Service"
+		|     },
+		|     {
+		|          "link": "http://localhost:3000/services/tables/nigeria_hexbins/topojson",
+		|          "name": "TopoJSON"
+		|     } 
+		|   ]
+		|}
 
 	-if(infoMessage){
 		div.infoMessage
