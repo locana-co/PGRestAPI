@@ -1,5 +1,7 @@
 //common.js is a collection of commonly used functions by the main app.js and all submodules.
-var pg = require('pg');
+var pg = require('pg'),
+    querystring = require('querystring'),
+    http = require("http");
 
 var common = {};
 common.formatters = {};
@@ -208,5 +210,47 @@ common.formatters.ESRIFeatureSetJSONFormatter = function (rows, geom_fields_arra
     return featureSet;
 }
 
+
+common.executeSelfRESTRequest = function(table, path, postargs, callback, settings) {
+    //Grab JSON from our own rest service for a table.
+    var post_data = querystring.stringify(postargs);
+    console.log("Post Data: " + post_data);
+
+    var options = {
+        host: settings.application.host,
+        path: path.replace("{table}", table), 
+        port: settings.application.port,
+        method: 'POST', 
+        headers: {  
+            'Content-Type': 'application/x-www-form-urlencoded',  
+            'Content-Length': post_data.length  
+        }
+    };
+
+
+    var post_req = http.request(options, function (res) {
+        var str = [];
+
+        res.on('error', function (err) {
+            console.log("problem");
+        });
+
+        //res.setEncoding('utf8');  
+        res.on('data', function (chunk) {
+            str.push(chunk);  
+        });
+
+        //the whole response has been recieved, so we just print it out here
+        res.on('end', function () {
+            console.log("ended API response");
+            callback(null, JSON.parse(str));
+        });
+    }); 
+
+    debugger;
+    //execute
+    post_req.write(post_data);
+    post_req.end(); 
+}
 
 module.exports = common;

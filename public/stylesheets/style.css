@@ -2,6 +2,7 @@ body {
   padding: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
   background: url(../img/bg_thatch.png) repeat;
+  min-width: 960px;
 }
 a {
   color: #808083;
@@ -156,4 +157,14 @@ input:-moz-placeholder,
 textarea:-moz-placeholder {
   color: #999;
   background-color: #f1f1f1;
+}
+.main-content {
+  position: relative;
+}
+.floatingColumns {
+  position: absolute;
+  right: 0;
+}
+.floatingColumns .littleSpace {
+  margin-left: 0;
 }

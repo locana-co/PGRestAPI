@@ -43,14 +43,26 @@ app.all('/services/tables', function (req, res) {
     args.link = "http://" + args.host + "/services/tables";
 
     try {
-        var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
-        common.executePgQuery(query, function (result) {
-
-            args.featureCollection = result.rows.map(function (item) { return item.table_name; }); //Get array of table names
-
+        //Check to see if we've stashed the list already.
+        if (settings.tableList) {
             //Render HTML page with results at bottom
+            args.featureCollection = settings.tableList;
             common.respond(req, res, args);
-        });
+        }
+        else {
+            //Fetch from DB
+            var query = { text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ", values: [] };
+            common.executePgQuery(query, function (result) {
+
+                args.featureCollection = result.rows.map(function (item) { return item.table_name; }); //Get array of table names
+
+                //stash it for later
+                settings.tableList = args.featureCollection;
+
+                //Render HTML page with results at bottom
+                common.respond(req, res, args);
+            });
+        }
     } catch (e) {
         args.errorMessage = e.text;
         common.respond(req, res, args);
@@ -86,59 +98,85 @@ app.all('/services/tables/:table', flow.define(
         this.args.fullURL = "http://" + (settings.application.publichost || this.req.headers.host) + this.req.path; //TODO - make the protocol dynamic
         this.args.link = "http://" + this.args.host + "/services/tables/" + this.args.table;
 
+        //Find Column Names
+        //Grab from stash if we have it already
+        if (settings.columnNames && settings.columnNames[this.args.table]) {
+            this.args.featureCollection = {};
+            this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
 
-        var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [this.args.table] };
-        common.executePgQuery(query, this);
+            this(settings.columnNames[this.args.table]); //Pass on in flow
+        }
+        else{
+            //copy for closure
+            var args = this.args;
+            var flo = this;
 
+            var query = { text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1", values: [this.args.table] };
+            common.executePgQuery(query, function (result) {
+                //check for error
+                if (result.status == "error") {
+                    //Report error and exit.
+                    args.errorMessage = result.message;
+                    flo(); //go to next flow
+                }
+                else if (result && result.rows && result.rows.length > 0) {
+
+                    args.featureCollection = {};
+                    args.featureCollection.columns = result.rows;
+
+                    
+                    //Stash
+                    if(!settings.columnNames){
+                        settings.columnNames = {};   
+                    }
+
+                    settings.columnNames[args.table] = result;
+                    
+                    flo(result); //Call and pass to flow when done
+                }
+                else {
+                    //unknown table, or no columns?
+                    flo({ rows: [] }); //go to next flow
+                }
+            }); 
+        }
     },
     function (result) {
-        //coming back executePgQuery
-        //TODO: handle errors here
-       
-        //check for error
-        if (result.status == "error") {
-            //Report error and exit.
-            this.args.errorMessage = result.message;
-            this(); //go to next flow
-        }
-        else if (result && result.rows && result.rows.length > 0) {
+        //Expecting an array of columns and types
 
-            this.args.featureCollection = {};
-            this.args.featureCollection.columns = result.rows;
-            //Add supported operations in a property
-            this.args.featureCollection.supportedOperations = [];
-            this.args.featureCollection.supportedOperations.push({ link: this.args.fullURL + "/query", name: "Query" });
+        //Add supported operations in a property
+        this.args.featureCollection.supportedOperations = [];
+        this.args.featureCollection.supportedOperations.push({ link: this.args.fullURL + "/query", name: "Query" });
 
-            var rasterOrGeometry = { present: false, name: "" };
+        var rasterOrGeometry = { present: false, name: "" };
 
-            var args = this.args; //copy for closure
+        var args = this.args; //copy for closure
 
-            result.rows.forEach(function (item) {
-                if (item.data_type == "raster") {
-                    args.featureCollection.supportedOperations.push({ link: args.fullURL + "/rasterOps", name: "Raster Operations" });
-                    rasterOrGeometry.present = true;
-                    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
-                }
-                else if (item.data_type == "geometry") {
-                    args.featureCollection.supportedOperations.push({ link: args.fullURL + "/dynamicMapLanding", name: "Dynamic Map Service" });
-                    args.featureCollection.supportedOperations.push({ link: args.fullURL + "/topojson", name: "TopoJSON" });
-                    rasterOrGeometry.present = true;
-                    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
-                }
-            });
+        result.rows.forEach(function (item) {
+            if (item.data_type == "raster") {
+                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/rasterOps", name: "Raster Operations" });
+                rasterOrGeometry.present = true;
+                rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
+            }
+            else if (item.data_type == "geometry") {
+                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/dynamicMapLanding", name: "Dynamic Map Service" });
+                args.featureCollection.supportedOperations.push({ link: args.fullURL + "/topojson", name: "TopoJSON" });
+                rasterOrGeometry.present = true;
+                rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
+            }
+        });
 
-            this.args = args;  //update this.args property
+        this.args = args;  //update this.args property
 
-            //If there's a geom or raster column, then check for SRID
-            if (rasterOrGeometry.present === true) {
+        //If there's a geom or raster column, then check for SRID
+        if (rasterOrGeometry.present === true) {
+            if (settings.columnNames[this.args.table] && settings.columnNames[this.args.table].srid) {
+                this({ rows: [{ srid: settings.columnNames[this.args.table].srid }] });
+            } else {
                 //check SRID
                 var query = { text: "select ST_SRID(" + rasterOrGeometry.name + ") as SRID FROM " + this.args.table + " LIMIT 1;", values: [] };
                 common.executePgQuery(query, this);
             }
-        }
-        else {
-            //unknown table, or no columns?
-            this(); //go to next flow
         }
     },
     function (result) {
@@ -154,13 +192,13 @@ app.all('/services/tables/:table', flow.define(
             }
             else {
                 this.args.SRID = result.rows[0].srid; //Use the SRID
+                settings.columnNames[this.args.table].srid = result.rows[0].srid;
             }
         }
         else {
             //no match found.
             this.args.infoMessage = "Couldn't find inforamtion for this table.";
         }
-
 
         //Render HTML page with results at bottom
         common.respond(this.req, this.res, this.args);
@@ -176,7 +214,6 @@ app.all('/services/tables/:table/query', flow.define(
         this.res = res;
 
         this.args = {};
-
         //Grab POST or QueryString args depending on type
         if (req.method.toLowerCase() == "post") {
             //If a post, then arguments will be members of the this.req.body property
@@ -186,6 +223,13 @@ app.all('/services/tables/:table/query', flow.define(
             //If request is a get, then args will be members of the this.req.query property
             this.args = req.query;
         }
+
+        //Prepare Stash
+        if (!settings.columnNames) {
+            settings.columnNames = {};
+        }
+
+        settings.application.host = app.get('ipaddr') || "localhost";
 
         // arguments passed to renameAndStat() will pass through to this first function
         if (JSON.stringify(this.args) != '{}') {
@@ -198,8 +242,19 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.view = "table_query";
 
-            //either way, get the spatial columns so we can exclude them from the query
-            createSpatialQuerySelectStatement(this.args.table, this.args.outputsrid, this);
+            //See if columns exist for this table in settings.js
+            if (settings.columnNames[this.args.table]) {
+                this();
+            }
+            else {
+                //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
+                var flow = this;
+                common.executeSelfRESTRequest(this.args.table, "/services/tables/" + this.args.table, { where: "1=1", format: "geojson" }, function () {
+                    common.log("refreshed column list");
+                    flo();
+                }, settings);
+            }
+
         }
         else {
             //If the querystring is empty, just show the regular HTML form.
@@ -209,10 +264,38 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
 
-            common.respond(this.req, this.res, this.args);
+            var args = this.args;
+
+            //See if columns exist for this table in settings.js
+
+
+            if (settings.columnNames[this.args.table]) {
+                this.args.columnNames = settings.columnNames[this.args.table].rows;
+
+                common.respond(req, res, args);
+            }
+            else {
+                //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
+                var flow = this;
+                common.executeSelfRESTRequest(args.table,"/services/tables/" + this.args.table, { where: "1=1", format: "geojson" }, function () {
+                    args.columnNames = settings.columnNames[args.table].rows;
+
+                    common.log("refreshed column list");
+                    common.respond(req, res, args);
+                }, settings);
+            }
+
+            
         }
 
-    }, function (geom_fields_array, geom_select_array, geom_envelope_array) {
+    }, function () {
+        //should have column names in settings.js now
+        this.args.columnNames = settings.columnNames[this.args.table].rows;
+
+        //either way, get the spatial columns so we can exclude them from the query
+        createSpatialQuerySelectStatement(this.args.table, this.args.outputsrid, this);
+        
+    },function (geom_fields_array, geom_select_array, geom_envelope_array) {
         //Coming from createSpatialQuerySelectStatement
         //Store the geom_fields for use later
         this.args.geom_fields_array = geom_fields_array; //hold geom column names
@@ -355,41 +438,7 @@ app.all('/services/tables/:table/query', flow.define(
             var req = this.req; //copy for closure.
             var res = this.res; //copy for closure.
 
-            common.executePgQuery(query, function (result) {
-                var features = [];
-
-                //check for error
-                if (result.status == "error") {
-                    //Report error and exit.
-                    args.errorMessage = result.message;
-                } else {
-                    //a-ok
-                    //Check which format was specified
-                    if (!args.format || args.format.toLowerCase() == "html") {
-                        //Render HTML page with results at bottom
-                        features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
-
-                        //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
-                        //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
-                    }
-                    else if (args.format && args.format.toLowerCase() == "geojson") {
-                        //Respond with JSON
-                        features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
-
-                        //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
-                        //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
-                    }
-                    else if (args.format && args.format.toLowerCase() == "esrijson") {
-                        //Respond with esriJSON
-                        features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(args.geom_fields_array));
-                    }
-
-                    args.featureCollection = features;
-                    args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
-                    args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
-                }
-                common.respond(req, res, args);
-            });
+            common.executePgQuery(query, this); //pass to next flow
         }
         else {
             //Invalid SQL was entered by user.
@@ -399,6 +448,41 @@ app.all('/services/tables/:table/query', flow.define(
             common.respond(this.req, this.res, this.args);
             return;
         }
+    }, function (result) {
+
+        var features = [];
+
+        //check for error
+        if (result.status == "error") {
+            //Report error and exit.
+            this.args.errorMessage = result.message;
+        } else {
+            //a-ok
+            //Check which format was specified
+            if (!this.args.format || this.args.format.toLowerCase() == "html") {
+                //Render HTML page with results at bottom
+                features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
+
+                //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
+                //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
+            }
+            else if (this.args.format && this.args.format.toLowerCase() == "geojson") {
+                //Respond with JSON
+                features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+
+                //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
+                //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
+            }
+            else if (this.args.format && this.args.format.toLowerCase() == "esrijson") {
+                //Respond with esriJSON
+                features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+            }
+
+            this.args.featureCollection = features;
+            this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
+            this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+        }
+        common.respond(this.req, this.res, this.args);
     }
 ));
 

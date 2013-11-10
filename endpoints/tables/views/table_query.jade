@@ -3,6 +3,15 @@ extends ../../../shared_views/layout
 block content
 	h2 Query
 
+	div.floatingColumns
+		h4 Column List
+		-if(columnNames){
+			- each item in columnNames
+				div.littleSpace= item.column_name + " (" + item.data_type + ")"
+		-}else{
+			div.littlespace No information found for this table.
+		-}	
+
 	div.section
 		div.headingTitle Entry Fields
 		dev Enter a where clause to retrieve a subset of features from this table
@@ -145,32 +154,32 @@ block content
 		- postSample.push("limit: '" + limit + "'")
 
 
-
-	div.section
-		h3 Code Sample
-		span Here's how to hit this endpoint programatically to get this data
-
-		h4 POST
-		pre.codePreview
-			|//define POST arguments
-			|var postArgs = {
-			|     #{postSample.join(",\n    ")}
-			|};
-			|&nbsp;
-			|//jQuery JSONP POST
-			|$.getJSON('#{link}?callback=?', postArgs).done(function (data) {
-			|    //Callback on success
-			|    console.log(data);
-			|})
-
-
-	h4 GET
-	pre.codePreview
-		|#{"http://" + host + path + "?" + requestSample.join("&")}
-
 	-if(requestSample.length > 0){
 
+		div.section
+			h3 Code Sample
+			span Here's how to hit this endpoint programatically to get this data
+
+			h4 POST
+			pre.codePreview
+				|//define POST arguments
+				|var postArgs = {
+				|     #{postSample.join(",\n    ")}
+				|};
+				|&nbsp;
+				|//jQuery JSONP POST
+				|$.getJSON('#{link}?callback=?', postArgs).done(function (data) {
+				|    //Callback on success
+				|    console.log(data);
+				|})
+
+
+		h4 GET
+		pre.codePreview
+			|#{"http://" + host + path + "?" + requestSample.join("&")}
+
 	-}
+
 
 	-if(infoMessage){
 		div.infoMessage
@@ -183,6 +192,8 @@ block content
 
 
 block sidebar
+
+
 	.widget
 		h2 Results
 		.results
@@ -249,4 +260,5 @@ block sidebar
 					div.propertyGroup No results found
 				-}
 			-}
-			
+
+

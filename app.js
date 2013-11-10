@@ -70,6 +70,7 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
     if (app.get('ipaddr')) {
         startMessage += ' on IP:' + app.get('ipaddr') + ', ';
     }
+
     startMessage += ' on port ' + app.get('port');
 
     console.log(startMessage);
