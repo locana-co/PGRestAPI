@@ -4,13 +4,6 @@ block content
 	h2 Query
 
 	div.section
-		div.codeBlockWrapper
-			div.headingTitle Code Block
-			span Click to view the sample code
-			div.sampleCodeButtonWrapper
-				div.sampleCodeButton Sample Code
-
-	div.section
 		div.headingTitle Entry Fields
 		dev Enter a where clause to retrieve a subset of features from this table
 	form(action='',method='post',id='queryForm')
@@ -105,39 +98,78 @@ block content
 			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
 	
-	- var requestSample = []
+	- var requestSample = [];
+	- var postSample = [];
+
 	-if(where)
 		- requestSample.push("where=" + encodeURIComponent(where))
+		- postSample.push("where: '" + where + "'")
+
 
 	-if(returnfields)
 		- requestSample.push("returnfields=" + encodeURIComponent(returnfields))
+		- postSample.push("returnfields: '" + returnfields + "'")
+
 	
 	-if(format)
 		- requestSample.push("format=" + encodeURIComponent(format))
+		- postSample.push("format: 'geojson'") 
 
 	-if(returnGeometry)
 		- requestSample.push("returnGeometry=" + encodeURIComponent(returnGeometry))
+		- postSample.push("returnGeometry: '" + returnGeometry + "'")
+
 
 	-if(returnGeometryEnvelopes)
 		- requestSample.push("returnGeometryEnvelopes=" + encodeURIComponent(returnGeometryEnvelopes))
+		- postSample.push("returnGeometryEnvelopes: '" + returnGeometryEnvelopes + "'")
+
 
 	-if(groupby)
 		- requestSample.push("groupby=" + encodeURIComponent(groupby))
+		- postSample.push("groupby: '" + groupby + "'")
+
 
 	-if(statsdef)
 		- requestSample.push("statsdef=" + encodeURIComponent(statsdef))
+		- postSample.push("statsdef: '" + statsdef + "'")
+
 
 	-if(wkt)
 		- requestSample.push("wkt=" + encodeURIComponent(wkt))
+		- postSample.push("wkt: '" + wkt + "'")
+
 
 	-if(limit)
 		- requestSample.push("limit=" + encodeURIComponent(limit))
+		- postSample.push("limit: '" + limit + "'")
 
+
+
+	div.section
+		h3 Code Sample
+		span Here's how to hit this endpoint programatically to get this data
+
+		h4 POST
+		pre.codePreview
+			|//define POST arguments
+			|var postArgs = {
+			|     #{postSample.join(",\n    ")}
+			|};
+			|&nbsp;
+			|//jQuery JSONP POST
+			|$.getJSON('#{link}?callback=?', postArgs).done(function (data) {
+			|    //Callback on success
+			|    console.log(data);
+			|})
+
+
+	h4 GET
+	pre.codePreview
+		|#{"http://" + host + path + "?" + requestSample.join("&")}
 
 	-if(requestSample.length > 0){
-		h2: |Request Sample
-		div#requestSample
-			|#{"http://" + host + path + "?" + requestSample.join("&")}
+
 	-}
 
 	-if(infoMessage){

@@ -385,10 +385,9 @@ app.all('/services/tables/:table/query', flow.define(
                     }
 
                     args.featureCollection = features;
-                    args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://codeorigin.jquery.com/jquery-1.10.2.min.js']; //Load external scripts for map preview
+                    args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
                     args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
                 }
-
                 common.respond(req, res, args);
             });
         }
