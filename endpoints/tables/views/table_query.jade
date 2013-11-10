@@ -108,7 +108,7 @@ block content
 
 	-if(returnfields)
 		- requestSample.push("returnfields=" + encodeURIComponent(returnfields))
-		- postSample.push("returnfields: '" + returnfields + "'")
+		- postSample.push("returnfields: '" + returnfields.replace(/\s+/g, "") + "'")
 
 	
 	-if(format)
