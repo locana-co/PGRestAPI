@@ -8,7 +8,7 @@ Quick Start
 
 ```
 /* Set up the libraries */
-var nodetiles = require('nodetiles-core');
+var nodetiles = require('nodetiles-core-cache');
 var PostGIS = nodetiles.datasources.GeoJson;
     
 /* Create your map context */
