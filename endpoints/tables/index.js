@@ -248,7 +248,7 @@ app.all('/services/tables/:table/query', flow.define(
             }
             else {
                 //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
-                var flow = this;
+                var flo = this;
                 common.executeSelfRESTRequest(this.args.table, "/services/tables/" + this.args.table, { where: "1=1", format: "geojson" }, function () {
                     common.log("refreshed column list");
                     flo();
@@ -276,7 +276,6 @@ app.all('/services/tables/:table/query', flow.define(
             }
             else {
                 //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
-                var flow = this;
                 common.executeSelfRESTRequest(args.table,"/services/tables/" + this.args.table, { where: "1=1", format: "geojson" }, function () {
                     args.columnNames = settings.columnNames[args.table].rows;
 
