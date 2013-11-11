@@ -18,3 +18,4 @@ npm-debug.log
 
 public/topojson/output/
 public/geojson/output/
+public/cached_nodetiles
