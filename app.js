@@ -91,6 +91,9 @@ tables.findSpatialTables(function (error, tables) {
             tables.forEach(function (item) {
                 //Spin up a route to serve dynamic tiles for this table
                 nodetiles.createPGTileRenderer(item.table, item.geometry_column, item.srid, null);
+
+                //Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
+                nodetiles.createCachedFolder(item.table);
             });
         }
     }

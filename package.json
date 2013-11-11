@@ -20,6 +20,6 @@
     "flow": "*",
     "less-middleware": "*",
     "topojson": "*",
-	"nodetiles-core": "~0.0.2"
+	"nodetiles-core-cache": "~0.0.2"
   }
 }

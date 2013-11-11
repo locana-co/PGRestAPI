@@ -34,6 +34,22 @@ var app = exports.app = express();
 
 //app.set('views', __dirname + '/views');
 //app.set('view engine', 'jade');
+
+exports.createCachedFolder = function (table) {
+    var folder = './public/cached_nodetiles/' + table;
+    //create a folder for this table in public/cached_nodetiles if it doesn't exist
+    fs.exists(folder, function (exists) {
+        if (exists === false) {
+            //make it
+            console.log("Didn't find cache folder.  Tyring to make folder: " + folder);
+            fs.mkdir(folder, function () {
+                console.log("Made " + folder);
+            }); //Synch
+        }
+    });
+}
+
+
 exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFile) {
     var name;
 
@@ -60,11 +76,11 @@ exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFi
     map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
 
 
-    app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng({ map: map })); // tile.png
+    app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng2Disk({ map: map })); //tilePng2Disk will try to read from cached files on disk. Otherwise, makes the tile.  originally was tilePng
     console.log("Created dynamic service: " + '/services/tables/' + table + '/dynamicMap');
 }
 
-//This should take in a geoJSON object and create a new route on the fly - return the URL?
+    //This should take in a geoJSON object and create a new route on the fly - return the URL?
 exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoCssFile) {
     var map = new nodetiles.Map();
 
@@ -83,36 +99,36 @@ exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoC
     console.log("Created dynamic service: " + '/services/nodetiles/' + name + '/tiles');
 };
 
-//// Wire up the URL routing
-//app.use('/services/nodetiles/tiles', nodetiles.route.tilePng({ map: map })); // tile.png
-//app.use('/services/nodetiles/utfgrids', nodetiles.route.utfGrid({ map: map })); // utfgrids
-// tile.json: use app.get for the tile.json since we're serving a file, not a directory
-//app.get('/services/nodetiles/tile.json', nodetiles.route.tileJson({ path: __dirname + '/map/tile.json' }));
+    //// Wire up the URL routing
+    //app.use('/services/nodetiles/tiles', nodetiles.route.tilePng({ map: map })); // tile.png
+    //app.use('/services/nodetiles/utfgrids', nodetiles.route.utfGrid({ map: map })); // utfgrids
+    // tile.json: use app.get for the tile.json since we're serving a file, not a directory
+    //app.get('/services/nodetiles/tile.json', nodetiles.route.tileJson({ path: __dirname + '/map/tile.json' }));
 
 
-//
-// Configure Express routes
-// 
-//app.configure('development', function () {
-//    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+    //
+    // Configure Express routes
+    // 
+    //app.configure('development', function () {
+    //    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 
-//    // Backbone routing
-//    app.use('/services/nodetiles/assets', express.static(__dirname + '/assets'));
-//});
+    //    // Backbone routing
+    //    app.use('/services/nodetiles/assets', express.static(__dirname + '/assets'));
+    //});
 
-//app.configure('production', function () {
-//    app.use(express.errorHandler());
-//    io.set('log level', 1); // reduce logging
+    //app.configure('production', function () {
+    //    app.use(express.errorHandler());
+    //    io.set('log level', 1); // reduce logging
 
-//    // Backbone routing: compilation step is included in `npm install` script
-//    app.use('/services/nodetiles/app', express.static(__dirname + '/dist/release'));
-//    app.use('/services/nodetiles/assets/js/libs', express.static(__dirname + '/dist/release'));
-//    app.use('/services/nodetiles/assets/css', express.static(__dirname + '/dist/release'));
-//    app.use(express.static(__dirname + '/public'));
-//});
+    //    // Backbone routing: compilation step is included in `npm install` script
+    //    app.use('/services/nodetiles/app', express.static(__dirname + '/dist/release'));
+    //    app.use('/services/nodetiles/assets/js/libs', express.static(__dirname + '/dist/release'));
+    //    app.use('/services/nodetiles/assets/css', express.static(__dirname + '/dist/release'));
+    //    app.use(express.static(__dirname + '/public'));
+    //});
 
 
-//// 1. Serve Index.html
-//app.get('/', function (req, res) {
-//    res.sendfile(__dirname + '/index.html');
-//});
+    //// 1. Serve Index.html
+    //app.get('/', function (req, res) {
+    //    res.sendfile(__dirname + '/index.html');
+    //});
