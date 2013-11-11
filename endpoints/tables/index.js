@@ -991,7 +991,7 @@ function makeGeoJSONFile(table, filename, callback) {
     var options = {
         host: settings.application.host, //TODO - make this point to the environment variable to get the right IP
         path: "/services/tables/" + table + "/query?where=1%3D1&format=geojson&returnGeometry=yes&returnGeometryEnvelopes=no",
-        port: 3000
+        port: settings.application.port
     };
 
     http.request(options, function (response) {
