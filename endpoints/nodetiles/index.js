@@ -76,7 +76,7 @@ exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFi
     map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
 
 
-    app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng2Disk({ map: map })); //tilePng2Disk will try to read from cached files on disk. Otherwise, makes the tile.  originally was tilePng
+    app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng2Disk({ map: map, cachePath: "./public/cached_nodetiles/" + table })); //tilePng2Disk will try to read from cached files on disk. Otherwise, makes the tile.  originally was tilePng
     console.log("Created dynamic service: " + '/services/tables/' + table + '/dynamicMap');
 }
 
