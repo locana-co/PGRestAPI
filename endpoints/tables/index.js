@@ -989,7 +989,7 @@ function geoJSONToTopoJSON(table, geojsonfile, topojsonfile, callback) {
 function makeGeoJSONFile(table, filename, callback) {
     //Grab GeoJSON from our own rest service for this table.
     var options = {
-        host: "localhost", //TODO - make this point to the environment variable to get the right IP
+        host: settings.application.host, //TODO - make this point to the environment variable to get the right IP
         path: "/services/tables/" + table + "/query?where=1%3D1&format=geojson&returnGeometry=yes&returnGeometryEnvelopes=no",
         port: 3000
     };
