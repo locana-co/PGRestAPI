@@ -283,10 +283,7 @@ app.all('/services/tables/:table/query', flow.define(
                     common.respond(req, res, args);
                 }, settings);
             }
-
-            
         }
-
     }, function () {
         //should have column names in settings.js now
         this.args.columnNames = settings.columnNames[this.args.table].rows;
@@ -430,7 +427,7 @@ app.all('/services/tables/:table/query', flow.define(
                 common.escapePostGresColumns([this.args.table]).join(",") + //escape
                 this.where +
                 (this.args.groupby ? " GROUP BY " + this.args.groupby : "")+
-                (this.limit && common.IsNumeric(this.limit) ? " LIMIT " + this.limit : ""), values: []
+                (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : ""), values: []
             };
 
             var args = this.args; //copy for closure.
@@ -989,7 +986,7 @@ function makeGeoJSONFile(table, filename, callback) {
     //Grab GeoJSON from our own rest service for this table.
     var options = {
         host: settings.application.host, //TODO - make this point to the environment variable to get the right IP
-        path: "/services/tables/" + table + "/query?where=1%3D1&format=geojson&returnGeometry=yes&returnGeometryEnvelopes=no",
+        path: "/services/tables/" + table + "/query?where=1%3D1&format=geojson&returnGeometry=yes&returnGeometryEnvelopes=no&limit=-1",
         port: settings.application.port
     };
 
