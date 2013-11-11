@@ -54,30 +54,42 @@ exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFi
     var name;
 
     if (!cartoCssFile) {
-        cartoCssFile = "style.mss"; //Default
-        name = "default"; //A default class for CartoCSS, only used if a style file isn't passed in
+        //If not passed in, see if there is a <tablename>.mss file for this table.
+        //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+        fs.stat(__dirname + '/cartocss/' + table + ".mss", function (err, stat) {
+            if (!err) {
+                //Style file exists.
+                cartoCssFile = table + ".mss";
+            } else {
+                //No file.  Use defaults.
+                //otherwise, use the default style.mss
+                cartoCssFile = "style.mss"; //Default
+                name = "default"; //A default class for this table, only used if a style file isn't passed in
+            }
+
+            /* Create your map context */
+            var map = new nodetiles.Map();
+
+            map.assetsPath = path.join(__dirname, "cartocss"); //This is the cartoCSS path
+
+
+            /* Add some data from PostGIS! */
+            map.addData(new nodetilespostGIS({
+                connectionString: global.conString,
+                tableName: table,
+                geomField: geom_field,
+                projection: "EPSG:" + epsgSRID,
+                name: name //if this is empty, the table name will be used as the class selector
+            }));
+
+            map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
+
+            app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng2Disk({ map: map, cachePath: "./public/cached_nodetiles/" + table })); //tilePng2Disk will try to read from cached files on disk. Otherwise, makes the tile.  originally was tilePng
+            console.log("Created dynamic service: " + '/services/tables/' + table + '/dynamicMap');
+
+
+        });
     }
-
-    /* Create your map context */
-    var map = new nodetiles.Map();
-
-    map.assetsPath = path.join(__dirname, "cartocss"); //This is the cartoCSS path
-
-
-    /* Add some data from PostGIS! */
-    map.addData(new nodetilespostGIS({
-        connectionString: global.conString,
-        tableName: table,
-        geomField: geom_field,
-        projection: "EPSG:" + epsgSRID,
-        name: name //if this is empty, the table name will be used as the class selector
-    }));
-
-    map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
-
-
-    app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng2Disk({ map: map, cachePath: "./public/cached_nodetiles/" + table })); //tilePng2Disk will try to read from cached files on disk. Otherwise, makes the tile.  originally was tilePng
-    console.log("Created dynamic service: " + '/services/tables/' + table + '/dynamicMap');
 }
 
     //This should take in a geoJSON object and create a new route on the fly - return the URL?
