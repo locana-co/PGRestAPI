@@ -34,12 +34,12 @@ block content
 			span Here's how to use these dynamically craeted maps in your application
 
 			h4 POST - Leaflet Example
-				pre.codePreview
-					|//Create a leaflet map
-					|var map = L.map('map');
-					|&nbsp;
-					|//Add the tiled layer
-					|L.tileLayer('#{featureCollection[0].link}/{z}/{x}/{y}.png').addTo(map);
+			pre.codePreview
+				|//Create a leaflet map
+				|var map = L.map('map');
+				|&nbsp;
+				|//Add the tiled layer
+				|L.tileLayer('#{featureCollection[0].link}/{z}/{x}/{y}.png').addTo(map);
 	
 			div.helpLink 
 				|Get more help with 

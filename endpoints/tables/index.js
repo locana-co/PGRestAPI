@@ -37,7 +37,7 @@ app.all('/services/tables', function (req, res) {
     }
 
     args.view = "table_list";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Table List" }];
+    args.breadcrumbs = [{ link: "", name: "Table List" }];
     args.path = req.path;
     args.host = settings.application.publichost || req.headers.host;
     args.link = "http://" + args.host + "/services/tables";
@@ -91,7 +91,7 @@ app.all('/services/tables/:table', flow.define(
 
         this.args.table = this.req.params.table;
         this.args.view = "table_details";
-        this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "", name: this.args.table }];
+        this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "", name: this.args.table }];
         this.args.host = settings.application.publichost || req.headers.host;
         this.args.url = this.req.url;
         this.args.table_details = [];
@@ -239,7 +239,7 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.table = req.params.table;
             this.args.path = req.path;
             this.args.host = settings.application.publichost || req.headers.host;
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.view = "table_query";
 
             //See if columns exist for this table in settings.js
@@ -261,7 +261,7 @@ app.all('/services/tables/:table/query', flow.define(
             //Render Query Form without any results.
             this.args.table = req.params.table;
             this.args.view = "table_query";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
 
             var args = this.args;
@@ -489,7 +489,7 @@ app.all('/services/tables/:table/rasterOps', function (req, res) {
     var args = {};
     args.opslist = [{ link: 'zonalstatistics', name: 'Zonal Statistics' }];
     args.view = "rasterops";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
     args.title = "GeoWebServices";
     args.path = req.path;
     args.host = req.headers.host;
@@ -521,7 +521,7 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
 
             this.args.table = req.params.table;
             this.args.view = "zonalstatistics";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
             this.args.path = req.path;
             this.args.host = req.headers.host;
             this.args.featureCollection = {};
@@ -679,7 +679,7 @@ app.all('/services/tables/:table/topojson', flow.define(
         if (JSON.stringify(this.args) != '{}') {
             this.args.view = "topojson_list";
             this.args.table = this.req.params.table;
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
             this.args.path = this.req.path;
             this.args.host = this.req.headers.host;
             this.args.files = [];
@@ -701,7 +701,7 @@ app.all('/services/tables/:table/topojson', flow.define(
             //Respond with list.
             this.args.view = "topojson_list";
             this.args.table = this.req.params.table;
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
             this.args.path = this.req.path;
             this.args.host = this.req.headers.host;
 
@@ -814,7 +814,7 @@ app.all('/services/tables/:table/dynamicMapLanding', flow.define(
 
         this.args.view = "table_dynamic_map";
         this.args.table = this.req.params.table;
-        this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/tables/", name: "Table List" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
+        this.args.breadcrumbs = [{ link: "/services/tables/", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
         this.args.path = this.req.path;
         this.args.host = settings.application.publichost || this.req.headers.host;
 
