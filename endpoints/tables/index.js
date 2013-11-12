@@ -44,7 +44,7 @@ app.all('/services/tables', function (req, res) {
 
     try {
         //Check to see if we've stashed the list already.
-        if (settings.tableList) {
+        if (settings.tableList && !args.search) {
             //Render HTML page with results at bottom
             args.featureCollection = settings.tableList;
             common.respond(req, res, args);
