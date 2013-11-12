@@ -33,17 +33,52 @@ block content
 			h3 Code Sample
 			span Here's how to use these dynamically craeted maps in your application
 
-			h4 POST - Leaflet Example
+			h4 Leaflet Example - add this
 			pre.codePreview
 				|//Create a leaflet map
 				|var map = L.map('map');
 				|&nbsp;
 				|//Add the tiled layer
 				|L.tileLayer('#{featureCollection[0].link}/{z}/{x}/{y}.png').addTo(map);
-	
+
 			div.helpLink 
 				|Get more help with 
 				a(href='http://leafletjs.com/',target='_blank') Leaflet 
+
+			
+			h3 Optional Override of styling using 
+				a(href='https://www.mapbox.com/tilemill/docs/manual/carto/', target='_blank') CartoCSS
+			span To override the default styling, call the dynamicMap endpoint and provide 2 querystring arguments:  
+				b className 
+				|and 
+				b style
+			div 
+				b className 
+				|will be applied to your datasource (can be any name, as long as you refernce it in your 
+				b style
+				|)
+			div 
+				b style 
+				|should be an encoded string of your CartoCSS, referencing your 
+				b className 
+				|variable.
+			div You only need to call this method when you want to change the style.  Subsequent tile requests should honor the new style.
+
+			pre.codePreview
+				|//UN-encoded CartoCSS: #roads_table { polygon-fill: #000000; polygon-opacity:0.65; }
+				|//encoded CartoCSS: %23roads_table%7B+polygon-fill%3A+%23000000%3B+polygon-opacity%3A0.65%3B+%7D
+				|className: roads_table
+				|&nbsp;
+				|//Call to update styling for this endpoint
+				|#{featureCollection[0].link}?className=roads_table&style=%23roads_table%7B+polygon-fill%3A+%23000000%3B+polygon-opacity%3A0.65%3B+%7D
+	
+
+
+			h3 Optional force redraw of tile 
+			span To force a redraw of a tile, include the optional parameter fromCache=false 
+			pre.codePreview
+				|//Request tile, force re-render
+				|#{featureCollection[0].link}/{z}/{x}/{y}.png?fromCache=false
 
 	-if(infoMessage){
 		div.infoMessage
