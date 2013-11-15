@@ -124,6 +124,12 @@ So, cd into PGRestAPI/node_modules/nodetiles-core, and then
 With any luck, nodetiles-core should now be installed.
 
 
+###Installing nodetiles-PostGIS
+For the time being, this module is stored in the /PGRestAPI/lib folder.
+Install this module by cd-ing into the /PGRestAPI/lib/nodetiles-postgis folder and then
+	npm install
+
+
 ###To Run as a Windows Service
 When starting as a windows service, install winser
 	

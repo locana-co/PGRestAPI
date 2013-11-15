@@ -126,25 +126,21 @@ pre {
 }
 ::-webkit-input-placeholder {
   /* WebKit browsers */
-
   color: #999;
   background-color: #f1f1f1;
 }
 :-moz-placeholder {
   /* Mozilla Firefox 4 to 18 */
-
   color: #999;
   background-color: #f1f1f1;
 }
 ::-moz-placeholder {
   /* Mozilla Firefox 19+ */
-
   color: #999;
   background-color: #f1f1f1;
 }
 :-ms-input-placeholder {
   /* Internet Explorer 10+ */
-
   color: #999;
   background-color: #f1f1f1;
 }
