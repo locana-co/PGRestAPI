@@ -1,4 +1,4 @@
-PGRestAPI - Windows Installation
+PGRestAPI - Ubuntu 12/13 Installation
 =========
 
 ## Dependencies
