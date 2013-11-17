@@ -5,12 +5,13 @@ block content
 
 	div.floatingColumns
 		h4 Column List
-		-if(columnNames){
-			- each item in columnNames
-				div.littleSpace= item.column_name + " (" + item.data_type + ")"
-		-}else{
-			div.littlespace No information found for this table.
-		-}	
+		div.columnList
+			-if(columnNames){
+				- each item in columnNames
+					div.littleSpace= item.column_name + " (" + item.data_type + ")"
+			-}else{
+				div.littlespace No information found for this table.
+			-}	
 
 	div.section
 		div.headingTitle Entry Fields

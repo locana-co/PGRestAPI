@@ -197,13 +197,23 @@ input:-moz-placeholder, textarea:-moz-placeholder {
 }
 
 .floatingColumns {
-    position: absolute;
-    right: 0;
+    float: left;
+    margin-right: 60px;
 }
 
-    .floatingColumns .littleSpace {
-        margin-left: 0;
-    }
+.floatingColumns .littleSpace {
+    margin-left: 0;
+    border-bottom: 1px solid #000;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+    padding: 10px;
+    margin: 0px;
+    background-color: #f1f1f2;
+}
+
+.floatingColumns .columnList .littleSpace:first-child {
+    border-top: 1px solid #000;   
+}
 
 .widget {
     background-color: #fff;
