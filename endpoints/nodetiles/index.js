@@ -6,7 +6,7 @@ var express = require('express'),
     settings = require('../../settings');
 
 //Module-specific requires:
-var nodetiles = require('nodetiles-core'),
+var nodetiles = require('nodetiles-core-cache'),
     nodetilespostGIS = require('../../lib/nodetiles-postgis'),
     GeoJsonSource = nodetiles.datasources.GeoJson,
     DynamicGeoJsonSource = nodetiles.datasources.DynamicGeoJson,
