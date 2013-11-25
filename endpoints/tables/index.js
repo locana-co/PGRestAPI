@@ -609,7 +609,7 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
                         "drop table if exists _zstemp; " +  //TODO: Add session ID (or something) to make sure this is dynamic.
                         "create temporary table _zstemp as " +
 
-                        "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + ", ST_ASGeoJSON(buffer) as geom " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+                        "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + ", ST_ASGeoJSON(buffer) as geom, ST_AsText(buffer) as wkt " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
                         " FROM " + this.args.table +
                         " WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
 
