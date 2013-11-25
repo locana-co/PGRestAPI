@@ -73,7 +73,6 @@ operation.Query = "DO $$DECLARE " +
 "orig_srid int; " +
 "BEGIN " +
 "drop table if exists _gptemp; " +
-"--create all polygons " +
 "create temporary table _gptemp as " +
 "select  " +
 "a.landuse, " +

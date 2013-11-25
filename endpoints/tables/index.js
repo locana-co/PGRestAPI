@@ -547,7 +547,6 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
                 }
             }
 
-
             //Dynamically fetch the raster name for this table.
             getRasterColumnName(this.args.table, this);
         }
