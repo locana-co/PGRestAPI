@@ -247,7 +247,6 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
         });
     }); 
 
-    debugger;
     //execute
     post_req.write(post_data);
     post_req.end(); 

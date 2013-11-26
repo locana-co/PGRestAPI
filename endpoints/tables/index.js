@@ -382,7 +382,7 @@ app.all('/services/tables/:table/query', flow.define(
             //For each geometry in the table, give an intersects clause
             var wkt = this.args.wkt;
             var wkt_array = [];
-            this.args.geom_fields_array.forEach(function (item) {
+            geom_fields_array.forEach(function (item) {
                 wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
             });
             this.wkt = wkt_array;
@@ -394,7 +394,7 @@ app.all('/services/tables/:table/query', flow.define(
         if (this.where.length > 0) {
             this.where = " WHERE " + this.where;
             if (this.wkt) {
-                this.where += " AND (" + this.wkt.join(" OR ") + ")";
+                this.where += (" AND (" + this.wkt.join(" OR ") + ")");
             }
         }
         else {
@@ -595,16 +595,16 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
                         "pref int; " +
                         "BEGIN " +
                         "geomgeog:= ST_Transform(input,4326); " +
-                        "IF (ST_Y(geomgeog))>0 THEN " +
-                        "pref:=32600; " +
-                        "ELSE " +
-                        "pref:=32700; " +
-                        "END IF; " +
-                        "zone:=floor((ST_X(geomgeog)+180)/6)+1; " +
+                        //See if incoming WKT is a point.  If so, use the ST_Y to find the right zone.  Otherwize, get the centroid, and get the y from that.
+                        (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "IF (ST_Y(geomgeog))>0 THEN pref:=32600; ELSE pref:=32700; END IF;" : "IF (ST_Y(ST_CENTROID(geomgeog))) > 0 THEN pref:=32600; ELSE pref:=32700; END IF; ") +
+                        (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "zone:=floor((ST_X(geomgeog)+180)/6)+1; " : "zone:=floor((ST_X(ST_CENTROID(geomgeog))+180)/6)+1; ") +
+
+                        " " +
                         "orig_srid:= ST_SRID(input); " +
                         "utm_srid:= zone+pref; " +
 
-                        "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326); " +
+                        //If a point, buffer.  Otherwise, don't.
+                        (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326);" : "buffer:=input; ") +
 
                         "drop table if exists _zstemp; " +  //TODO: Add session ID (or something) to make sure this is dynamic.
                         "create temporary table _zstemp as " +
