@@ -141,7 +141,6 @@ exports.createPGTileQueryRenderer = flow.define(
     function (table, geom_field, epsgSRID, cartoFile) {
 
         this.table = table;
-        this.whereClause = whereClause;
 
         var name;
         var stylepath = __dirname + '/cartocss/';
