@@ -80,8 +80,10 @@ exports.createPGTileRenderer = flow.define(
             'estimate_extent': 'true'
         };
 
+        var _self = this;
+
         //Create Route for this table
-        app.use('/services/tables/' + this.table + '/dynamicMap', function (req,res) {
+        app.use('/services/tables/' + _self.table + '/dynamicMap', function (req, res) {
 
             parseXYZ(req, TMS_SCHEME, function (err, params) {
                 if (err) {
@@ -91,7 +93,7 @@ exports.createPGTileRenderer = flow.define(
                     try {
                         //create map and layer
                         var map = new mapnik.Map(256, 256, mercator.proj4);
-                        var layer = new mapnik.Layer(this.table, mercator.proj4);
+                        var layer = new mapnik.Layer(_self.table, mercator.proj4);
                         var postgis = new mapnik.Datasource(postgis_settings);
                         var bbox = mercator.xyz_to_envelope(parseInt(params.x),
                                                                parseInt(params.y),
@@ -127,7 +129,7 @@ exports.createPGTileRenderer = flow.define(
             });
         });
 
-        console.log("Created dynamic service: " + '/services/tables/' + this.table + '/dynamicMap');
+        console.log("Created dynamic service: " + '/services/tables/' + _self.table + '/dynamicMap');
     }
 )
 
