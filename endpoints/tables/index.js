@@ -392,7 +392,7 @@ app.all('/services/tables/:table/query', flow.define(
         if (this.args.where) this.where = " " + this.where;
 
         if (this.where.length > 0) {
-            this.where = " WHERE " + this.where;
+            this.where = " WHERE " + "(" + this.where + ")"; //make sure where clause stands on it's own by wrapping in parenthesis
             if (this.wkt) {
                 this.where += (" AND (" + this.wkt.join(" OR ") + ")");
             }
