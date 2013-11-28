@@ -228,7 +228,7 @@ exports.createPGTileQueryRenderer = flow.define(
                     'host': settings.pg.server,
                     'port': settings.pg.port = '5432',
                     'dbname': settings.pg.database,
-                    'table': "(SELECT " + _self.geom_field + " from " + _self.table + ") as " + _self.table + (args.where ? " WHERE " + args.where : ""),
+                    'table': (args.where ? "(SELECT " + _self.geom_field + " from " + _self.table + " WHERE " + args.where + ") as " + _self.table: _self.table),
                     'user': settings.pg.username,
                     'password': settings.pg.password,
                     'type': 'postgis',
