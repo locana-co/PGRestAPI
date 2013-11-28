@@ -232,7 +232,7 @@ exports.createPGTileQueryRenderer = flow.define(
                 //We're all good. Make the picture.
                 try {
                     //create map and layer
-                    var map = new mapnik.Map(args.width, args.height, mercator.proj4); //width, height
+                    var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
                     var layer = new mapnik.Layer(_self.table, mercator.proj4);
                     var postgis = new mapnik.Datasource(postgis_settings);
                     var bbox = [bbox]; //ll lat, ll lon, ur lat, ur lon
