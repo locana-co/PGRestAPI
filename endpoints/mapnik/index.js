@@ -191,7 +191,7 @@ exports.createPGTileQueryRenderer = flow.define(
         app.use('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
 
             //Check for correct args
-            //Needs: width (px), height (px), bbox (ymax, xmin, ymin, xmax), where, optional styling
+            //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
             var args = {};
 
             //Grab POST or QueryString args depending on type
@@ -235,7 +235,10 @@ exports.createPGTileQueryRenderer = flow.define(
                     var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
                     var layer = new mapnik.Layer(_self.table, mercator.proj4);
                     var postgis = new mapnik.Datasource(postgis_settings);
-                    var bbox = [args.bbox]; //ll lat, ll lon, ur lat, ur lon
+
+                    var floatbbox = args.bbox.split(",");
+
+                    var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]]; //ll lat, ll lon, ur lat, ur lon
 
                     layer.datasource = postgis;
                     layer.styles = ['style'];
