@@ -141,6 +141,7 @@ exports.createPGTileQueryRenderer = flow.define(
     function (table, geom_field, epsgSRID, cartoFile) {
 
         this.table = table;
+        this.geom_field = geom_field;
 
         var name;
         var stylepath = __dirname + '/cartocss/';
@@ -171,19 +172,6 @@ exports.createPGTileQueryRenderer = flow.define(
     },
     function (fullpath) {
         //Flow from after getting full path to Style file
-
-        //Vacuum Analyze needs to be run on every table in the DB.
-        //Also, data should be in 3857 SRID
-        var postgis_settings = {
-            'host': settings.pg.server,
-            'port': settings.pg.port = '5432',
-            'dbname': settings.pg.database,
-            'table': this.table,
-            'user': settings.pg.username,
-            'password': settings.pg.password,
-            'type': 'postgis',
-            'estimate_extent': 'true'
-        };
 
         var _self = this;
 
@@ -229,6 +217,24 @@ exports.createPGTileQueryRenderer = flow.define(
                     return;
                 }
 
+                //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
+                if (args.where) {
+                    //Validate where - TODO
+                }
+
+                //Vacuum Analyze needs to be run on every table in the DB.
+                //Also, data should be in 3857 SRID
+                var postgis_settings = {
+                    'host': settings.pg.server,
+                    'port': settings.pg.port = '5432',
+                    'dbname': settings.pg.database,
+                    'table': "(SELECT " + this.geom_field + " from " + _self.table + ") as " + _self.table + (args.where ? " " + args.where : ""),
+                    'user': settings.pg.username,
+                    'password': settings.pg.password,
+                    'type': 'postgis',
+                    'estimate_extent': 'true'
+                };
+
                 //We're all good. Make the picture.
                 try {
                     //create map and layer
@@ -248,13 +254,12 @@ exports.createPGTileQueryRenderer = flow.define(
                         if (err) throw err;
                         map.add_layer(layer);
 
-                        debugger;
                         console.log(map.toXML()); // Debug settings
 
                         map.extent = bbox;
                         var im = new mapnik.Image(map.width, map.height);
                         map.render(im, function (err, im) {
-                            debugger;
+                            
                             if (err) {
                                 throw err;
                             } else {
