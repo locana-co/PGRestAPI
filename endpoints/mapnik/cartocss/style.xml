@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+
+<Map minimum-version="2.0.0">
+  <Style name="polygon">
+    <Rule>
+      <PolygonSymbolizer fill="white" />
+      <LineSymbolizer stroke="black" stroke-width="2" />
+      <PointSymbolizer/>
+    </Rule>
+  </Style>
+</Map>
