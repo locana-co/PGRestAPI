@@ -5,8 +5,7 @@
   <Style name="style">
     <Rule>
       <PolygonSymbolizer fill="white" />
-      <LineSymbolizer stroke="black" stroke-width="2" />
-      <PointSymbolizer/>
+      <LineSymbolizer stroke="black" stroke-width=".2" />
     </Rule>
   </Style>
 </Map>
