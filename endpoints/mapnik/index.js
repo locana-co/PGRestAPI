@@ -245,11 +245,13 @@ exports.createPGTileQueryRenderer = flow.define(
                         if (err) throw err;
                         map.add_layer(layer);
 
+                        debugger;
                         console.log(map.toXML()); // Debug settings
 
                         map.extent = bbox;
                         var im = new mapnik.Image(map.width, map.height);
                         map.render(im, function (err, im) {
+                            debugger;
                             if (err) {
                                 throw err;
                             } else {
