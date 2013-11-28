@@ -73,7 +73,7 @@ exports.createPGTileRenderer = flow.define(
             'host': settings.pg.server,
             'port': settings.pg.port = '5432',
             'dbname': settings.pg.database,
-            'table': table,
+            'table': this.table,
             'user': settings.pg.username,
             'password': settings.pg.password,
             'type': 'postgis',
