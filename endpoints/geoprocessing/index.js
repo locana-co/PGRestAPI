@@ -7,7 +7,7 @@ var express = require('express'),
 
 //The next requires are specific to this module only
 var gp = require('./operations');
-var nodetiles = require('../../endpoints/nodetiles');
+
 //End module specific requires
 
 var app = module.exports = express();
@@ -118,7 +118,7 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
 
                     //if GP operation specifies output image service, then spin one up
                     if (gpOperation.outputImage && gpOperation.outputImage == true) {
-                        nodetiles.createDynamicGeoJSONEndpoint(features, gpOperation.name, "4326", "style.mss"); //Use a dyanmic GP ID here to append to the name.
+                        //nodetiles.createDynamicGeoJSONEndpoint(features, gpOperation.name, "4326", "style.mss"); //Use a dyanmic GP ID here to append to the name.
                     }
 
                     args.view = "geoprocessing_operation";
