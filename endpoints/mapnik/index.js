@@ -107,7 +107,7 @@ exports.createPGTileRenderer = flow.define(
                             if (err) throw err;
                             map.add_layer(layer);
 
-                            // console.log(map.toXML()); // Debug settings
+                            console.log(map.toXML()); // Debug settings
 
                             map.extent = bbox;
                             var im = new mapnik.Image(map.width, map.height);
