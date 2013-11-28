@@ -235,7 +235,7 @@ exports.createPGTileQueryRenderer = flow.define(
                     var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
                     var layer = new mapnik.Layer(_self.table, mercator.proj4);
                     var postgis = new mapnik.Datasource(postgis_settings);
-                    var bbox = [bbox]; //ll lat, ll lon, ur lat, ur lon
+                    var bbox = [args.bbox]; //ll lat, ll lon, ur lat, ur lon
 
                     layer.datasource = postgis;
                     layer.styles = ['style'];
