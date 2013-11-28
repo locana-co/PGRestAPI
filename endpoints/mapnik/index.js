@@ -31,6 +31,7 @@ exports.createCachedFolder = function (table) {
     });
 }
 
+//Create a static renderer that will always use the default styling
 exports.createPGTileRenderer = flow.define(
 
     function (table, geom_field, epsgSRID, cartoFile) {
@@ -133,47 +134,147 @@ exports.createPGTileRenderer = flow.define(
     }
 )
 
-//exports.createPGTileRenderer = function (table, geom_field, epsgSRID, cartoCssFile) {
-//    var name;
 
-//    if (!cartoCssFile) {
-//        //If not passed in, see if there is a <tablename>.mss file for this table.
-//        //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
-//        fs.stat(__dirname + '/cartocss/' + table + ".mss", function (err, stat) {
-//            if (!err) {
-//                //Style file exists.
-//                cartoCssFile = table + ".mss";
-//            } else {
-//                //No file.  Use defaults.
-//                //otherwise, use the default style.mss
-//                cartoCssFile = "style.mss"; //Default
-//                name = "default"; //A default class for this table, only used if a style file isn't passed in
-//            }
+//Create a renderer that will accept dynamic queries and styling and bring back a single image to fit the map's extent.
+exports.createPGTileQueryRenderer = flow.define(
 
-//            /* Create your map context */
-//            var map = new nodetiles.Map();
+    function (table, geom_field, epsgSRID, cartoFile) {
 
-//            map.assetsPath = path.join(__dirname, "cartocss"); //This is the cartoCSS path
+        this.table = table;
+        this.whereClause = whereClause;
+
+        var name;
+        var stylepath = __dirname + '/cartocss/';
+        var fullpath = "";
+
+        //Set the path to the style file
+        if (cartoFile) {
+            //Passed in
+            fullpath = stylepath + cartoFile;
+        }
+        else {
+            //default
+            fullpath = stylepath + table + ".xml";
+        }
+
+        var flo = this;
+
+        //See if there is a <tablename>.mss/xml file for this table.
+        //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+        fs.stat(fullpath, function (err, stat) {
+            if (err) {
+                //No file.  Use defaults.
+                fullpath = stylepath + "style.xml"; //Default
+            }
+
+            flo(fullpath); //flow to next function
+        });
+    },
+    function (fullpath) {
+        //Flow from after getting full path to Style file
+
+        //Vacuum Analyze needs to be run on every table in the DB.
+        //Also, data should be in 3857 SRID
+        var postgis_settings = {
+            'host': settings.pg.server,
+            'port': settings.pg.port = '5432',
+            'dbname': settings.pg.database,
+            'table': this.table,
+            'user': settings.pg.username,
+            'password': settings.pg.password,
+            'type': 'postgis',
+            'estimate_extent': 'true'
+        };
+
+        var _self = this;
+
+        //Create Route for this table
+        app.use('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
+
+            //Check for correct args
+            //Needs: width (px), height (px), bbox (ymax, xmin, ymin, xmax), where, optional styling
+            var args = {};
+
+            //Grab POST or QueryString args depending on type
+            if (req.method.toLowerCase() == "post") {
+                //If a post, then arguments will be members of the this.req.body property
+                args = req.body;
+            }
+            else if (req.method.toLowerCase() == "get") {
+                //If request is a get, then args will be members of the this.req.query property
+                args = req.query;
+            }
+
+            // check to see if args were provided
+            if (JSON.stringify(args) != '{}') {
+                //are all mandatory args provided?
+                var missing = "Please provide"
+                var missingArray = [];
+                if (!args.width){
+                    missingArray.push("width");
+                }
+
+                if(!args.height){
+                    missingArray.push("height");
+                }
+
+                if(!args.bbox){
+                    missingArray.push("bbox");
+                }
+                
+                if (missingArray.length > 0) {
+                    missing += missingArray.join(", ");
+                    //respond with message.
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    res.end(missing);
+                    return;
+                }
+
+                //We're all good. Make the picture.
+                try {
+                    //create map and layer
+                    var map = new mapnik.Map(args.width, args.height, mercator.proj4); //width, height
+                    var layer = new mapnik.Layer(_self.table, mercator.proj4);
+                    var postgis = new mapnik.Datasource(postgis_settings);
+                    var bbox = [bbox]; //ll lat, ll lon, ur lat, ur lon
+
+                    layer.datasource = postgis;
+                    layer.styles = ['style'];
+
+                    map.bufferSize = 64;
+                    map.load(path.join(fullpath), { strict: true }, function (err, map) {
+                        if (err) throw err;
+                        map.add_layer(layer);
+
+                        console.log(map.toXML()); // Debug settings
+
+                        map.extent = bbox;
+                        var im = new mapnik.Image(map.width, map.height);
+                        map.render(im, function (err, im) {
+                            if (err) {
+                                throw err;
+                            } else {
+                                res.writeHead(200, { 'Content-Type': 'image/png' });
+                                res.end(im.encodeSync('png'));
+                            }
+                        });
+                    });
+                }
+                catch (err) {
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    res.end(err.message);
+                }
 
 
-//            /* Add some data from PostGIS! */
-//            map.addData(new nodetilespostGIS({
-//                connectionString: global.conString,
-//                tableName: table,
-//                geomField: geom_field,
-//                projection: "EPSG:" + epsgSRID,
-//                name: name //if this is empty, the table name will be used as the class selector
-//            }));
+            } else {
+                //if no args, pass to regular tile renderer
 
-//            map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
+            }
+        });
 
-//            app.use('/services/tables/' + table + '/dynamicMap', nodetiles.route.tilePng2Disk({ map: map, cachePath: "./public/cached_nodetiles/" + table })); //tilePng2Disk will try to read from cached files on disk. Otherwise, makes the tile.  originally was tilePng
-//            console.log("Created dynamic service: " + '/services/tables/' + table + '/dynamicMap');
-
-
-//        });
-//    }
-//}
+        console.log("Created dynamic query service: " + '/services/tables/' + _self.table + '/dynamicQueryMap');
+    }
+)
 
     //This should take in a geoJSON object and create a new route on the fly - return the URL?
 exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoCssFile) {
