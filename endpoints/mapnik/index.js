@@ -7,8 +7,8 @@ var express = require('express'),
 
 //Module-specific requires:
 var mapnik = require('mapnik'),
-    mercator = require('/utils/sphericalmercator.js'),
-    parseXYZ = require('/utils/tile.js').parseXYZ,
+    mercator = require('./utils/sphericalmercator.js'),
+    parseXYZ = require('./utils/tile.js').parseXYZ,
     path = require('path'),
     fs = require("fs"),
     flow = require('flow');
@@ -51,6 +51,8 @@ exports.createPGTileRenderer = flow.define(
             fullpath = stylepath + table + ".xml";
         }
 
+        var flo = this;
+
         //See if there is a <tablename>.mss/xml file for this table.
         //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
         fs.stat(fullpath, function (err, stat) {
@@ -59,7 +61,7 @@ exports.createPGTileRenderer = flow.define(
                 fullpath = stylepath + "style.xml"; //Default
             }
 
-            this(fullpath); //flow to next function
+            flo(fullpath); //flow to next function
         });
     },
     function (fullpath) {
