@@ -7,8 +7,8 @@ var express = require('express'),
 
 //Module-specific requires:
 var mapnik = require('mapnik'),
-    mercator = require('utils/sphericalmercator'),
-    parseXYZ = require('../../utils/tile.js').parseXYZ,
+    mercator = require('/utils/sphericalmercator.js'),
+    parseXYZ = require('/utils/tile.js').parseXYZ,
     path = require('path'),
     fs = require("fs"),
     flow = require('flow');
