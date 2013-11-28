@@ -12,11 +12,8 @@ var flow = require('flow'),
     path = require("path"),
     blower = require("../../lib/datablower");
 
-var nodetiles = require('../../endpoints/nodetiles');
-
 var app = exports.app = express();
 
-app.use(nodetiles.app);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 
