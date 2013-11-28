@@ -222,15 +222,13 @@ exports.createPGTileQueryRenderer = flow.define(
                     //Validate where - TODO
                 }
 
-                debugger;
-
                 //Vacuum Analyze needs to be run on every table in the DB.
                 //Also, data should be in 3857 SRID
                 var postgis_settings = {
                     'host': settings.pg.server,
                     'port': settings.pg.port = '5432',
                     'dbname': settings.pg.database,
-                    'table': "(SELECT " + this.geom_field + " from " + _self.table + ") as " + _self.table + (args.where ? " WHERE " + args.where : ""),
+                    'table': "(SELECT " + _self.geom_field + " from " + _self.table + ") as " + _self.table + (args.where ? " WHERE " + args.where : ""),
                     'user': settings.pg.username,
                     'password': settings.pg.password,
                     'type': 'postgis',
