@@ -278,6 +278,7 @@ exports.createPGTileQueryRenderer = flow.define(
                                 layer.styles = ['style'];
 
                                 map.bufferSize = 64;
+                                console.log(output);
                                 map.fromString(output, { strict: true }, function (err, map) {
                                     console.log(map.toXML()); // Debug settings
 
