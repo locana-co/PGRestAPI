@@ -155,7 +155,7 @@ exports.createPGTileQueryRenderer = flow.define(
         }
         else {
             //default
-            fullpath = stylepath + table + ".mms";
+            fullpath = stylepath + table + ".mss";
         }
 
         var flo = this;
@@ -165,7 +165,7 @@ exports.createPGTileQueryRenderer = flow.define(
         fs.stat(fullpath, function (err, stat) {
             if (err) {
                 //No file.  Use defaults.
-                fullpath = stylepath + "style.mms"; //Default
+                fullpath = stylepath + "style.mss"; //Default
             }
 
             flo(fullpath); //flow to next function
