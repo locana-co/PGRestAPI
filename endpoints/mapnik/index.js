@@ -279,10 +279,12 @@ exports.createPGTileQueryRenderer = flow.define(
 
                                 map.bufferSize = 64;
                                 map.fromString(output, { strict: true }, function (err, map) {
+                                    console.log(map.toXML()); // Debug settings
+
+
                                     if (err) throw err;
                                     map.add_layer(layer);
 
-                                    console.log(map.toXML()); // Debug settings
 
                                     map.extent = bbox;
                                     var im = new mapnik.Image(map.width, map.height);
