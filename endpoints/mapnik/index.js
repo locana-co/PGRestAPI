@@ -11,7 +11,8 @@ var mapnik = require('mapnik'),
     parseXYZ = require('./utils/tile.js').parseXYZ,
     path = require('path'),
     fs = require("fs"),
-    flow = require('flow');
+    flow = require('flow'),
+    carto = require('carto');
 
 var TMS_SCHEME = false;
 
@@ -154,17 +155,17 @@ exports.createPGTileQueryRenderer = flow.define(
         }
         else {
             //default
-            fullpath = stylepath + table + ".xml";
+            fullpath = stylepath + table + ".mms";
         }
 
         var flo = this;
 
-        //See if there is a <tablename>.mss/xml file for this table.
+        //See if there is a <tablename>.mml file for this table.
         //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
         fs.stat(fullpath, function (err, stat) {
             if (err) {
                 //No file.  Use defaults.
-                fullpath = stylepath + "style.xml"; //Default
+                fullpath = stylepath + "style.mms"; //Default
             }
 
             flo(fullpath); //flow to next function
@@ -175,113 +176,133 @@ exports.createPGTileQueryRenderer = flow.define(
 
         var _self = this;
 
-        //Create Route for this table
-        app.use('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
-
-            //Check for correct args
-            //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
-            var args = {};
-
-            //Grab POST or QueryString args depending on type
-            if (req.method.toLowerCase() == "post") {
-                //If a post, then arguments will be members of the this.req.body property
-                args = req.body;
-            }
-            else if (req.method.toLowerCase() == "get") {
-                //If request is a get, then args will be members of the this.req.query property
-                args = req.query;
-            }
-
-            // check to see if args were provided
-            if (JSON.stringify(args) != '{}') {
-                //are all mandatory args provided?
-                var missing = "Please provide"
-                var missingArray = [];
-                if (!args.width){
-                    missingArray.push("width");
-                }
-
-                if(!args.height){
-                    missingArray.push("height");
-                }
-
-                if(!args.bbox){
-                    missingArray.push("bbox");
-                }
-                
-                if (missingArray.length > 0) {
-                    missing += missingArray.join(", ");
-                    //respond with message.
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end(missing);
-                    return;
-                }
-
-                //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
-                if (args.where) {
-                    //Validate where - TODO
-                }
-
-                //Vacuum Analyze needs to be run on every table in the DB.
-                //Also, data should be in 3857 SRID
-                var postgis_settings = {
-                    'host': settings.pg.server,
-                    'port': settings.pg.port = '5432',
-                    'dbname': settings.pg.database,
-                    'table': (args.where ? "(SELECT " + _self.geom_field + " from " + _self.table + " WHERE " + args.where + ") as " + _self.table: _self.table),
-                    'user': settings.pg.username,
-                    'password': settings.pg.password,
-                    'type': 'postgis',
-                    'estimate_extent': 'true'
-                };
-
-                //We're all good. Make the picture.
-                try {
-                    //create map and layer
-                    var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
-                    var layer = new mapnik.Layer(_self.table, mercator.proj4);
-                    var postgis = new mapnik.Datasource(postgis_settings);
-
-                    var floatbbox = args.bbox.split(",");
-
-                    var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]]; //ll lat, ll lon, ur lat, ur lon
-
-                    layer.datasource = postgis;
-                    layer.styles = ['style'];
-
-                    map.bufferSize = 64;
-                    map.load(path.join(fullpath), { strict: true }, function (err, map) {
-                        if (err) throw err;
-                        map.add_layer(layer);
-
-                        //console.log(map.toXML()); // Debug settings
-
-                        map.extent = bbox;
-                        var im = new mapnik.Image(map.width, map.height);
-                        map.render(im, function (err, im) {
-                            
-                            if (err) {
-                                throw err;
-                            } else {
-                                res.writeHead(200, { 'Content-Type': 'image/png' });
-                                res.end(im.encodeSync('png'));
-                            }
-                        });
-                    });
-                }
-                catch (err) {
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end(err.message);
-                }
-
-
+        new carto.Renderer({
+            filename: fullpath,
+            local_data_dir: path.dirname(fullpath),
+        }).render(data, function(err, output) {
+        if (err) {
+            if (Array.isArray(err)) {
+                err.forEach(function(e) {
+                    carto.writeError(e, options);
+                });
             } else {
-                //if no args, pass to regular tile renderer
-
+                throw err;
             }
-        });
+        } else {
 
-        console.log("Created dynamic query service: " + '/services/tables/' + _self.table + '/dynamicQueryMap');
+            //loaded file.  Proceed.
+
+            //Create Route for this table
+            app.use('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
+
+                //Check for correct args
+                //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
+                var args = {};
+
+                //Grab POST or QueryString args depending on type
+                if (req.method.toLowerCase() == "post") {
+                    //If a post, then arguments will be members of the this.req.body property
+                    args = req.body;
+                }
+                else if (req.method.toLowerCase() == "get") {
+                    //If request is a get, then args will be members of the this.req.query property
+                    args = req.query;
+                }
+
+                // check to see if args were provided
+                if (JSON.stringify(args) != '{}') {
+                    //are all mandatory args provided?
+                    var missing = "Please provide"
+                    var missingArray = [];
+                    if (!args.width) {
+                        missingArray.push("width");
+                    }
+
+                    if (!args.height) {
+                        missingArray.push("height");
+                    }
+
+                    if (!args.bbox) {
+                        missingArray.push("bbox");
+                    }
+
+                    if (missingArray.length > 0) {
+                        missing += missingArray.join(", ");
+                        //respond with message.
+                        res.writeHead(500, { 'Content-Type': 'text/plain' });
+                        res.end(missing);
+                        return;
+                    }
+
+                    //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
+                    if (args.where) {
+                        //Validate where - TODO
+                    }
+
+                    //Vacuum Analyze needs to be run on every table in the DB.
+                    //Also, data should be in 3857 SRID
+                    var postgis_settings = {
+                        'host': settings.pg.server,
+                        'port': settings.pg.port = '5432',
+                        'dbname': settings.pg.database,
+                        'table': (args.where ? "(SELECT " + _self.geom_field + " from " + _self.table + " WHERE " + args.where + ") as " + _self.table : _self.table),
+                        'user': settings.pg.username,
+                        'password': settings.pg.password,
+                        'type': 'postgis',
+                        'estimate_extent': 'true'
+                    };
+
+                    //We're all good. Make the picture.
+                    try {
+                        //create map and layer
+                        var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
+                        var layer = new mapnik.Layer(_self.table, mercator.proj4);
+                        var postgis = new mapnik.Datasource(postgis_settings);
+
+                        var floatbbox = args.bbox.split(",");
+
+                        var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]]; //ll lat, ll lon, ur lat, ur lon
+
+                        layer.datasource = postgis;
+                        layer.styles = ['style'];
+
+                        map.bufferSize = 64;
+                        map.fromString(output, { strict: true }, function (err, map) {
+                            if (err) throw err;
+                            map.add_layer(layer);
+
+                            console.log(map.toXML()); // Debug settings
+
+                            map.extent = bbox;
+                            var im = new mapnik.Image(map.width, map.height);
+                            map.render(im, function (err, im) {
+
+                                if (err) {
+                                    throw err;
+                                } else {
+                                    res.writeHead(200, { 'Content-Type': 'image/png' });
+                                    res.end(im.encodeSync('png'));
+                                }
+                            });
+                        });
+                    }
+                    catch (err) {
+                        res.writeHead(500, { 'Content-Type': 'text/plain' });
+                        res.end(err.message);
+                    }
+
+
+                } else {
+                    //if no args, pass to regular tile renderer
+
+                }
+            });
+
+            console.log("Created dynamic query service: " + '/services/tables/' + _self.table + '/dynamicQueryMap');
+        }
+    });
+
+
     }
 )
 
