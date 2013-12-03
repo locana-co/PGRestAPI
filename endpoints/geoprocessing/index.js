@@ -118,7 +118,7 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
 
                     //if GP operation specifies output image service, then spin one up
                     if (gpOperation.outputImage && gpOperation.outputImage == true) {
-                        nodetiles.createDynamicGeoJSONEndpoint(features, gpOperation.name, "4326", "style.mss"); //Use a dyanmic GP ID here to append to the name.
+                        //nodetiles.createDynamicGeoJSONEndpoint(features, gpOperation.name, "4326", "style.mss"); //Use a dyanmic GP ID here to append to the name.
                     }
 
                     args.view = "geoprocessing_operation";
