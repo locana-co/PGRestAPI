@@ -76,19 +76,20 @@ operation.Query = "DO $$DECLARE " +
 "select a.landuse, " +
 "ST_UNION(st_intersection(a.geom,b.geom)) as geom " +
 "from {country}_urbanareas a " +
-"inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(geom, {srid}), {buffer_distance}), 4326 )) as geom, featuretype " +
+"inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(geom, {srid}), {buffer_distance}), 4326 )) as geom " +
 "FROM {country}_cicos " +
 "WHERE {where_clause} " +
-"GROUP BY featuretype) b on " +
+") b on " +
 "st_intersects(a.geom, b.geom) " +
-"WHERE landuse <> 'Rural' " +
+//"WHERE landuse <> 'Rural' " +
 "GROUP BY a.landuse; " +
+"CREATE INDEX _gptemp_gix ON _gptemp USING GIST (geom); " + 
 "END$$; " +
-"SELECT SUM((ST_SummaryStats(ST_Clip(rast, _gptemp.geom , true), 1, true)).sum) as  sum, _gptemp.landuse, ST_AsGeoJSON(_gptemp.geom) as geom " +
+"SELECT SUM((_st_summarystats(ST_Clip(rast,_gptemp.geom, true), 1, true, .99)).sum) as  sum, _gptemp.landuse, ST_AsGeoJSON(_gptemp.geom) as geom " +
 "FROM uganda_population_raster, _gptemp " +
 "WHERE ST_Intersects(_gptemp.geom,rast) " +
-"AND landuse <> 'Rural' " +
-"GROUP BY _gptemp.landuse, ST_AsGeoJSON(_gptemp.geom); ";
+//"AND landuse <> 'Rural' " +
+"GROUP BY _gptemp.landuse, _gptemp.geom; ";
 
 
 
