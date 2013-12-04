@@ -16,3 +16,9 @@ node_modules/
 
 npm-debug.log
 
+<<<<<<< HEAD
+=======
+public/topojson/output/
+public/geojson/output/
+public/blast_output
+>>>>>>> datablaster
