@@ -18,6 +18,8 @@ var TMS_SCHEME = false;
 
 var app = exports.app = express();
 
+var styleExtension = '.xml';
+
 exports.createCachedFolder = function (table) {
     var folder = './public/cached_nodetiles/' + table;
     //create a folder for this table in public/cached_nodetiles if it doesn't exist
@@ -50,7 +52,7 @@ exports.createPGTileRenderer = flow.define(
         }
         else {
             //default
-            fullpath = stylepath + table + ".xml";
+            fullpath = stylepath + table + styleExtension;
         }
 
         var flo = this;
@@ -176,11 +178,8 @@ exports.createPGTileQueryRenderer = flow.define(
 
         var _self = this;
 
-        debugger;
-
         fs.readFile(fullpath, 'utf8', function (err, data) {
 
-            debugger;
             if (err) {
                 return console.log(err);
             }
@@ -190,7 +189,6 @@ exports.createPGTileQueryRenderer = flow.define(
                 local_data_dir: path.dirname(fullpath),
             }).renderMSS(data, function (err, output) {
 
-                debugger;
 
                 if (err) {
                     if (Array.isArray(err)) {
