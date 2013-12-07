@@ -279,7 +279,7 @@ exports.createPGTileQueryRenderer = flow.define(
 
                                 map.bufferSize = 64;
                                 console.log(output);
-                                map.fromString(output, { strict: true }, function (err, map) {
+                                map.load(path.join(fullpath), { strict: true }, function (err, map) {
                                     console.log(map.toXML()); // Debug settings
 
 
