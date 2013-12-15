@@ -26,7 +26,7 @@ PGRestAPI - Ubuntu 12/13 Installation
 	cd npm 
 	sudo make install
 
-###Install Mapnik (from https://github.com/mapnik/mapnik/wiki/UbuntuInstallation)
+###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/UbuntuInstallation))
 	sudo apt-get update
 	sudo apt-get upgrade
 
@@ -46,14 +46,21 @@ PGRestAPI - Ubuntu 12/13 Installation
 	sudo make install
 	cd python
 	sudo python setup.py install
-	--it will fail.  Download file manually
+
+This step will fail.  Download file manually
+
 	sudo wget https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg
-	--rename to the file it wants
+
+Rename to the file it is expecting.
+
 	sudo mv setuptools-0.6c11-py2.7.egg setuptools-0.6c9-py2.7.egg
 	sudo ldconfig
+
+Try it
+
 	protoc --version
 
-###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
+###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub)
 
     git clone https://github.com/spatialdev/PGRestAPI.git
 

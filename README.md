@@ -1,5 +1,7 @@
-PGRestAPI
+PGRestAPI (a.k.a. Chubbs Spatial Server)
 =========
+
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/logo.png "Logo")
 
 ## Overview
 
