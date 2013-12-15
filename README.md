@@ -32,8 +32,6 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 ##Screenshots
 
-###Home Screen:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/services.png "Services Screen")
 
 ###Table/View List:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/tablelist.png "Table List Screen")
@@ -50,8 +48,8 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 ###Dynamic Service Endpoint:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/dynamic.png "Dynamic Map endpoint")
 
-###Geoprocessing Tool - Buffer:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/gpbuffer.png "GP Buffer")
+###WKT Preview endpoint - Buffer:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/wktpreview.png "WKT Preview")
 
 ###Raster Operations - Zonal Statistics:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/raster.png "Raster Zonal Statistics")
