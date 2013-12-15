@@ -3,32 +3,28 @@ PGRestAPI - Windows Installation
 
 ## Dependencies
 
-* PostGres 9.1 + w/ PostGIS 2.0 +
 * topojson
-* Cairo - You need to [download](http://www.gtk.org/download/index.php) and install Cairo in order to use the [nodetiles](https://github.com/nodetiles/nodetiles-core) dynamic tile rendering functionality.
-* nodetiles-core (on Windows, cloned and built on it's own, then copied to PGRestAPI/node_modules folder)
+* (This project includes a reference to Mapnik.  If you can get it to install on Windows, congrats.  For those of us who can't yet, the install of node-mapnik will fail, but the rest of the project will still work.  You just won't get dyanmic tiled map services)
 
 (Assumes you've got a PostGreSQL 9.1+ and PostGIS 2.0+ is installed somewhere)
 
 ###Install Node.js 0.10.x (0.10.15 when this project started)
 Download the windows node installation package and run: http://nodejs.org/dist/v0.10.21/x64/node-v0.10.21-x64.msi
 
-###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
-Create a 'PGRestAPI' directory, then:
-  
+###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
+
     git clone https://github.com/spatialdev/PGRestAPI.git
 
 -or-
 
-extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) and copy to PGRestAPI folder
+extract files from [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) and copy to a PGRestAPI folder
 
 ###Navigate to PGRestAPI folder, and npm install
 from the console:  
 
     npm install
 
-**This may fail due to a compilation error in the node_canvas module.  If this is the case, clone or copy the nodetiles-core module to a separate folder.
-Then follow the instructions below for "Installing Cairo" and "Installing nodetiles-core", then return to this step and run "npm install"
+**The node-mapnik install will almost certainly fail.  However, the rest of the project should install correctly.  Windows users won't be able to use the dynamic map services until the install of node-mapnik is figured out. 
 
 ###Create PostGreSQL Read Only User
 To grant read-only permissions for a user (assuming your user is already created):  
@@ -91,44 +87,12 @@ These config sections help the API write out fully qualified URLs using the exte
 	settings.application.publicport = "80";
 
 
-
 ###Install topojson module globally
     npm install -g topojson
 
 ###For development purposes, install nodemon
 Nodemon monitors your node project, and will automatically restart your node project if there are any file changes.
 	npm install -g nodemon
-
-
-###Installing Cairo (for dynamic map tile capability)
-Cairo - You need to [download](http://www.gtk.org/download/index.php) and install Cairo in order to use the [nodetiles](https://github.com/nodetiles/nodetiles-core) dynamic tile rendering functionality.
-For Windows, it seems the common way to do this is to install something called the GTK+ All-In-One package, which includes Cairo and other dependencies.
-[Download](http://ftp.gnome.org/pub/gnome/binaries/win64/gtk+/2.22/gtk+-bundle_2.22.1-20101229_win64.zip) and install to C:/GTK (this is important) 
-
-*I won't lie.  This and nodetiles-core was a bear to intall on Windows.*
-
-
-###Installing nodetiles-core
-[nodetiles-core](https://github.com/nodetiles/nodetiles-core) (on Windows, cloned or copied to a folder OUTSIDE of the PGRestAPI project).
-Then move the entire nodetiles-core folder into PGRestAPI/node_modules
-
-Next, copy cairo DLLs:   
-After Cairo is installed, copy all dlls from C:\GTK\bin to PGRestAPI/node_modules/nodetiles-core/node_modules/canvas/build/Release.
-
-Lastly, use npm install to install nodetiles-core  
-So, cd into PGRestAPI/node_modules/nodetiles-core, and then
-
-	npm install
-
-
-With any luck, nodetiles-core should now be installed.
-
-
-###Installing nodetiles-PostGIS
-For the time being, this module is stored in the /PGRestAPI/lib folder.
-Install this module by cd-ing into the /PGRestAPI/lib/nodetiles-postgis folder and then
-	npm install
-
 
 ###To Run as a Windows Service
 When starting as a windows service, install winser

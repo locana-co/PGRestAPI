@@ -3,10 +3,8 @@ PGRestAPI - Ubuntu 12/13 Installation
 
 ## Dependencies
 
-* PostGres 9.1 + w/ PostGIS 2.0 +
 * topojson
-* Cairo - You need to [download](http://www.gtk.org/download/index.php) and install Cairo in order to use the [nodetiles](https://github.com/nodetiles/nodetiles-core) dynamic tile rendering functionality.
-* nodetiles-core (on Windows, cloned and built on it's own, then copied to PGRestAPI/node_modules folder)
+* [Mapnik](https://github.com/mapnik/mapnik)
 
 (Assumes you've got a PostGreSQL 9.1+ and PostGIS 2.0+ is installed somewhere)
 
@@ -28,15 +26,36 @@ PGRestAPI - Ubuntu 12/13 Installation
 	cd npm 
 	sudo make install
 
-###Create a directory for the project and clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
+###Install Mapnik (from https://github.com/mapnik/mapnik/wiki/UbuntuInstallation)
+	sudo apt-get update
+	sudo apt-get upgrade
 
-	sudo mkdir pgisserver  
+	sudo apt-get install -y python-software-properties
+
+	--Mapnik 2.2.0
+	sudo add-apt-repository ppa:mapnik/v2.2.0
+	sudo apt-get update
+	sudo apt-get install libmapnik libmapnik-dev mapnik-utils python-mapnik
+
+###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik)
+	sudo wget https://protobuf.googlecode.com/files/protobuf-2.3.0.tar.gz
+	sudotar xvf protobuf-2.3.0.tar.gz
+	cd protobuf-2.3.0
+	./configure
+	sudo make
+	sudo make install
+	cd python
+	sudo python setup.py install
+	--it will fail.  Download file manually
+	sudo wget https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg
+	--rename to the file it wants
+	sudo mv setuptools-0.6c11-py2.7.egg setuptools-0.6c9-py2.7.egg
+	sudo ldconfig
+	protoc --version
+
+###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub
+
     git clone https://github.com/spatialdev/PGRestAPI.git
-
-
-###Installing Cairo (for dynamic map tile capability)
-
-	sudo apt-get install libcairo2-dev
 
 ###Navigate to PGRestAPI folder, and npm install
 from the console:  
@@ -65,7 +84,9 @@ To grant read-only permissions for a user (assuming your user is already created
 	TO <username>;
 
 ###Create settings.js file
-Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.  
+Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
+	
+	sudo cp settings.js.example settings.js
 
 *For security reasons, it is recommended that you use a READ ONLY PostGreSQL User.*
 

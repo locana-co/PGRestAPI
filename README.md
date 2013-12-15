@@ -5,10 +5,9 @@ PGRestAPI
 
 Node.js REST API for PostgreSQL Spatial Entities.
 
-Point the settings file at your instance of PostgreSQL and PostGIS.
-
-You'll get a REST API that supports:
-* Dynamic Tiled Map Services for spatial tables and views
+Point it at your instance of PostgreSQL and PostGIS,
+and you'll get a REST API that supports:
+* Dynamic Tiled Map Services for spatial tables and views using Mapnik (Not for Windows installs, yet)
 * RESTful Query endpoint for each table and view - return GeoJSON and esriJSON.  Supports spatial and tabular queries and aggregation.
 * Geoprocessing Framework - (You still have to know how to write PostGIS logic, but...), with dynamic tiled maps available as output.
 * Reflection of TileStream API
