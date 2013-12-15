@@ -60,8 +60,8 @@ app.all('/services/tables', function (req, res) {
 
                 args.featureCollection = result.rows.map(function (item) { return item.table_name; }); //Get array of table names
 
-                //stash it for later
-                settings.tableList = args.featureCollection;
+                //stash it for later - if not the result of a search
+                if(!args.search) settings.tableList = args.featureCollection;
 
                 //Render HTML page with results at bottom
                 common.respond(req, res, args);

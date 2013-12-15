@@ -35,15 +35,15 @@ block content
 		h3 Code Sample
 		span Here's how to hit this endpoint programatically to get an array of these column names
 
-		h4 POST
+		h4 JSONP GET
 		pre.codePreview
-			|//define POST arguments
-			|var postArgs = {
+			|//define arguments
+			|var args = {
 			|    format: 'geojson'
 			|};
 			|&nbsp;
-			|//jQuery JSONP POST
-			|$.getJSON('#{link}?callback=?', postArgs).done(function (data) {
+			|//jQuery JSONP GET
+			|$.getJSON('#{link}?callback=?', args).done(function (data) {
 			|    //Callback on success
 			|    console.log(data);
 			|})
