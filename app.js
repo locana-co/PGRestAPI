@@ -62,8 +62,14 @@ app.use(geoprocessing);
 var utilities = require('./endpoints/utilities');
 app.use(utilities);
 
-var mapnik = require('./endpoints/mapnik');
-app.use(mapnik.app);
+var mapnik;
+try{
+    mapnik = require('./endpoints/mapnik');
+} catch (e) {
+    mapnik = null;
+}
+
+if(mapnik) app.use(mapnik.app);
 
 
 //Create web server
@@ -83,22 +89,25 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
 app.get('/', function (req, res) { res.redirect('/services/tables') });
 
 
-//look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
-//on startup.  Probably move this to a 'startup' module
-tables.findSpatialTables(function (error, tables) {
-    if (error) {
+if (mapnik)
+{
+    //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
+    //on startup.  Probably move this to a 'startup' module
+    tables.findSpatialTables(function (error, tables) {
+        if (error) {
 
-    }
-    else {
-        if (tables && tables.length > 0) {
-            tables.forEach(function (item) {
-                //Spin up a route to serve dynamic tiles for this table
-                mapnik.createPGTileRenderer(item.table, item.geometry_column, item.srid, null);
-                mapnik.createPGTileQueryRenderer(item.table, item.geometry_column, item.srid, null);
-
-                //Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
-                mapnik.createCachedFolder(item.table);
-            });
         }
-    }
-});
+        else {
+            if (tables && tables.length > 0) {
+                tables.forEach(function (item) {
+                    //Spin up a route to serve dynamic tiles for this table
+                    mapnik.createPGTileRenderer(item.table, item.geometry_column, item.srid, null);
+                    mapnik.createPGTileQueryRenderer(item.table, item.geometry_column, item.srid, null);
+
+                    //Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
+                    mapnik.createCachedFolder(item.table);
+                });
+            }
+        }
+    });
+}

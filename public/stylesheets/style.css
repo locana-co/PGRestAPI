@@ -178,3 +178,6 @@ textarea:-moz-placeholder {
   padding: 20px;
   margin: 20px 0;
 }
+.geometry {
+  word-wrap: break-word;
+}
