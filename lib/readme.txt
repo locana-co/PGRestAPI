@@ -1,2 +1,0 @@
-This folder contains node_modules that are not yet available via npm, but need to be included with the project.
-when installing, need to cd into the lib/nodetiles-postgis folder and do a sudo npm install to make sure this projects dependencies are also installed.
