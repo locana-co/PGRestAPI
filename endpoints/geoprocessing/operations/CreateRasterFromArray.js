@@ -24,8 +24,8 @@ operation.inputs = {};
 
 operation.outputImage = false;
 
-operation.inputs["height"] = { };
-operation.inputs["width"] = {}; 
+operation.inputs["height"] = {};
+operation.inputs["width"] = {};
 operation.inputs["cell_size"] = [];
 operation.inputs["values"] = [];
 operation.inputs["upper_left_x"] = [];
@@ -43,7 +43,7 @@ operation.Query = "DO $$DECLARE " +
 "CREATE TABLE _tempraster (id integer, rast raster); " +
 "INSERT INTO _tempraster(id,rast) VALUES(1, ST_MakeEmptyRaster({width}, {height}, {upper_left_x}, {upper_left_y}, {cellsize}, -{cellsize}, 0, 0, {srid}) );  " + //
 "UPDATE _tempraster SET rast = ST_AddBand(rast,'32BF'::text,0) WHERE id = 1; " +
-"UPDATE _tempraster SET rast = ST_SetValues(rast, 1, 1, 1, ARRAY{values}::double precision[][], 0.0, false) WHERE id = 1; " + 
+"UPDATE _tempraster SET rast = ST_SetValues(rast, 1, 1, 1, ARRAY{values}::double precision[][], 0.0, false) WHERE id = 1; " +
 "END$$; " +
 "SELECT val, ST_AsText(ST_Transform(geom, 4326)) as wkt FROM (SELECT (ST_DumpAsPolygons(rast)).* from _tempraster) as a where val = 1"
 
@@ -72,7 +72,7 @@ operation.execute = flow.define(
         else {
             //Invalid arguments
             //return message
-            callback({ status: "Missing required arguments", rows: []});
+            callback({ status: "Missing required arguments", rows: [] });
         }
     },
     function (results) {
