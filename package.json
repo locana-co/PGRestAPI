@@ -19,8 +19,10 @@
     "pg": "*",
     "flow": "*",
     "less-middleware": "*",
-    "topojson": "*",
-	"mapnik": "*",
+    "topojson": "*"
+  },
+  "optionalDependencies":{
+  	"mapnik": "*",
 	"carto": "*"
   }
 }
