@@ -10,7 +10,7 @@ var flow = require('flow'),
     fs = require("fs"),
     http = require("http"),
     path = require("path"),
-    blower = require("../../lib/datablower");
+    blaster = require("../../lib/datablaster");
 
 var mapnik;
 try {
@@ -870,13 +870,12 @@ if (mapnik) {
     ));
 }
 
-//Test blower route
-app.all("/services/blower", function (req, res) {
-    blower.blow(null, null, function (err, result) {
-        //Handle err
-
-        //then
-        res.jsonp(result);
+//Test blaster route
+app.all("/services/blaster", function (req, res) {
+    blaster.batchBlast(function (err, blastCount) {
+        //Finished blasting.
+        //say so.
+        res.end("Done blasting. Finished " + blastCount + " blast(s).");
     });
 });
 
