@@ -23,7 +23,7 @@ app.set('port', process.env.PORT || settings.application.port);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.enable("jsonp callback");
-app.use(express.favicon());
+app.use(express.favicon(path.join(__dirname, 'public/img/favicon.png')));
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
@@ -55,9 +55,6 @@ app.use(tiles);
 
 var geoprocessing = require('./endpoints/geoprocessing');
 app.use(geoprocessing);
-
-//var nodetiles = require('./endpoints/nodetiles');
-//app.use(nodetiles.app);
 
 var utilities = require('./endpoints/utilities');
 app.use(utilities);
