@@ -41,7 +41,7 @@ operation.Query = "DO $$DECLARE " +
 "CREATE INDEX _gptemp_gix ON _gptemp USING GIST (geom); " +
 "END$$; " +
 "SELECT SUM((_st_summarystats(ST_Clip(rast,_gptemp.geom, true), 1, true, .99)).sum) as  sum, _gptemp.landuse, ST_AsGeoJSON(_gptemp.geom) as geom " +
-"FROM uganda_population_raster, _gptemp " +
+"FROM {country}_population_raster, _gptemp " +
 "WHERE ST_Intersects(_gptemp.geom,rast) " +
 "GROUP BY _gptemp.landuse, _gptemp.geom; ";
 
@@ -52,7 +52,7 @@ operation.execute = flow.define(
         this.args = args;
         this.callback = callback;
         //Step 1
-        debugger;
+
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (operation.isInputValid(args) === true) {
             operation.inputs["where_clause"] = args.where_clause;
