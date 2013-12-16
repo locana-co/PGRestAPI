@@ -1,6 +1,6 @@
 {
   "name": "PGRestAPI",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "author": "Ryan Whitley <apollolm@gmail.com>",
   "description": "Spatial API on top of PostGreSQL/PostGIS.",
