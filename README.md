@@ -48,7 +48,7 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 ###Dynamic Service Endpoint:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/dynamic.png "Dynamic Map endpoint")
 
-###WKT Preview endpoint - Buffer:
+###WKT Preview endpoint:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/wktpreview.png "WKT Preview")
 
 ###Raster Operations - Zonal Statistics:

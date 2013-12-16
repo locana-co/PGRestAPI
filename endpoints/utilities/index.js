@@ -15,7 +15,7 @@ app.all('/services/utilities', function (req, res) {
     var args = {};
 
     args.view = "services";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }];
     args.path = req.path;
     args.host = req.headers.host;
 
@@ -45,7 +45,7 @@ app.all('/services/wktpreview', function (req, res) {
     }
 
     args.view = "wktpreview";
-    args.breadcrumbs = [{ link: "/services", name: "Services" }, { link: "/services/utilities", name: "Utilities" }, { link: "", name: "WKT Preview" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/utilities", name: "Utilities" }, { link: "", name: "WKT Preview" }];
     args.path = req.path;
     args.host = req.headers.host;
    

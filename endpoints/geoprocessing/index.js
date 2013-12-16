@@ -19,7 +19,7 @@ app.all('/services/geoprocessing', function (req, res) {
 
     var args = {};
     args.view = "geoprocessing_operations";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Geoprocessing Operations" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "", name: "Geoprocessing Operations" }];
     args.url = req.url;
     args.opslist = [];
 
@@ -49,7 +49,7 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
     }
 
     args.view = "geoprocessing_operation";
-    args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
     args.featureCollection = [];
 
     if (JSON.stringify(args) != '{}') {
@@ -74,7 +74,7 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
             args._input_arguments = [];
             args._input_values = [];
             args.description = gpOperation.description;
-            args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: gpOperation.name }];
+            args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: gpOperation.name }];
             args.path = req.path;
             args.host = req.headers.host;
 
