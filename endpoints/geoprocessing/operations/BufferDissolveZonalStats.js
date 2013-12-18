@@ -29,7 +29,7 @@ operation.Query = "DO $$DECLARE " +
 "BEGIN " +
 "drop table if exists _gptemp; " +
 "create temporary  table _gptemp as  " +
-"select a.landuse, a.name, " +
+"select a.landuse, a.name, a.total, " +
 "ST_UNION(st_intersection(a.geom,b.geom)) as geom " +
 "from {country}_district_landuse a " +
 "inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(geom, {srid}), {buffer_distance}), 4326 )) as geom " +
@@ -37,13 +37,13 @@ operation.Query = "DO $$DECLARE " +
 "WHERE {where_clause} " +
 ") b on " +
 "st_intersects(a.geom, b.geom) " +
-"GROUP BY a.landuse, a.name; " +
+"GROUP BY a.landuse, a.name, a.total; " +
 "CREATE INDEX _gptemp_gix ON _gptemp USING GIST (geom); " +
 "END$$; " +
-"SELECT SUM((_st_summarystats(ST_Clip(rast,_gptemp.geom, true), 1, true, 1)).sum) as  sum, _gptemp.landuse, _gptemp.name, ST_AsGeoJSON(_gptemp.geom) as geom " +
+"SELECT SUM((_st_summarystats(ST_Clip(rast,_gptemp.geom, true), 1, true, 1)).sum) as  sum, _gptemp.landuse, _gptemp.name, _gptemp.total, ST_AsGeoJSON(_gptemp.geom) as geom " +
 "FROM {country}_population_raster, _gptemp " +
 "WHERE ST_Intersects(_gptemp.geom,rast) " +
-"GROUP BY _gptemp.landuse, _gptemp.geom, _gptemp.name; ";
+"GROUP BY _gptemp.landuse, _gptemp.geom, _gptemp.name, _gptemp.total; ";
 
 
 
