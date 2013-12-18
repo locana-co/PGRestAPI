@@ -29,7 +29,7 @@ operation.Query = "DO $$DECLARE " +
 "BEGIN " +
 "drop table if exists _gptemp; " +
 "create temporary  table _gptemp as  " +
-"select a.landuse, a.name " +
+"select a.landuse, a.name, " +
 "ST_UNION(st_intersection(a.geom,b.geom)) as geom " +
 "from {country}_district_landuse a " +
 "inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(geom, {srid}), {buffer_distance}), 4326 )) as geom " +
