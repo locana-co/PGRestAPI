@@ -39,9 +39,9 @@ PGRestAPI - Ubuntu 12/13 Installation
 
 ###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik)
 	sudo wget https://protobuf.googlecode.com/files/protobuf-2.3.0.tar.gz
-	sudotar xvf protobuf-2.3.0.tar.gz
+	sudo tar xvf protobuf-2.3.0.tar.gz
 	cd protobuf-2.3.0
-	./configure
+	sudo ./configure
 	sudo make
 	sudo make install
 	cd python
