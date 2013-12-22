@@ -85,11 +85,16 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
 //Root Request - show table list
 app.get('/', function (req, res) { res.redirect('/services/tables') });
 
+//Redirect /services to table list
+app.get('/services', function (req, res) { res.redirect('/services/tables') });
+
 
 if (mapnik)
 {
     //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
     //on startup.  Probably move this to a 'startup' module
+    common.vacuumAnalyzeAll();
+    
     tables.findSpatialTables(function (error, tables) {
         if (error) {
 
@@ -107,4 +112,6 @@ if (mapnik)
             }
         }
     });
+    
+    
 }

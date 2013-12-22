@@ -71,6 +71,13 @@ common.log = function(message) {
     console.log(message);
 }
 
+common.vacuumAnalyzeAll = function(){
+	var query = { text: "VACUUM ANALYZE;", values: [] };
+	common.executePgQuery(query, function (result) {
+		console.log("Performed VACUUM ANALYZE on ALL;")
+	});
+}
+
 //Determine if a string contains all numbers.
 common.IsNumeric = function (sText) {
     var ValidChars = "0123456789";

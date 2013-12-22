@@ -24,7 +24,6 @@ var app = exports.app = express();
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 
-
 //Add a route and define response
 //Get list of public base tables from postgres
 app.all('/services/tables', function (req, res) {
@@ -827,12 +826,22 @@ if (mapnik) {
             getGeometryFieldNames(this.args.table, this);
 
         }, function (geom_fields_array) {
-
+			
+			//This should have a value
+			var srid = app.spatialTables[this.args.table].srid;
+			
             //coming back from getGeometryFieldNames
             //for now, assume just 1 geometry.  TODO
             if (geom_fields_array.length > 0) {
                 //Check for layer extent
-                var query = { text: "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";", values: [] };
+                //Transform to 4326 if 3857
+                var query;
+                if(srid && (srid == 3857 || srid == 3587)){
+                	query = { text: "SELECT ST_Extent(ST_Transform(" + geom_fields_array[0] + ", 4326)) as table_extent FROM " + this.args.table + ";", values: [] };
+               	}
+               	else{
+               		query = { text: "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";", values: [] };
+               	}
                 common.executePgQuery(query, this);
             }
             else {
@@ -848,7 +857,7 @@ if (mapnik) {
                 this.args.errorMessage = "Problem getting the extent for this table.";
             }
             else {
-
+				debugger;
                 var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(","); //Should be BOX(XMIN YMIN, XMAX YMAX)
                 this.args.xmin = bboxArray[0].split(" ")[0];
                 this.args.ymin = bboxArray[0].split(" ")[1];
@@ -1026,7 +1035,7 @@ function makeGeoJSONFile(table, filename, callback) {
 exports.findSpatialTables = function (callback) {
     var spatialTables = [];
     var error;
-
+    
     var query = { text: "select * from geometry_columns", values: [] }; //TODO - add options to specify schema and database.  Right now it will read all
     common.executePgQuery(query, function (result) {
         if (result.status == "error") {
@@ -1034,12 +1043,15 @@ exports.findSpatialTables = function (callback) {
             error = result.message;
             console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + result.message);
         } else {
+        	app.spatialTables = {};
             //Add to list of tables.
             result.rows.forEach(function (item) {
-                spatialTables.push({ table: item.f_table_name, geometry_column:item.f_geometry_column, srid: item.srid });
+            	var spTable = { table: item.f_table_name, geometry_column:item.f_geometry_column, srid: item.srid };
+                spatialTables.push(spTable);
+                app.spatialTables[item.f_table_name] = spTable; //Keep a copy in tables for later.
             });
         }
-
+        
         //return to sender
         callback(error, spatialTables);
     });

@@ -7,7 +7,8 @@ var express = require('express'),
 
 //Module-specific requires:
 var mapnik = require('mapnik'),
-    mercator = require('./utils/sphericalmercator.js'),
+    mercator = require('./utils/sphericalmercator.js'), // 3857
+    geographic = require('./utils/geographic.js'), //4326
     parseXYZ = require('./utils/tile.js').parseXYZ,
     path = require('path'),
     fs = require("fs"),
@@ -40,6 +41,7 @@ exports.createPGTileRenderer = flow.define(
     function (table, geom_field, epsgSRID, cartoFile) {
 
         this.table = table;
+        this.epsg = epsgSRID;
 
         var name;
         var stylepath = __dirname + '/cartocss/';
@@ -97,7 +99,7 @@ exports.createPGTileRenderer = flow.define(
                     try {
                         //create map and layer
                         var map = new mapnik.Map(256, 256, mercator.proj4);
-                        var layer = new mapnik.Layer(_self.table, mercator.proj4);
+                        var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4)); //check to see if 3857.  If not, assume WGS84
                         var postgis = new mapnik.Datasource(postgis_settings);
                         var bbox = mercator.xyz_to_envelope(parseInt(params.x),
                                                                parseInt(params.y),
@@ -145,6 +147,7 @@ exports.createPGTileQueryRenderer = flow.define(
 
         this.table = table;
         this.geom_field = geom_field;
+        this.epsg = epsgSRID;
 
         var name;
         var stylepath = __dirname + '/cartocss/';
@@ -242,7 +245,7 @@ exports.createPGTileQueryRenderer = flow.define(
                 try {
                     //create map and layer
                     var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
-                    var layer = new mapnik.Layer(_self.table, mercator.proj4);
+                    var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4)); //check to see if 3857.  If not, assume WGS84
                     var postgis = new mapnik.Datasource(postgis_settings);
 
                     var floatbbox = args.bbox.split(",");
