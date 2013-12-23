@@ -18,7 +18,7 @@
   "dependencies": {
 	"geojson-validation": "*",
     "express": "3.3.4",
-    "jade": "*",
+    "jade": "0.35.0",
     "pg": "*",
     "flow": "*",
     "less-middleware": "*",
