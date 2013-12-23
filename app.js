@@ -64,6 +64,7 @@ try{
     mapnik = require('./endpoints/mapnik');
 } catch (e) {
     mapnik = null;
+    console.log("Mapnik not properly installed. Skipping. " + e);
 }
 
 if(mapnik) app.use(mapnik.app);

@@ -90,6 +90,14 @@ To grant read-only permissions for a user (assuming your user is already created
 	ON SEQUENCES 
 	TO <username>;
 
+###Run Stats on tables
+Mapnik requires that statistics be generated for all spatial tables.
+To do this use the DB Owner or superuser to run 
+
+	VACUUM ANALYZE;
+
+...in PostGres.
+
 ###Create settings.js file
 Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
 	
