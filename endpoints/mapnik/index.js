@@ -253,7 +253,7 @@ exports.createPGTileQueryRenderer = flow.define(
                     var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]]; //ll lat, ll lon, ur lat, ur lon
 
                     layer.datasource = postgis;
-                    layer.styles = ['style'];
+                    layer.styles = [_self.table, 'style'];
 
                     map.bufferSize = 64;
                    
