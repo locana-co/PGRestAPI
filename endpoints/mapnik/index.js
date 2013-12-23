@@ -106,7 +106,7 @@ exports.createPGTileRenderer = flow.define(
                                                                parseInt(params.z), false);
 
                         layer.datasource = postgis;
-                        layer.styles = ['style'];
+                        layer.styles = [_self.table,'style'];
 
                         map.bufferSize = 64;
                         map.load(path.join(fullpath), { strict: true }, function (err, map) {
