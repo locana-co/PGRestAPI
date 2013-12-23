@@ -1,4 +1,4 @@
-doctype 5
+doctype html
 html
 	head
 		title PGRestAPI
@@ -24,7 +24,7 @@ html
 						a(href=crumb.link) #{crumb.name}
 						-if(breadcrumbs.length > 1){
 							&nbsp;
-							>
+							|>
 							&nbsp;
 						-}
 					-}
