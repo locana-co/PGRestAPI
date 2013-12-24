@@ -1,11 +1,11 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
-  background: #999;
+  margin: 2px;
+  font: 14px Arial, sans-serif;
+  background: #e5e5e5;
   min-width: 960px;
 }
 a {
-  color: #808083;
+  color: #594242;
   text-decoration: none;
 }
 a:hover {
@@ -13,11 +13,15 @@ a:hover {
 }
 .header {
   background-color: #fff;
-  padding: 20px;
+  padding: 5px;
 }
 .container {
-  background-color: #fff;
-  padding: 20px;
+  background-color: #f2f2f2;
+  margin: 30px 40px;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border: 1px solid #cdcdcd;
+  padding: 0px 0px 20px 0px;
 }
 .section {
   margin: 40px 0px;
@@ -42,10 +46,8 @@ a:hover {
 /*End Code Block*/
 .bigSpace {
   margin-top: 20px;
-  margin-left: 40px;
 }
 .littleSpace {
-  margin-left: 40px;
   margin-top: 5px;
   margin-bottom: 5px;
 }
@@ -109,14 +111,22 @@ textarea {
   display: inline-block;
   cursor: pointer;
 }
+.main-content div a {
+  color: #5969ae;
+}
+.main-content .heading {
+  font-family: futura__condensed;
+  text-transform: uppercase;
+  font-size: 30px;
+  margin: 5px 0;
+}
 pre {
   background-color: lightgray;
   padding: 20px;
 }
 .breadcrumbs {
-  padding: 10px 20px;
-  background-color: #fff;
-  margin: 14px 0;
+  background-color: #e8e8e8;
+  padding: 20px;
 }
 .container table {
   margin-top: 25px;
@@ -156,6 +166,7 @@ textarea:-moz-placeholder {
 }
 .main-content {
   position: relative;
+  padding: 20px;
 }
 .floatingColumns {
   float: left;

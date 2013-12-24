@@ -40,7 +40,6 @@ app.all('/services/tables', function (req, res) {
     }
 
     args.view = "table_list";
-    args.breadcrumbs = [{ link: "", name: "Table List" }];
     args.path = req.path;
     args.host = settings.application.publichost || req.headers.host;
     args.link = "http://" + args.host + "/services/tables";

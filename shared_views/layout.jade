@@ -3,6 +3,8 @@ html
 	head
 		title PGRestAPI
 		link(rel='stylesheet', href='/stylesheets/style.css')
+		link(rel='stylesheet', href='/fonts/fonts.css')
+
 		-if(css){
 			-each csslink in css 
 				link(rel='stylesheet', href= csslink)
@@ -14,22 +16,23 @@ html
 		-}	
 	body
 		div.header
-			img(src='/img/logo.png',alt='logo')
-		div.breadcrumbs
-			-if(breadcrumbs){
-				each crumb in breadcrumbs
-					-if(crumb.link == ""){
-						|#{crumb.name}
-					-}else{
-						a(href=crumb.link) #{crumb.name}
-						-if(breadcrumbs.length > 1){
-							&nbsp;
-							|>
-							&nbsp;
-						-}
-					-}
-			-}
+			img(src='/img/logo.png',alt='logo',style='height:65px;')
+		
 		.container
+			-if(breadcrumbs){
+				div.breadcrumbs
+					each crumb in breadcrumbs
+						-if(crumb.link == ""){
+							|#{crumb.name}
+						-}else{
+							a(href=crumb.link) #{crumb.name}
+							-if(breadcrumbs.length > 1){
+								&nbsp;
+								|>
+								&nbsp;
+							-}
+						-}
+			-}
 			.main-content
 				block content
 		.sidebar
