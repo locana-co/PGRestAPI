@@ -21,19 +21,25 @@ html
 		.container
 			-if(breadcrumbs){
 				div.breadcrumbs
-					each crumb in breadcrumbs
+					each crumb, idx in breadcrumbs
 						-if(crumb.link == ""){
-							|#{crumb.name}
+							span.blue #{crumb.name}
 						-}else{
 							a(href=crumb.link) #{crumb.name}
 							-if(breadcrumbs.length > 1){
-								&nbsp;
-								|>
-								&nbsp;
+								-if(breadcrumbs.length == idx +2){
+									&nbsp;
+									span.blue &#9654;
+									&nbsp;
+								-}else{
+									&nbsp;
+									&#9654;
+									&nbsp;
+								-}
 							-}
 						-}
 			-}
-			.main-content
+			.main-content.clearfix
 				block content
 		.sidebar
 				block sidebar

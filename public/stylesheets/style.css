@@ -1,8 +1,26 @@
+.clearfix:before,
+.clearfix:after {
+  content: " ";
+  display: table;
+}
+.clearfix:after {
+  clear: both;
+}
+.clearfix {
+  *zoom: 1;
+}
+.left {
+  float: left;
+}
+.right {
+  float: right;
+}
 body {
   margin: 2px;
   font: 14px Arial, sans-serif;
   background: #e5e5e5;
   min-width: 960px;
+  color: #424242;
 }
 a {
   color: #594242;
@@ -22,6 +40,7 @@ a:hover {
   border-top-right-radius: 5px;
   border: 1px solid #cdcdcd;
   padding: 0px 0px 20px 0px;
+  border-radius: 5px;
 }
 .section {
   margin: 40px 0px;
@@ -112,7 +131,21 @@ textarea {
   cursor: pointer;
 }
 .main-content div a {
-  color: #5969ae;
+  color: #3d87c8;
+}
+div.description {
+  margin: 10px 0;
+}
+.columnList {
+  font-weight: bold;
+}
+#rightHand {
+  padding: 0 40px;
+  background-color: #fff;
+  padding-top: 43px;
+}
+.blue {
+  color: #0769ae;
 }
 .main-content .heading {
   font-family: futura__condensed;
@@ -127,6 +160,8 @@ pre {
 .breadcrumbs {
   background-color: #e8e8e8;
   padding: 20px;
+  font-weight: bold;
+  border-radius: 5px;
 }
 .container table {
   margin-top: 25px;
@@ -170,7 +205,8 @@ textarea:-moz-placeholder {
 }
 .floatingColumns {
   float: left;
-  margin-right: 60px;
+  margin-right: 20px;
+  width: 250px;
 }
 .floatingColumns .littleSpace {
   margin-left: 0;
