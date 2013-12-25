@@ -31,12 +31,18 @@ block content
 
 block apidoc
 
-	div.section
-				h3 Code Sample
-				span Here's how to hit this endpoint programatically to get an array of these column names
+	div.section.code
 
-				h4 JSONP GET
-				pre.codePreview
+		div.codeSamplesHeader Code Sample
+		
+		div.codeBody
+
+			span Here's how to hit this endpoint programatically to get an array of these column names
+
+			div.requestHeader JSONP GET
+
+			div.requestContent
+				pre.prettyprint.linenums
 					|//define arguments
 					|var args = {
 					|    format: 'geojson'
@@ -51,47 +57,56 @@ block apidoc
 			- var requestSample = ["format=geojson"]
 			-if(search)
 				- requestSample.push("search=" + encodeURIComponent(search))
-			h4 GET
-			pre.codePreview
-				|#{link + "?" + requestSample.join("&")}
 
-			h4 GeoJSON Response
-			pre.codePreview
-				|{
-				|   "columns": [
-				|     {
-				|          "column_name": "gid",
-				|          "data_type": "integer"
-				|     },
-				|     {
-				|          "column_name": "longitude",
-				|          "data_type": "numeric"
-				|     }
-				|  ]
-				|  "supportedOperations": [
-				|     {
-				|          "link": "#{link}/query",
-				|          "name": "Query"
-				|     },
-				|     {
-				|          "link": "#{link}/dynamicMapLanding",
-				|          "name": "Dynamic Map Service"
-				|     },
-				|     {
-				|          "link": "#{link}/topojson",
-				|          "name": "TopoJSON"
-				|     } 
-				|   ]
-				|}
+			div.requestHeader GET
 
-			-if(infoMessage){
-				div.infoMessage
-					|!{infoMessage}
-			-}
-			-if(errorMessage){
-				div.errorMessage
-					|#{errorMessage}
-			-}
+			div.requestContent
+
+				pre.prettyprint.linenums
+					span.nocode.white #{link + "?" + requestSample.join("&")}
+
+			div.requestHeader GeoJSON Response
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					|{
+					|   "columns": [
+					|     {
+					|          "column_name": "gid",
+					|          "data_type": "integer"
+					|     },
+					|     {
+					|          "column_name": "longitude",
+					|          "data_type": "numeric"
+					|     }
+					|  ]
+					|  "supportedOperations": [
+					|     {
+					|          "link": "#{link}/query",
+					|          "name": "Query"
+					|     },
+					|     {
+					|          "link": "#{link}/dynamicMapLanding",
+					|          "name": "Dynamic Map Service"
+					|     },
+					|     {
+					|          "link": "#{link}/topojson",
+					|          "name": "TopoJSON"
+					|     } 
+					|   ]
+					|}
+
+				-if(infoMessage){
+					div.infoMessage
+						|!{infoMessage}
+				-}
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}
+
+
 	
 block sidebar
 	.widget
