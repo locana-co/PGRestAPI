@@ -1,8 +1,19 @@
 extends ../../../shared_views/layout
 
 block content
+	script.
+		//Trigger Active Nav Link
+		$("#tableListing").addClass("active");
+
 	div.floatingColumns.blocks
 		div.heading #{table}
+
+		h2 SRID
+		-if(SRID){
+			p(style="color:green")
+				| SRID is #{SRID}
+		-}
+
 		h2 Columns
 		div.description Below is a list of columns and data types for this table.
 		div.columnList
@@ -23,11 +34,6 @@ block content
 						a(href=operation.link) #{operation.name}
 				-}
 
-	
-			-if(SRID){
-				p(style="color:green")
-					| SRID is #{SRID}
-			-}
 
 block apidoc
 
@@ -106,10 +112,5 @@ block apidoc
 						|#{errorMessage}
 				-}
 
-
-	
-block sidebar
-	.widget
-	
 
 				

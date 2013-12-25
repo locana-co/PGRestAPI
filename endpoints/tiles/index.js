@@ -30,7 +30,7 @@ if (settings.tilestream && settings.tilestream.host && settings.tilestream.path)
         }
 
         args.view = "tile_list";
-        args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services", name: "Services" }, { link: "", name: "Tile List" }];
+        args.breadcrumbs = [{ link: "/services", name: "Table Listing" }, { link: "", name: "Tile List" }];
         args.path = req.path;
         args.host = req.headers.host;
 

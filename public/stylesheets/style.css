@@ -119,15 +119,9 @@ textarea {
 #topofilename {
   background-color: #D5D5D5;
 }
-.links a:hover {
-  background-color: #c2c2c2;
-  text-decoration: none;
-}
 .links a {
-  margin-right: 10px;
   padding: 10px 20px;
-  border: 1px solid #1b75ba;
-  display: inline-block;
+  display: block;
   cursor: pointer;
 }
 .main-content div a {
@@ -222,11 +216,6 @@ textarea:-moz-placeholder {
 }
 .floatingColumns .columnList .littleSpace:first-child {
   border-top: 1px solid #000;
-}
-.widget {
-  background-color: #fff;
-  padding: 20px;
-  margin: 20px 0;
 }
 .geometry {
   word-wrap: break-word;
@@ -387,4 +376,26 @@ li.L8 {
 .requestContent {
   padding: 20px;
   border: 1px solid #d1d1d1;
+}
+footer {
+  padding: 5px 40px;
+  color: #9e9e9e;
+}
+div.navLinks a {
+  float: left;
+  padding: 10px;
+  margin-top: 19px;
+  font-size: 24px;
+  text-transform: uppercase;
+  font-family: futura__condensed;
+  cursor: pointer;
+  display: block;
+  text-decoration: none;
+}
+div.navLinks a.active {
+  border-bottom: 4px solid #0769ad;
+  color: #0769ad;
+}
+div.navLinks a:hover {
+  color: #0769ad;
 }
