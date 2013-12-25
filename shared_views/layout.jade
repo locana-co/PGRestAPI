@@ -9,11 +9,16 @@ html
 			-each csslink in css 
 				link(rel='stylesheet', href= csslink)
 		-}
+
+		script(type='text/javascript', src='http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js')
+		
+
 		-if(scripts){
 		-each script in scripts 
 			script(type='text/javascript', src= script)
-	
 		-}	
+
+
 	body
 		div.header
 			img(src='/img/logo.png',alt='logo',style='height:65px;')
@@ -41,7 +46,11 @@ html
 			-}
 			.main-content.clearfix
 				block content
+			.main-content.clearfix
+				block apidoc
 		.sidebar
 				block sidebar
+		script(type='text/javascript', src='/stylesheets/layout.js')
+
 	footer
 		p Running on node with Express, Jade and Less

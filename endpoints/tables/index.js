@@ -477,7 +477,7 @@ app.all('/services/tables/:table/query', flow.define(
             }
 
             this.args.featureCollection = features;
-            this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
+            this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js']; //Load external scripts for map preview
             this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
         }
         common.respond(this.req, this.res, this.args);
@@ -868,8 +868,8 @@ if (mapnik) {
                 this.args.featureCollection.push({ name: "Map Service Endpoint", link: "http://" + this.args.host + "/services/tables/" + this.args.table + "/dynamicMap" });
                 this.args.extent = result.rows[0];
 
-                //load leaflet and jquery
-                this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://codeorigin.jquery.com/jquery-1.10.2.min.js']; //Load external scripts for map preview
+                //load leaflet
+                this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js']; //Load external scripts for map preview
                 this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
             }
 
