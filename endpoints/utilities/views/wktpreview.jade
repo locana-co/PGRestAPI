@@ -4,7 +4,7 @@ block content
 	p
 		| Paste in a WKT string to see a preview on the map, and get a GeoJSON representation
 	form(action='',method='post',id='queryForm')
-		table.inputTable
+		table.inputTable(style='background-color: #fff;')
 			
 			tr
 				td
@@ -27,7 +27,7 @@ block content
 
 
 		div(data-role='fieldcontain')   
-			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
+			input.blueButton(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
 	
 	- var requestSample = []
@@ -51,70 +51,85 @@ block content
 	-}
 
 
-block sidebar
-	.widget
-		h2 Results
-		.results
-			- if (featureCollection){
-				-if(featureCollection.features && featureCollection.features.length > 0 && featureCollection.features[0].geometry){
-					script.
-						var geojson = !{JSON.stringify(featureCollection)};
+block results
+	-if(infoMessage || errorMessage || featureCollection){
+		div.section.code
 
-					//Map Div
-					div#map(style='height:400px;width:400px;')
+			div.codeSamplesHeader Results
+		
+			div.codeBody
 
-					//Load Leaflet
-					script.
-						function updateWKTAndPost(){
-							//Get the map bounds, convert to WKT, update WKT input box, and POST
-							if(map){
-								var bounds = map.getBounds();
-								var NW = bounds.getNorthWest();
-								var NE = bounds.getNorthEast();
-								var SE = bounds.getSouthEast();
-								var SW = bounds.getSouthWest();
-
-								var wktBBox = "POLYGON(({A},{B},{C},{D},{E}))".replace("{A}", NW.lng + " " + NW.lat).replace("{B}", NE.lng + " " + NE.lat).replace("{C}", SE.lng + " " + SE.lat).replace("{D}", SW.lng + " " + SW.lat).replace("{E}", NW.lng + " " + NW.lat);
-								$("#wkt").text(wktBBox);
-								document.getElementById("queryForm").submit();
-							}
-
-						}
-
-						var map = L.map('map').setView([51.505, -0.09], 13);
-						L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-vyofok3q/{z}/{x}/{y}.png').addTo(map);
-						previewLayer = L.geoJson(geojson).addTo(map);
-						map.fitBounds(previewLayer);
+				-if(infoMessage){
+					div.infoMessage
+						|#{infoMessage}
 				-}
 
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}
 
-				-if(featureCollection.features){
-					div(style='margin-top:20px;')
-						i # records: #{featureCollection.features.length}
-					each val, key in featureCollection.features
-						div.propertyGroup
-							each ival, ikey in val.properties
-								-if(ival && ival.coordinates){
-									each egval, egkey in ival
-										div.geometry #{ikey}: #{egkey}: #{egval}
-								-}else{
-									div.property #{ikey}: #{ival}
-								-}
-								
-							-if(val.geometry){
-								-if(val.geometry.geometries){
-									each mgval, mgkey in val.geometry.geometries
-										-if(mgval.coordinates){
-											div.geometries #{mgval.type}: #{mgval.coordinates}
+				.results
+					- if (featureCollection){
+						-if(featureCollection.features && featureCollection.features.length > 0 && featureCollection.features[0].geometry){
+							script.
+								var geojson = !{JSON.stringify(featureCollection)};
+
+							//Map Div
+							div#map(style='height:400px;width:400px;')
+
+							//Load Leaflet
+							script.
+								function updateWKTAndPost(){
+									//Get the map bounds, convert to WKT, update WKT input box, and POST
+									if(map){
+										var bounds = map.getBounds();
+										var NW = bounds.getNorthWest();
+										var NE = bounds.getNorthEast();
+										var SE = bounds.getSouthEast();
+										var SW = bounds.getSouthWest();
+
+										var wktBBox = "POLYGON(({A},{B},{C},{D},{E}))".replace("{A}", NW.lng + " " + NW.lat).replace("{B}", NE.lng + " " + NE.lat).replace("{C}", SE.lng + " " + SE.lat).replace("{D}", SW.lng + " " + SW.lat).replace("{E}", NW.lng + " " + NW.lat);
+										$("#wkt").text(wktBBox);
+										document.getElementById("queryForm").submit();
+									}
+
+								}
+
+								var map = L.map('map').setView([51.505, -0.09], 13);
+								L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-vyofok3q/{z}/{x}/{y}.png').addTo(map);
+								previewLayer = L.geoJson(geojson).addTo(map);
+								map.fitBounds(previewLayer);
+						-}
+
+
+						-if(featureCollection.features){
+							div(style='margin-top:20px;')
+								i # records: #{featureCollection.features.length}
+							each val, key in featureCollection.features
+								div.propertyGroup
+									each ival, ikey in val.properties
+										-if(ival && ival.coordinates){
+											each egval, egkey in ival
+												div.geometry #{ikey}: #{egkey}: #{egval}
+										-}else{
+											div.property #{ikey}: #{ival}
 										-}
-								-}else{
-									each gval, gkey in val.geometry
-										div.geometry geometry: #{gkey}: #{gval}
-								-}
-							-}
+								
+									-if(val.geometry){
+										-if(val.geometry.geometries){
+											each mgval, mgkey in val.geometry.geometries
+												-if(mgval.coordinates){
+													div.geometries #{mgval.type}: #{mgval.coordinates}
+												-}
+										-}else{
+											each gval, gkey in val.geometry
+												div.geometry geometry: #{gkey}: #{gval}
+										-}
+									-}
 							
-				-}else{
-					div.propertyGroup No results found
-				-}
-			-}
+						-}else{
+							div.propertyGroup No results found
+						-}
+					-}
 			

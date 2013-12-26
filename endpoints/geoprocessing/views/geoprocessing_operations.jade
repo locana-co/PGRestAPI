@@ -1,19 +1,20 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| The following geoprocessing operations are available.
+	script.
+		//Trigger Active Nav Link
+		$("#geoprocessing").addClass("active");
 
-	table
-		thead
-			tr
-				th GP Operations
-		tbody
-			- var items = opslist
-			- each item in items
-				tr
-					td
-						a(href=url + "/" + item.link) #{item.name}
+	div.heading Geoprocessing Operations
+
+	span Geoprocessing services are simply custom functions (created ahead of time) exposed thru this API. The following geoprocessing operations are available.
+
+	div.bigSpace
+
+	- var items = opslist
+	- each item in items
+		div.littleSpace
+			a(href=url + "/" + item.link) #{item.name}
 					
 
 

@@ -93,7 +93,7 @@ app.all('/services/tables/:table', flow.define(
 
         this.args.table = this.req.params.table;
         this.args.view = "table_details";
-        this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "", name: this.args.table }];
+        this.args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "", name: this.args.table }];
         this.args.host = settings.application.publichost || req.headers.host;
         this.args.url = this.req.url;
         this.args.table_details = [];
@@ -172,9 +172,9 @@ app.all('/services/tables/:table', flow.define(
 
         //If there's a geom or raster column, then check for SRID
         if (rasterOrGeometry.present === true) {
-            if (settings.columnNames[this.args.table] && settings.columnNames[this.args.table].srid) {
-                this({ rows: [{ srid: settings.columnNames[this.args.table].srid }] });
-            } else {
+            if (app.spatialTables[this.args.table] && app.spatialTables[this.args.table].srid) {
+                this({ rows: [{ srid: app.spatialTables[this.args.table].srid }] });
+            }else {
                 //check SRID
                 var query = { text: "select ST_SRID(" + rasterOrGeometry.name + ") as SRID FROM " + this.args.table + " LIMIT 1;", values: [] };
                 common.executePgQuery(query, this);
@@ -194,7 +194,14 @@ app.all('/services/tables/:table', flow.define(
             }
             else {
                 this.args.SRID = result.rows[0].srid; //Use the SRID
-                settings.columnNames[this.args.table].srid = result.rows[0].srid;
+                if (app.spatialTables[this.args.table]) {
+                    app.spatialTables[this.args.table].srid = result.rows[0].srid;
+                }
+                else {
+                    //Add the table name and the SRID
+                    app.spatialTables[this.args.table] = {};
+                    app.spatialTables[this.args.table].srid = result.rows[0].srid;
+                }
             }
         }
         else {
@@ -241,8 +248,9 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.table = req.params.table;
             this.args.path = req.path;
             this.args.host = settings.application.publichost || req.headers.host;
-            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.view = "table_query";
+            this.args.SRID = app.spatialTables[this.args.table].srid //Use the stored SRID
 
             //See if columns exist for this table in settings.js
             if (settings.columnNames[this.args.table]) {
@@ -263,8 +271,8 @@ app.all('/services/tables/:table/query', flow.define(
             //Render Query Form without any results.
             this.args.table = req.params.table;
             this.args.view = "table_query";
-            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
-            this.args.title = "GeoWebServices";
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
+            this.args.SRID = app.spatialTables[this.args.table].srid //Use the stored SRID
 
             var args = this.args;
 
@@ -491,8 +499,7 @@ app.all('/services/tables/:table/rasterOps', function (req, res) {
     var args = {};
     args.opslist = [{ link: 'zonalstatistics', name: 'Zonal Statistics' }];
     args.view = "rasterops";
-    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
-    args.title = "GeoWebServices";
+    args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "", name: "Raster Ops" }];
     args.path = req.path;
     args.host = req.headers.host;
 
@@ -523,7 +530,7 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
 
             this.args.table = req.params.table;
             this.args.view = "zonalstatistics";
-            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/tables/" + req.params.table, name: req.params.table }, { link: "/services/tables/" + req.params.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
             this.args.path = req.path;
             this.args.host = req.headers.host;
             this.args.featureCollection = {};
@@ -556,8 +563,7 @@ app.all('/services/tables/:table/rasterOps/zonalstatistics', flow.define(
             //Render Query Form without any results.
             this.args.table = this.req.params.table;
             this.args.view = "zonalstatistics";
-            this.args.breadcrumbs = [{ link: "/services", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "/services/tables/" + this.args.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
-            this.args.title = "GeoWebServices";
+            this.args.breadcrumbs = [{ link: "/services", name: "Table Listing" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "/services/tables/" + this.args.table + "/rasterOps", name: "Raster Ops" }, { link: "", name: "Zonal Statistics" }];
 
             common.respond(this.req, this.res, this.args);
         }
@@ -680,7 +686,7 @@ app.all('/services/tables/:table/topojson', flow.define(
         if (JSON.stringify(this.args) != '{}') {
             this.args.view = "topojson_list";
             this.args.table = this.req.params.table;
-            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
             this.args.path = this.req.path;
             this.args.host = this.req.headers.host;
             this.args.files = [];
@@ -702,7 +708,7 @@ app.all('/services/tables/:table/topojson', flow.define(
             //Respond with list.
             this.args.view = "topojson_list";
             this.args.table = this.req.params.table;
-            this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
+            this.args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "TopoJSON" }];
             this.args.path = this.req.path;
             this.args.host = this.req.headers.host;
 
@@ -817,7 +823,7 @@ if (mapnik) {
 
             this.args.view = "table_dynamic_map";
             this.args.table = this.req.params.table;
-            this.args.breadcrumbs = [{ link: "/services/tables/", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
+            this.args.breadcrumbs = [{ link: "/services/tables/", name: "Table Listing" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Dynamic Map Service" }];
             this.args.path = this.req.path;
             this.args.host = settings.application.publichost || this.req.headers.host;
 

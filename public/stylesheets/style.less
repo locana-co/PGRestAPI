@@ -99,11 +99,10 @@ a:hover {
 
 .inputTable {
 	padding: 5px;
-	margin: 10px 0px 3px;
+	margin: 10px 0px 10px;
 }
 
 .inputTable td{
-	font-size: 0.90em;
 	margin: 0px 0px 3px;
 	padding: 3px 11px 5px 0;
 }
@@ -116,14 +115,12 @@ a:hover {
 	background-color: #FFFFE0;
 	padding: 20px;
 	border: @messageBorder;
-	margin-top: 40px;
 }
 
 .errorMessage {
 	background-color: pink;
 	padding: 20px;
 	border: @messageBorder;
-	margin-top: 40px;
 }
 
 textarea{
@@ -214,33 +211,7 @@ pre {
     text-align: left;
 }
 
-::-webkit-input-placeholder { /* WebKit browsers */
-    color:    #999;
-    background-color: #f1f1f1;
-}
-:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
-    color:    #999;
-    background-color: #f1f1f1;
 
-}
-::-moz-placeholder { /* Mozilla Firefox 19+ */
-    color:    #999;
-    background-color: #f1f1f1;
-
-}
-:-ms-input-placeholder { /* Internet Explorer 10+ */
-    color:    #999;
-    background-color: #f1f1f1;
-}
-
-input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
-  color: #999;
-  background-color: #f1f1f1;
-}
-input:-moz-placeholder, textarea:-moz-placeholder {
-  color: #999;
-  background-color: #f1f1f1;
-}
 
 .main-content {
     position: relative;
@@ -250,7 +221,7 @@ input:-moz-placeholder, textarea:-moz-placeholder {
 .floatingColumns {
     float: left;
     margin-right: 20px;
-    width: 250px;
+    min-width: 250px;
 }
 
 .floatingColumns .littleSpace {
@@ -269,7 +240,7 @@ input:-moz-placeholder, textarea:-moz-placeholder {
 
 
 .geometry {
-    word-wrap: break-word;
+    /*word-wrap: break-word;*/
 }
 
 .section.code {
@@ -467,3 +438,39 @@ div.navLinks a.active {
     div.navLinks a:hover {
         color: #0769ad;
     }
+
+    #querySubmit{
+        float:right;
+    }
+
+#querySubmit, .blueButton {
+    padding: 5px 50px;
+    background-color: #0769ad;
+    color: #fff;
+    font-family: futura__condensed;
+    font-size: 30px;
+    border:0px;
+    text-transform:uppercase;
+    margin-bottom:20px;
+    cursor:pointer;
+}
+
+#map {
+    height:400px;
+    width: 400px;
+    border-top:1px solid;padding-top:20px;
+}
+
+.truncate {
+  width: 1000px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#queryMapUpdate {
+    margin-top: 20px;
+}
+
+.breakword {
+    word-wrap:break-word;
+}

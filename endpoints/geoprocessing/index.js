@@ -19,7 +19,7 @@ app.all('/services/geoprocessing', function (req, res) {
 
     var args = {};
     args.view = "geoprocessing_operations";
-    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "", name: "Geoprocessing Operations" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "", name: "Geoprocessing Operations" }];
     args.url = req.url;
     args.opslist = [];
 
@@ -48,11 +48,10 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
         args = req.query;
     }
 
-    args.view = "geoprocessing_operation";
-    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
-    args.featureCollection = [];
-
     if (JSON.stringify(args) != '{}') {
+
+        args.view = "geoprocessing_operation";
+        args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
 
         if (args.name) {
             //Dynamically load the page
@@ -147,7 +146,9 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
 
     }
     else {
-        //Render HTML page with results at bottom
+        //Page initial load.  No results
+        args.view = "geoprocessing_operation";
+        args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/geoprocessing", name: "Geoprocessing Operations" }, { link: "", name: "Geoprocessing Operation" }];
         common.respond(req, res, args);
     }
 });

@@ -1,10 +1,15 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| Define an area for which to get zonal statistics
+	script.
+		//Trigger Active Nav Link
+		$("#tableListing").addClass("active");
+
+	div.heading Zonal Statistics
+	span Define an area for which to calculate zonal statistics from this raster.
+		
 	form(action='',method='post')
-		table.inputTable
+		table.inputTable(style='background-color: #fff;')
 			tr
 				td
 					label(for='stattype') Summary Statistic
@@ -38,7 +43,7 @@ block content
 
 
 		div(data-role='fieldcontain')   
-			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
+			input.blueButton(type='submit',value='Submit',data-transition='fade', data-theme='c')
 
 		- if(table_details){
 			table
@@ -76,47 +81,52 @@ block content
 		-}
 
 
-		-if(infoMessage){
-			div.infoMessage
-				|#{infoMessage}
-		-}
+block results
+	-if(infoMessage || errorMessage || featureCollection){
+		div.section.code
 
-		-if(errorMessage){
-			div.errorMessage
-				|#{errorMessage}
-		-}
+			div.codeSamplesHeader Results
+		
+			div.codeBody
 
-block sidebar
-	.widget
-		h2 Results
-		.results
-			- if (featureCollection){
-				-if(featureCollection.features){
-					i # records: #{featureCollection.features.length}
-					each val, key in featureCollection.features
-						div.propertyGroup
-							each ival, ikey in val.properties
-								-if(ival && ival.coordinates){
-									each egval, egkey in ival
-										div.geometry #{ikey}: #{egkey}: #{egval}
-								-}else{
-									div.property #{ikey}: #{ival}
-								-}
-								
-							-if(val.geometry){
-								-if(val.geometry.geometries){
-									each mgval, mgkey in val.geometry.geometries
-										-if(mgval.coordinates){
-											div.geometries #{mgval.type}: #{mgval.coordinates}
-										-}
-								-}else{
-									each gval, gkey in val.geometry
-										div.geometry geometry: #{gkey}: #{gval}
-								-}
-							-}
-							
-				-}else{
-					div.propertyGroup No results found
+				-if(infoMessage){
+					div.infoMessage
+						|#{infoMessage}
 				-}
-			-}
-			
+
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}
+
+				.results
+					- if (featureCollection){
+						-if(featureCollection.features){
+							i # records: #{featureCollection.features.length}
+							each val, key in featureCollection.features
+								div.propertyGroup
+									each ival, ikey in val.properties
+										-if(ival && ival.coordinates){
+											each egval, egkey in ival
+												div.geometry #{ikey}: #{egkey}: #{egval}
+										-}else{
+											div.property #{ikey}: #{ival}
+										-}
+								
+									-if(val.geometry){
+										-if(val.geometry.geometries){
+											each mgval, mgkey in val.geometry.geometries
+												-if(mgval.coordinates){
+													div.geometries #{mgval.type}: #{mgval.coordinates}
+												-}
+										-}else{
+											each gval, gkey in val.geometry
+												div.geometry geometry: #{gkey}: #{gval}
+										-}
+									-}
+							
+						-}else{
+							div.propertyGroup No results found
+						-}
+					-}
+	-}

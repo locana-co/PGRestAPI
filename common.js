@@ -7,6 +7,10 @@ var common = {};
 common.formatters = {};
 
 common.respond = function (req, res, args) {
+    
+    //calculate response time
+    args.responseTime = new Date - req._startTime; //ms since start of request
+
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
     if (!args.format || args.format.toLowerCase() == "html") {
         //Determine sample request based on args

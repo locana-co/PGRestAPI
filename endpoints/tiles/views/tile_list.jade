@@ -1,21 +1,16 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| Tilestream Layers
+	script.
+		//Trigger Active Nav Link
+		$("#tileStream").addClass("active");
 
-	table
-		thead
-			tr
-				th Name
-		tbody
-			- each item in featureCollection
-				tr
-					td
-						a(href=item.preview, target='_blank') #{item.name}
+	div.heading TileStream Maps
 
-						
+	span This is a list of cached tiled map services for your enjoyment.
 
+	div.bigSpace
 
-block sidebar
-	.widget
+	- each item in featureCollection
+		div.littleSpace
+			a(href=item.preview, target='_blank') #{item.name}

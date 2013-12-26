@@ -64,7 +64,7 @@ try{
     mapnik = require('./endpoints/mapnik');
 } catch (e) {
     mapnik = null;
-    console.log("Mapnik not properly installed. Skipping. " + e);
+    console.log("Mapnik not properly installed. Skipping. Reason: " + e);
 }
 
 if(mapnik) app.use(mapnik.app);
@@ -90,29 +90,28 @@ app.get('/', function (req, res) { res.redirect('/services/tables') });
 app.get('/services', function (req, res) { res.redirect('/services/tables') });
 
 
-if (mapnik)
-{
+
     //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
     //on startup.  Probably move this to a 'startup' module
-    common.vacuumAnalyzeAll();
+    //common.vacuumAnalyzeAll();
     
-    tables.findSpatialTables(function (error, tables) {
-        if (error) {
-
-        }
-        else {
-            if (tables && tables.length > 0) {
-                tables.forEach(function (item) {
+tables.findSpatialTables(function (error, tables) {
+    if (error) {
+        console.log(error);
+    }
+    else {
+        if (tables && tables.length > 0) {
+            tables.forEach(function (item) {
+                if (mapnik) {
                     //Spin up a route to serve dynamic tiles for this table
                     mapnik.createPGTileRenderer(item.table, item.geometry_column, item.srid, null);
                     mapnik.createPGTileQueryRenderer(item.table, item.geometry_column, item.srid, null);
 
                     //Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
                     mapnik.createCachedFolder(item.table);
-                });
-            }
+                }
+            });
         }
-    });
+    }
+});
     
-    
-}
