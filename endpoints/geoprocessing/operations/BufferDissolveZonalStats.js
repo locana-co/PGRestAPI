@@ -28,7 +28,7 @@ operation.inputs["country_code"] = []; //Let user specify input country code
 operation.Query = "DO $$DECLARE " +
 "BEGIN " +
 "drop table if exists _gptemp; " +
-"create temporary  table _gptemp as  " +
+"create temporary table _gptemp as  " +
 "select a.landuse, a.name, a.total, " +
 "ST_UNION(st_intersection(a.geom,b.geom)) as geom " +
 "from {country}_district_landuse a " +
