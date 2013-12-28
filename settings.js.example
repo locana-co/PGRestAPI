@@ -31,6 +31,9 @@ settings.displayTables = true;
 //Should the API hide any postgres tables or views?
 settings.pg.noFlyList = ["att_0"];
 
+//The list of formats to be returned by the Table Query REST endpoint.  If ogr2ogr is installed, .shp will be added automatically.
+settings.application.formatList =[ 'html', 'GeoJSON', 'esriJSON'];
+
 //Where to write out TopoJSON files?
 settings.application.topoJsonOutputFolder = "/public/topojson/output/";
 

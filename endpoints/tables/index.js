@@ -23,7 +23,8 @@ var ogr2ogr;
 try{
 	ogr2ogr = require('ogr2ogr');
 }catch(e){
-	ogr2ogr = null;
+    ogr2ogr = null;
+    console.log("No ogr2ogr found. Will not use.");
 }
 
 var app = exports.app = express();
