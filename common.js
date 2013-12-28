@@ -6,7 +6,7 @@ var pg = require('pg'),
 var common = {};
 common.formatters = {};
 
-common.respond = function (req, res, args) {
+common.respond = function (req, res, args, callback) {
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
     if (!args.format || args.format.toLowerCase() == "html") {
         //Determine sample request based on args
@@ -29,7 +29,9 @@ common.respond = function (req, res, args) {
         }
         else {
         	//Send back a shapefile
-  			res.download(args.file);
+            res.download(args.file, function(){
+                callback(args.file)
+            });
         }
     }
     else {

@@ -10,7 +10,8 @@ var flow = require('flow'),
     fs = require("fs"),
     http = require("http"),
     path = require("path"),
-    blaster = require("../../lib/datablaster");
+    blaster = require("../../lib/datablaster"),
+    shortid = require("shortid");
 
 var mapnik;
 try {
@@ -26,6 +27,9 @@ try{
     ogr2ogr = null;
     console.log("No ogr2ogr found. Will not use.");
 }
+
+//Add shapefile option to table query output list
+if (ogr2ogr) settings.application.formatList.push('shapefile');
 
 var app = exports.app = express();
 
@@ -252,9 +256,7 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.host = settings.application.publichost || req.headers.host;
             this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.view = "table_query";
-            
-            if(ogr2ogr) settings.application.formatList.push('shapefile');
-            this.args.formatlist = settings.application.formatList;
+            this.args.formatlist = settings.application.formatList; //TODO - just set this once.  Not on every request
 
             //See if columns exist for this table in settings.js
             if (settings.columnNames[this.args.table]) {
@@ -277,9 +279,7 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.view = "table_query";
             this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
-            
-            if(ogr2ogr) settings.application.formatList.push('shapefile');
-            this.args.formatlist = settings.application.formatList;
+            this.args.formatlist = settings.application.formatList;//TODO - just set this once.  Not on every request
 
             var args = this.args;
 
@@ -512,7 +512,7 @@ app.all('/services/tables/:table/query', flow.define(
                 //Convert the GeoJSON object to a shapefile
                 var shapefile = ogr2ogr(features).format('ESRI Shapefile').stream();
                 
-                var filePath = "." + settings.application.topoJsonOutputFolder + 'shapefile.zip';
+                var filePath = "." + settings.application.topoJsonOutputFolder + 'shapefile_' + shortid.generate() + '.zip';
                 var fileWriteStream = fs.createWriteStream(filePath);
                 
                 //Set the callback for when the shapefile is done writing
@@ -529,7 +529,19 @@ app.all('/services/tables/:table/query', flow.define(
     },
     function(){
     	//coming back from shapefile creation or other file processing
-    	common.respond(this.req, this.res, this.args);
+        common.respond(this.req, this.res, this.args, function (file) {
+            //clean up if shapefile was generated
+            if (file) {
+                fs.unlink(file, function (err) {
+                    if (err) {
+                        console.log("Problem deleting shapefile " + file + " :" + err);
+                    }
+                    else {
+                        console.log('Deleted shapefile ' + file);
+                    }
+                });
+            }
+        });
     }
 ));
 
