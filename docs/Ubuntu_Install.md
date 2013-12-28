@@ -36,6 +36,13 @@ PGRestAPI - Ubuntu 12/13 Installation
 	sudo add-apt-repository ppa:mapnik/v2.2.0
 	sudo apt-get update
 	sudo apt-get install libmapnik libmapnik-dev mapnik-utils python-mapnik
+	
+###Install GDAL
+	sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
+	sudo apt-get install gdal-bin
+	
+###Install TopoJSON globally
+	sudo npm install -g topojson
 
 ###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik)
 	sudo wget https://protobuf.googlecode.com/files/protobuf-2.3.0.tar.gz

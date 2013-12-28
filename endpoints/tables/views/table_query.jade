@@ -36,9 +36,8 @@ block content
 					label(for='format') Format
 				td
 					select(id='format',name='format')
-						formatlist = [ 'html', 'GeoJSON', 'esriJSON']
-							for item in formatlist
-								option(value=item, selected=(item==stattype))=item
+						for item in formatlist
+							option(value=item, selected=(item==stattype))=item
 			tr
 				td
 					label Return geometry

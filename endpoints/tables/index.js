@@ -19,6 +19,13 @@ try {
     mapnik = null;
 }
 
+var ogr2ogr;
+try{
+	ogr2ogr = require('ogr2ogr');
+}catch(e){
+	ogr2ogr = null;
+}
+
 var app = exports.app = express();
 
 app.set('views', __dirname + '/views');
@@ -244,6 +251,9 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.host = settings.application.publichost || req.headers.host;
             this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.view = "table_query";
+            
+            if(ogr2ogr) settings.application.formatList.push('shapefile');
+            this.args.formatlist = settings.application.formatList;
 
             //See if columns exist for this table in settings.js
             if (settings.columnNames[this.args.table]) {
@@ -266,6 +276,9 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.view = "table_query";
             this.args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/tables/" + this.args.table, name: this.args.table }, { link: "", name: "Query" }];
             this.args.title = "GeoWebServices";
+            
+            if(ogr2ogr) settings.application.formatList.push('shapefile');
+            this.args.formatlist = settings.application.formatList;
 
             var args = this.args;
 
@@ -313,6 +326,13 @@ app.all('/services/tables/:table/query', flow.define(
             this.args.geometryStatement = geom_select_array.join(",");
         }
         else {
+        	//No geometry desired.  That means you can't have a 'shapefile' as output. Check
+        	if(this.args.format.toLowerCase() == 'shapefile'){
+        		this.args.errorMessage = "Format 'shapefile' requires returnGeometry to be 'yes'.";
+        		common.respond(this.req, this.res, this.args);
+                return;
+        	}
+        	
             this.args.geometryStatement = "";
             this.args.geom_fields_array = []; //empty it
         }
@@ -448,6 +468,11 @@ app.all('/services/tables/:table/query', flow.define(
             return;
         }
     }, function (result) {
+    	
+    	var flo = this; //Save for closure //TODO - Use _self
+    	
+    	this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
+        this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
 
         var features = [];
 
@@ -455,33 +480,55 @@ app.all('/services/tables/:table/query', flow.define(
         if (result.status == "error") {
             //Report error and exit.
             this.args.errorMessage = result.message;
+            flo();
         } else {
             //a-ok
             //Check which format was specified
             if (!this.args.format || this.args.format.toLowerCase() == "html") {
                 //Render HTML page with results at bottom
-                features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
-
+                this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array)); //The page will parse the geoJson to make the HTMl
+				flo();
                 //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
                 //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
             }
             else if (this.args.format && this.args.format.toLowerCase() == "geojson") {
                 //Respond with JSON
-                features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
-
+                this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+				flo();
                 //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
                 //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
             }
             else if (this.args.format && this.args.format.toLowerCase() == "esrijson") {
                 //Respond with esriJSON
-                features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+                this.args.featureCollection = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+                flo();
             }
-
-            this.args.featureCollection = features;
-            this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
-            this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+            else if (this.args.format && this.args.format.toLowerCase() == "shapefile") {
+                //Make a Shapefile with the GeoJSON.  Then offer it up for download.
+                //Make a GeoJSON object from the features first.
+                features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+                
+                //Convert the GeoJSON object to a shapefile
+                var shapefile = ogr2ogr(features).format('ESRI Shapefile').stream();
+                
+                var filePath = "." + settings.application.topoJsonOutputFolder + 'shapefile.zip';
+                var fileWriteStream = fs.createWriteStream(filePath);
+                
+                //Set the callback for when the shapefile is done writing
+                fileWriteStream.on("finish", function(){
+                	flo.args.file = filePath;
+                	flo(); //Go to next block
+                })
+                
+                //Write
+				shapefile.pipe(fileWriteStream); 
+            }
         }
-        common.respond(this.req, this.res, this.args);
+        
+    },
+    function(){
+    	//coming back from shapefile creation or other file processing
+    	common.respond(this.req, this.res, this.args);
     }
 ));
 

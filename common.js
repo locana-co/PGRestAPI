@@ -21,6 +21,17 @@ common.respond = function (req, res, args) {
             res.jsonp(args.featureCollection);
         }
     }
+    else if(args.format && (args.format.toLowerCase() == "shapefile")){
+    	//Requesting Shapefile Format.
+    	//If there's an error, return a json
+        if (args.errorMessage) {
+            res.jsonp({ error: args.errorMessage });
+        }
+        else {
+        	//Send back a shapefile
+  			res.download(args.file);
+        }
+    }
     else {
         //If unrecognized format is specified
         if (args.errorMessage) {
