@@ -298,17 +298,18 @@ exports.createPGTileQueryRenderer = flow.define(
 //Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
 exports.createGeoJSONQueryRenderer = flow.define(
 
-    function (geoJSON, epsgSRID, cartoFile, id) {
+    function (geoJSON, epsgSRID, cartoFile, id, callback) {
 
         this.geoJSON = geoJSON;
         //this.geom_field = geom_field;
         this.epsg = epsgSRID;
 
         var _self = this;
+        var dynamicURL = '/services/GeoJSONQueryMap/' + id;
 
         //Create Route for this table - TODO:  Figure out how/when to kill this endpoint
-        app.use('/services/GeoJSONQueryMap/' + id, function (req, res) {
-            debugger;
+        app.use(dynamicURL, function (req, res) {
+            
             //Check for correct args
             //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
             var args = {};
@@ -326,7 +327,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
             // check to see if args were provided
             if (JSON.stringify(args) != '{}') {
                 //are all mandatory args provided?
-                var missing = "Please provide"
+                var missing = "Please provide";
                 var missingArray = [];
                 if (!args.width) {
                     missingArray.push("width");
@@ -354,8 +355,8 @@ exports.createGeoJSONQueryRenderer = flow.define(
                 }
 
                 //make a temporary geojson file for mapnik (until I figure out how to pass in an object)
-                common.writeGeoJSONFile(geoJSON, function (err, filename, fullpath) {
-                    debugger;
+                common.writeGeoJSONFile(geoJSON, id, function (err, filename, fullpath) {
+                  
                     if (err) {
                         //TODO: Handle this.
                         return;
@@ -374,21 +375,21 @@ exports.createGeoJSONQueryRenderer = flow.define(
                             //create map and layer
                             var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
                             var layer = new mapnik.Layer(id, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4)); //check to see if 3857.  If not, assume WGS84
-                            var postgis = new mapnik.Datasource(geojson_settings);
+                            var geojson_ds = new mapnik.Datasource(geojson_settings);
 
                             var floatbbox = args.bbox.split(",");
 
                             var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]]; //ll lat, ll lon, ur lat, ur lon
 
-                            layer.datasource = postgis;
-                            layer.styles = [_self.table, 'style'];
+                            layer.datasource = geojson_ds;
+                            layer.styles = [id, 'style'];
 
                             map.bufferSize = 64;
 
                             var stylepath = __dirname + '/cartocss/style.xml';
 
                             map.load(path.join(stylepath), { strict: true }, function (err, map) {
-                                debugger;
+                                
                                 console.log(map.toXML()); // Debug settings
 
                                 if (err) throw err;
@@ -398,7 +399,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
                                 map.extent = bbox;
                                 var im = new mapnik.Image(map.width, map.height);
                                 map.render(im, function (err, im) {
-                                    debugger;
+                                    
                                     if (err) {
                                         throw err;
                                     } else {
@@ -422,7 +423,8 @@ exports.createGeoJSONQueryRenderer = flow.define(
             }
         });
 
-        console.log("Created dynamic query service: " + '/services/GeoJSONQueryMap/' + id);
+        console.log("Created dynamic query service: " + dynamicURL);
+        callback({ imageURL: dynamicURL });
     }
 )
 

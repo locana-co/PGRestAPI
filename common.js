@@ -3,6 +3,7 @@ var pg = require('pg'),
     querystring = require('querystring'),
     http = require("http"),
     settings = require("./settings"),
+    fs = require("fs"),
     shortid = require("shortid");
 
 var common = {};
@@ -267,13 +268,12 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
 
 
 //Pass in an object and write out a GeoJSON File
-common.writeGeoJSONFile = function (geojson, callback) {
-
-    var tempFilename = shortid.generate();
+common.writeGeoJSONFile = function (geojson, name, callback) {
 
     //Write out a GeoJSON file to disk - remove all whitespace
-    var geoJsonOutFile = tempFilename + '.json';
-    fs.writeFile("." + settings.application.geoJsonOutputFolder + "/" + geoJsonOutFile, JSON.stringify(geojson).replace(/\s+/g, ''), function (err) {
+    var geoJsonOutFile = name + '.json';
+    var fullPath = "." + settings.application.geoJsonOutputFolder + geoJsonOutFile;
+    fs.writeFile(fullPath, JSON.stringify(geojson).replace(/\s+/g, ''), function (err) {
         if (err) {
             console.log(err.message);
         }
@@ -282,7 +282,7 @@ common.writeGeoJSONFile = function (geojson, callback) {
         }
 
         //pass back err, even if null
-        callback(err, geoJsonOutFile, settings.application.geoJsonOutputFolder + "/" + geoJsonOutFile);
+        callback(err, geoJsonOutFile, fullPath);
     });
 
 }
