@@ -1,17 +1,16 @@
 extends ../../../shared_views/layout
 
 block content
-	p
-		| The following operations are available for your raster dataset.
+	script.
+		//Trigger Active Nav Link
+		$("#tableListing").addClass("active");
 
-	table
-		thead
-			tr
-				th Operations
-		tbody
-			- var items = opslist
-			- each item in items
-				tr
-					td
-						a(href=path + "/" + item.link) #{item.name}
+	div.heading Raster Operations
+	span The following operations are available for your raster dataset.
+
+	div.bigSpace
+
+	- each item in opslist
+		div.littleSpace
+			a(href=path + "/" + item.link) #{item.name}
 					

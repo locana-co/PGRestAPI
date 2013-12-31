@@ -22,7 +22,8 @@
     "pg": "*",
     "flow": "*",
     "less-middleware": "*",
-    "topojson": "*"
+    "topojson": "*",
+	"shortid": "*"
   },
   "optionalDependencies":{
   	"mapnik": "*",

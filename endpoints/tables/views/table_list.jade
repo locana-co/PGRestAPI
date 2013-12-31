@@ -1,9 +1,12 @@
 extends ../../../shared_views/layout
 
 block content
-	h2 Table Listing
-	
-	
+	script.
+		//Trigger Active Nav Link
+		$("#tableListing").addClass("active");
+
+	div.heading Table Listing
+
 	span A list of your PostGres Tables
 	- if(featureCollection){
 		- var currentLetter = "";
@@ -22,47 +25,63 @@ block content
 
 
 
-	h3 Code Sample
-	span Here's how to hit this endpoint programatically to get an array of these table names
 
-	h4 JSONP GET
-	pre.codePreview
-		|//define arguments
-		|var args = {
-		|    format: 'geojson'
-		|};
-		|&nbsp;
-		|//jQuery JSONP GET
-		|$.getJSON('#{link}?callback=?', args).done(function (data) {
-		|    //Callback on success
-		|    console.log(data);
-		|})
-
-
-	- var requestSample = ["format=geojson"]
-	-if(search)
-		- requestSample.push("search=" + encodeURIComponent(search))
-	h4 GET
-	pre.codePreview
-		|#{"http://" + host + path + "?" + requestSample.join("&")}
-
-
-	- var optionalSample = ["format=geojson","search=a"]
-	h3 Optional Search
-	span To filter the tables, use a partial search term. For example, to only show tables starting with the letter 'a' using a GET method, append search=a
-	pre.codePreview
-		|#{"http://" + host + path + "?" + optionalSample.join("&")}
-
-	-if(infoMessage){
-		div.infoMessage
-			|#{infoMessage}
-	-}
-	-if(errorMessage){
-		div.errorMessage
-			|#{errorMessage}
-	-}
 						
+block apidoc
+
+	div.section.code
+
+		div.codeSamplesHeader Code Sample
+		
+		div.codeBody
+
+			span Here's how to hit this endpoint programatically to get an array of these column names
+
+			div.requestHeader JSONP GET
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					|//define arguments
+					|var args = {
+					|    format: 'geojson'
+					|};
+					|&nbsp;
+					|//jQuery JSONP GET
+					|$.getJSON('#{link}?callback=?', args).done(function (data) {
+					|    //Callback on success
+					|    console.log(data);
+					|})
 
 
-block sidebar
-	.widget
+			- var requestSample = ["format=geojson"]
+			-if(search)
+				- requestSample.push("search=" + encodeURIComponent(search))
+
+			div.requestHeader GET
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					span.nocode.str #{"http://" + host + path + "?" + requestSample.join("&")}
+
+
+			- var optionalSample = ["format=geojson","search=a"]
+			
+			div.requestHeader Optional Search
+
+			div.requestContent
+
+				span To filter the tables, use a partial search term. For example, to only show tables starting with the letter 'a' using a GET method, append search=a
+				
+				pre.prettyprint.linenums
+					span.nocode.str #{"http://" + host + path + "?" + optionalSample.join("&")}
+
+				-if(infoMessage){
+					div.infoMessage
+						|#{infoMessage}
+				-}
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}

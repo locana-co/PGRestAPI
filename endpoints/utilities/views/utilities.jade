@@ -2,14 +2,17 @@ extends ../../../shared_views/layout
 
 block content
 
-	table
-		thead
-			tr
-				th Utilities
-		tbody
-			- var items = opslist
-			- each item in items
-				tr
-					td
-						a(href="/services/" + item.link) #{item.name}
+	script.
+		//Trigger Active Nav Link
+		$("#utilities").addClass("active");
+
+	div.heading Utilities
+
+	span These utilities are a random collection of assorted helper functions.  Enjoy.
+
+	div.bigSpace
+		- var items = opslist
+		- each item in items
+			div.littleSpace
+				a(href="/services/" + item.link) #{item.name}
 					

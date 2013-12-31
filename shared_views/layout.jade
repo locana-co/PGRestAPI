@@ -3,36 +3,65 @@ html
 	head
 		title PGRestAPI
 		link(rel='stylesheet', href='/stylesheets/style.css')
+		link(rel='stylesheet', href='/fonts/fonts.css')
+
 		-if(css){
 			-each csslink in css 
 				link(rel='stylesheet', href= csslink)
 		-}
+
+		script(type='text/javascript', src='http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js')
+		
 		-if(scripts){
 		-each script in scripts 
 			script(type='text/javascript', src= script)
-	
 		-}	
+
+
 	body
 		div.header
-			img(src='/img/logo.png',alt='logo')
-		div.breadcrumbs
-			-if(breadcrumbs){
-				each crumb in breadcrumbs
-					-if(crumb.link == ""){
-						|#{crumb.name}
-					-}else{
-						a(href=crumb.link) #{crumb.name}
-						-if(breadcrumbs.length > 1){
-							&nbsp;
-							|>
-							&nbsp;
-						-}
-					-}
-			-}
+			a(href='/services/tables',alt='Table Listing')
+				img(src='/img/logo.png',alt='logo',style='height:65px;')
+			div.navLinks.right
+				a#tableListing(href='/services/tables') Table Listing
+				a#geoprocessing(href='/services/geoprocessing') Geoprocessing
+				a#utilities(href='/services/utilities') Utilities
+				a#tileStream(href='/services/tiles') TileStream Link					
+
 		.container
-			.main-content
+			-if(breadcrumbs){
+				div.breadcrumbs
+					each crumb, idx in breadcrumbs
+						-if(crumb.link == ""){
+							span.blue #{crumb.name}
+						-}else{
+							a(href=crumb.link) #{crumb.name}
+							-if(breadcrumbs.length > 1){
+								-if(breadcrumbs.length == idx +2){
+									&nbsp;
+									span.blue &#9654;
+									&nbsp;
+								-}else{
+									&nbsp;
+									&#9654;
+									&nbsp;
+								-}
+							-}
+						-}
+			-}
+			.main-content.clearfix
 				block content
+			.main-content.clearfix
+				block results
+			.main-content.clearfix
+				block apidoc
 		.sidebar
 				block sidebar
-	footer
-		p Running on node with Express, Jade and Less
+		script(type='text/javascript', src='/stylesheets/layout.js')
+		script(type='text/javascript', src='https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js')
+
+		
+	footer.clearfix
+		div.left &copy; 2013 Spatial Development International All Rights Reserved.
+		div.right
+			img(src='/img/sdlogo.jpg')

@@ -1,101 +1,116 @@
 extends ../../../shared_views/layout
 
 block content
-	h2 #{table}
+	script.
+		//Trigger Active Nav Link
+		$("#tableListing").addClass("active");
 
-	div.section
-		div.headingTitle Operations
-		div.links
-			- if(featureCollection && featureCollection.supportedOperations){
-				- each operation in featureCollection.supportedOperations
-					a(href=operation.link) #{operation.name}
-			-}
+	div.floatingColumns.blocks
+		div.heading #{table}
 
-	div.section
-		div.headingTitle Columns
-		span Below is a list of columns and column data types for this table.
-
-		div.spacer
-
-		-if(featureCollection && featureCollection.columns){
-			- each item in featureCollection.columns
-				div.littleSpace= item.column_name + " (" + item.data_type + ")"
-				-if(item.data_type == "raster") 
-		-}else{
-			div.littlespace No information found for this table.
+		h2 SRID
+		-if(SRID){
+			p(style="color:green")
+				| SRID is #{SRID}
 		-}
-	
-	-if(SRID){
-		p(style="color:green")
-			| SRID is #{SRID}
-	-}
+
+		h2 Columns
+		div.description Below is a list of columns and data types for this table.
+		div.columnList
+			-if(featureCollection && featureCollection.columns){
+				- each item in featureCollection.columns
+					div.littleSpace= item.column_name + " (" + item.data_type + ")"
+			-}else{
+				div.littlespace No information found for this table.
+			-}	
+
+	div.left#rightHand.blocks
+		div.innerRightHand
+			h2 Operations
+			div.description The following operations are available for this table.
+			div.links
+				- if(featureCollection && featureCollection.supportedOperations){
+					- each operation in featureCollection.supportedOperations
+						a(href=operation.link) #{operation.name}
+				-}
 
 
-	div.section
-		h3 Code Sample
-		span Here's how to hit this endpoint programatically to get an array of these column names
+block apidoc
 
-		h4 JSONP GET
-		pre.codePreview
-			|//define arguments
-			|var args = {
-			|    format: 'geojson'
-			|};
-			|&nbsp;
-			|//jQuery JSONP GET
-			|$.getJSON('#{link}?callback=?', args).done(function (data) {
-			|    //Callback on success
-			|    console.log(data);
-			|})
+	div.section.code
 
-	- var requestSample = ["format=geojson"]
-	-if(search)
-		- requestSample.push("search=" + encodeURIComponent(search))
-	h4 GET
-	pre.codePreview
-		|#{link + "?" + requestSample.join("&")}
+		div.codeSamplesHeader Code Sample
+		
+		div.codeBody
 
-	h4 GeoJSON Response
-	pre.codePreview
-		|{
-		|   "columns": [
-		|     {
-		|          "column_name": "gid",
-		|          "data_type": "integer"
-		|     },
-		|     {
-		|          "column_name": "longitude",
-		|          "data_type": "numeric"
-		|     }
-		|  ]
-		|  "supportedOperations": [
-		|     {
-		|          "link": "#{link}/query",
-		|          "name": "Query"
-		|     },
-		|     {
-		|          "link": "#{link}/dynamicMapLanding",
-		|          "name": "Dynamic Map Service"
-		|     },
-		|     {
-		|          "link": "#{link}/topojson",
-		|          "name": "TopoJSON"
-		|     } 
-		|   ]
-		|}
+			span Here's how to hit this endpoint programatically to get an array of these column names
 
-	-if(infoMessage){
-		div.infoMessage
-			|!{infoMessage}
-	-}
-	-if(errorMessage){
-		div.errorMessage
-			|#{errorMessage}
-	-}
+			div.requestHeader JSONP GET
 
+			div.requestContent
+				pre.prettyprint.linenums
+					|//define arguments
+					|var args = {
+					|    format: 'geojson'
+					|};
+					|&nbsp;
+					|//jQuery JSONP GET
+					|$.getJSON('#{link}?callback=?', args).done(function (data) {
+					|    //Callback on success
+					|    console.log(data);
+					|})
 
-block sidebar
-	.widget
-	
+			- var requestSample = ["format=geojson"]
+			-if(search)
+				- requestSample.push("search=" + encodeURIComponent(search))
+
+			div.requestHeader GET
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					span.nocode.str #{link + "?" + requestSample.join("&")}
+
+			div.requestHeader GeoJSON Response
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					|{
+					|   "columns": [
+					|     {
+					|          "column_name": "gid",
+					|          "data_type": "integer"
+					|     },
+					|     {
+					|          "column_name": "longitude",
+					|          "data_type": "numeric"
+					|     }
+					|  ]
+					|  "supportedOperations": [
+					|     {
+					|          "link": "#{link}/query",
+					|          "name": "Query"
+					|     },
+					|     {
+					|          "link": "#{link}/dynamicMapLanding",
+					|          "name": "Dynamic Map Service"
+					|     },
+					|     {
+					|          "link": "#{link}/topojson",
+					|          "name": "TopoJSON"
+					|     } 
+					|   ]
+					|}
+
+				-if(infoMessage){
+					div.infoMessage
+						|!{infoMessage}
+				-}
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}
+
 
 				

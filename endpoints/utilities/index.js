@@ -15,24 +15,25 @@ app.all('/services/utilities', function (req, res) {
     var args = {};
 
     args.view = "services";
-    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "", name: "Utilities"}];
     args.path = req.path;
     args.host = req.headers.host;
+    
 
     //object with available services
     var opslist = [
         { link: 'wktpreview', name: 'WKT Previewer' }
     ];
 
+    args.opslist = opslist;
+
     //send to view
-    res.render('utilities', { opslist: opslist, breadcrumbs: [{ link: "", name: "Services" }] });
+    res.render('utilities', args);
 });
 
 //Add a route and define response - get list of utilities
 app.all('/services/wktpreview', function (req, res) {
     var args = {};
-
-
 
     //Grab POST or QueryString args depending on type
     if (req.method.toLowerCase() == "post") {
@@ -45,7 +46,7 @@ app.all('/services/wktpreview', function (req, res) {
     }
 
     args.view = "wktpreview";
-    args.breadcrumbs = [{ link: "/services/tables", name: "Home" }, { link: "/services/utilities", name: "Utilities" }, { link: "", name: "WKT Preview" }];
+    args.breadcrumbs = [{ link: "/services/tables", name: "Table Listing" }, { link: "/services/utilities", name: "Utilities" }, { link: "", name: "WKT Preview" }];
     args.path = req.path;
     args.host = req.headers.host;
    
