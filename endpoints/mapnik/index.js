@@ -298,17 +298,17 @@ exports.createPGTileQueryRenderer = flow.define(
 //Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
 exports.createGeoJSONQueryRenderer = flow.define(
 
-    function (geoJSON, epsgSRID, cartoFile) {
-        debugger;
+    function (geoJSON, epsgSRID, cartoFile, id) {
+
         this.geoJSON = geoJSON;
         //this.geom_field = geom_field;
         this.epsg = epsgSRID;
 
         var _self = this;
 
-        //Create Route for this table
-        app.use('/services/GeoJSONQueryMap', function (req, res) {
-
+        //Create Route for this table - TODO:  Figure out how/when to kill this endpoint
+        app.use('/services/GeoJSONQueryMap/' + id, function (req, res) {
+            debugger;
             //Check for correct args
             //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
             var args = {};
@@ -355,6 +355,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
 
                 //make a temporary geojson file for mapnik (until I figure out how to pass in an object)
                 common.writeGeoJSONFile(geoJSON, function (err, filename, fullpath) {
+                    debugger;
                     if (err) {
                         //TODO: Handle this.
                         return;
@@ -372,7 +373,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
                         try {
                             //create map and layer
                             var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4); //width, height
-                            var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4)); //check to see if 3857.  If not, assume WGS84
+                            var layer = new mapnik.Layer(id, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4)); //check to see if 3857.  If not, assume WGS84
                             var postgis = new mapnik.Datasource(geojson_settings);
 
                             var floatbbox = args.bbox.split(",");
@@ -387,6 +388,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
                             var stylepath = __dirname + '/cartocss/style.xml';
 
                             map.load(path.join(stylepath), { strict: true }, function (err, map) {
+                                debugger;
                                 console.log(map.toXML()); // Debug settings
 
                                 if (err) throw err;
@@ -396,7 +398,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
                                 map.extent = bbox;
                                 var im = new mapnik.Image(map.width, map.height);
                                 map.render(im, function (err, im) {
-
+                                    debugger;
                                     if (err) {
                                         throw err;
                                     } else {
@@ -420,7 +422,7 @@ exports.createGeoJSONQueryRenderer = flow.define(
             }
         });
 
-        console.log("Created dynamic query service: " + '/services/GeoJSONQueryMap');
+        console.log("Created dynamic query service: " + '/services/GeoJSONQueryMap/' + id);
     }
 )
 

@@ -124,10 +124,9 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
                             features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
                         }
 
-                        debugger;
                         //if GP operation specifies output image service, then spin one up
                         if (mapnik && gpOperation.outputImage && gpOperation.outputImage == true) {
-                            mapnik.createGeoJSONQueryRenderer(features, "4326", "style.xml"); //Use a dyanmic GP ID here to append to the name.
+                            mapnik.createGeoJSONQueryRenderer(features, "4326", "style.xml", gpOperation.id); //Use a dyanmic GP ID here to append to the name.
                         }
 
                         args.featureCollection = features; //assign output features to args variable

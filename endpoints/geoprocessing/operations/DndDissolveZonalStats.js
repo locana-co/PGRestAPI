@@ -9,11 +9,15 @@ var pg = require('pg'),
 //Arguments are:
 //1. The points.
 //2. Buffer Radius
+//3. Country Code
 
 var operation = {};
 var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32645', name: 'bangladesh' }, 'UGA': { srid: '32635', name: 'uganda' }, 'NGA': { name: 'nigeria', srid: '32632' }, 'KEN': { name: 'kenya', srid: '32636' } };
 //SRIDs from http://www.sumapa.com/crsxpais.cfm
 /* METADATA */
+
+//Generate UniqueID for this GP Task
+operation.id = shortid.generate();
 
 operation.name = "DnDAccessSummary";
 operation.description = "Calculates the number of people living within a certain radius of given access ponits, broken down by urban and rural locations.";
@@ -25,7 +29,7 @@ operation.inputs["geojson"] = {};
 operation.inputs["buffer_distance"] = { value: 0, units: "" }; //how far and what units?
 operation.inputs["country_code"] = []; //Let user specify input country code
 
-//This will execute just for Land Use and buffers - ~ 4 seconds for all points in Uganda, minus rural
+
 operation.Query = "DO $$DECLARE " +
 "BEGIN " +
 "drop table if exists \"_gptemp{gpid}\"; " +
@@ -57,9 +61,6 @@ operation.execute = flow.define(
             operation.inputs["geojson"] = args.geojson;
             operation.inputs["buffer_distance"] = args.buffer_distance;
             operation.inputs["country_code"] = args.country_code.toUpperCase();
-
-            //Generate UniqueID for this GP Task
-            operation.id = shortid.generate();
 
             //Take the point and buffer it in PostGIS
             var query = { text: operation.Query.replace("{geojson}", operation.inputs["geojson"]).split("{gpid}").join(operation.id).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
