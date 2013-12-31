@@ -169,9 +169,9 @@ function (req, res) {
     	//Flowing from CreateGeoJSONQueryRenderer, or just responding back to request
     	
     	if(result && result.imageURL) {
-    		this.args.imageURL = result.imageURL;
+    		this.args.imageURL = "http://" + this.args.host +result.imageURL; //TODO - make protocol dynamic
     		if(this.args.featureCollection){
-    			this.args.featureCollection.imageURL = result.imageURL; //Write an extra parameter back to the caller so they know how to fetch the result image.
+    			this.args.featureCollection.imageURL = this.args.imageURL; //Write an extra parameter back to the caller so they know how to fetch the result image.
     		}
     	}
     	common.respond(this.req, this.res, this.args); //Write it out
