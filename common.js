@@ -1,7 +1,9 @@
 //common.js is a collection of commonly used functions by the main app.js and all submodules.
 var pg = require('pg'),
     querystring = require('querystring'),
-    http = require("http");
+    http = require("http"),
+    settings = require("./settings"),
+    shortid = require("shortid");
 
 var common = {};
 common.formatters = {};
@@ -262,5 +264,30 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
     post_req.write(post_data);
     post_req.end(); 
 }
+
+
+//Pass in an object and write out a GeoJSON File
+common.writeGeoJSONFile = function (geojson, callback) {
+
+    var tempFilename = shortid.generate();
+
+    //Write out a GeoJSON file to disk - remove all whitespace
+    var geoJsonOutFile = tempFilename + '.json';
+    fs.writeFile("." + settings.application.geoJsonOutputFolder + "/" + geoJsonOutFile, JSON.stringify(geojson).replace(/\s+/g, ''), function (err) {
+        if (err) {
+            console.log(err.message);
+        }
+        else {
+            console.log("created GeoJSON file.");
+        }
+
+        //pass back err, even if null
+        callback(err, geoJsonOutFile, settings.application.geoJsonOutputFolder + "/" + geoJsonOutFile);
+    });
+
+}
+
+
+
 
 module.exports = common;

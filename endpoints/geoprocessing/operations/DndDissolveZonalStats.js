@@ -28,19 +28,19 @@ operation.inputs["country_code"] = []; //Let user specify input country code
 //This will execute just for Land Use and buffers - ~ 4 seconds for all points in Uganda, minus rural
 operation.Query = "DO $$DECLARE " +
 "BEGIN " +
-"drop table if exists _gptemp{gpid}; " +
-"create temporary table _gptemp{gpid} as  " +
+"drop table if exists \"_gptemp{gpid}\"; " +
+"create temporary table \"_gptemp{gpid}\" as  " +
 "select a.landuse, a.name, a.total, " +
 "ST_UNION(st_intersection(a.geom,b.geom)) as geom " +
 "from {country}_district_landuse a " +
-"inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(ST_GeomFromGeoJson({geojson}, 4326), {srid}), {buffer_distance}), 4326 )) as geom " +
+"inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(ST_GeomFromGeoJson('{geojson}'), {srid}), {buffer_distance}), 4326 )) as geom " +
 ") b on " +
 "st_intersects(a.geom, b.geom) " +
 "GROUP BY a.landuse, a.name, a.total; " +
-"CREATE INDEX _gptemp{gpid}_gix ON _gptemp{gpid} USING GIST (geom); " +
+"CREATE INDEX \"_gptemp{gpid}_gix\" ON \"_gptemp{gpid}\" USING GIST (geom); " +
 "END$$; " +
 "SELECT SUM((_st_summarystats(ST_Clip(rast,c.geom, true), 1, true, 1)).sum) as  sum, c.landuse, c.name, c.total, ST_AsGeoJSON(c.geom) as geom " +
-"FROM {country}_population_raster, _gptemp{gpid} c " +
+"FROM {country}_population_raster, \"_gptemp{gpid}\" c " +
 "WHERE ST_Intersects(c.geom,rast) " +
 "GROUP BY c.landuse, c.geom, c.name, c.total; ";
 
@@ -54,7 +54,7 @@ operation.execute = flow.define(
 
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (operation.isInputValid(args) === true) {
-            operation.inputs["geojson"] = args.where_clause;
+            operation.inputs["geojson"] = args.geojson;
             operation.inputs["buffer_distance"] = args.buffer_distance;
             operation.inputs["country_code"] = args.country_code.toUpperCase();
 
@@ -62,14 +62,14 @@ operation.execute = flow.define(
             operation.id = shortid.generate();
 
             //Take the point and buffer it in PostGIS
-            var query = { text: operation.Query.replace("{geojson}", operation.inputs["geojson"]).replace("{gpid}", operation.id).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
+            var query = { text: operation.Query.replace("{geojson}", operation.inputs["geojson"]).split("{gpid}").join(operation.id).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
             common.executePgQuery(query, this);//Flow to next function when done.
 
         }
         else {
             //Invalid arguments
             //return message
-            callback({ status: "Missing required arguments", rows: [] });
+            callback({ status: "error", message: "Invalid or Missing arguments", rows: [] });
         }
     },
     function (results) {
@@ -85,7 +85,7 @@ operation.isInputValid = function (input) {
 
     if (input) {
         //make sure we have a where clause, buffer disatance and the country code is found in the country object.
-        if (input["wkt"] && input["buffer_distance"] && countries[input["country_code"].toUpperCase()]) {
+        if (input["geojson"] && input["buffer_distance"] && countries[input["country_code"].toUpperCase()]) {
             //It's got everything we need.
             return true;
         }

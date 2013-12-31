@@ -8,6 +8,13 @@ var express = require('express'),
 //The next requires are specific to this module only
 var gp = require('./operations');
 
+var mapnik;
+try {
+    mapnik = require('../../endpoints/mapnik');
+} catch (e) {
+    mapnik = null;
+}
+
 //End module specific requires
 
 var app = module.exports = express();
@@ -93,38 +100,44 @@ app.all('/services/geoprocessing/geoprocessing_operation', function (req, res) {
             //Now get other args (if any) and process them
             if (args.formfields.length == args._input_arguments.length) {
                 //We've got all of the required arguments
-
-
                 gpOperation.execute(args, function (result) {
-                    //TODO: check for errors here and handle.
-                    
-                    //Write out results to page
-                    var features = "";
+                    //check for error
+                    if (result.status == "error") {
+                        //Report error and exit.
+                        args.errorMessage = result.message;
+                    } else {
+                        //success
+                        //Write out results to page
+                        var features = "";
 
-                    //Check which format was specified
-                    if (!args.format || args.format.toLowerCase() == "html") {
-                        //Render HTML page with results at bottom
-                        features = common.formatters.geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
-                    }
-                    else if (args.format && args.format.toLowerCase() == "geojson") {
-                        //Respond with JSON
-                        features = common.formatters.geoJSONFormatter(result.rows, args.geom_fields_array);
-                    }
-                    else if (args.format && args.format.toLowerCase() == "esrijson") {
-                        //Respond with esriJSON
-                        features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+                        //Check which format was specified
+                        if (!args.format || args.format.toLowerCase() == "html") {
+                            //Render HTML page with results at bottom
+                            features = common.formatters.geoJSONFormatter(result.rows, args.geom_fields_array); //The page will parse the geoJson to make the HTMl
+                        }
+                        else if (args.format && args.format.toLowerCase() == "geojson") {
+                            //Respond with JSON
+                            features = common.formatters.geoJSONFormatter(result.rows, args.geom_fields_array);
+                        }
+                        else if (args.format && args.format.toLowerCase() == "esrijson") {
+                            //Respond with esriJSON
+                            features = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, args.geom_fields_array);
+                        }
+
+                        debugger;
+                        //if GP operation specifies output image service, then spin one up
+                        if (mapnik && gpOperation.outputImage && gpOperation.outputImage == true) {
+                            mapnik.createGeoJSONQueryRenderer(features, "4326", "style.xml"); //Use a dyanmic GP ID here to append to the name.
+                        }
+
+                        args.featureCollection = features; //assign output features to args variable
                     }
 
-                    //if GP operation specifies output image service, then spin one up
-                    if (gpOperation.outputImage && gpOperation.outputImage == true) {
-                        //nodetiles.createDynamicGeoJSONEndpoint(features, gpOperation.name, "4326", "style.mss"); //Use a dyanmic GP ID here to append to the name.
-                    }
+                    args.view = "geoprocessing_operation"; //The view to load
 
-                    args.view = "geoprocessing_operation";
-                    args.featureCollection = features;
-
-                    common.respond(req, res, args);
+                    common.respond(req, res, args); //Write it out
                     return;
+
                 });
 
             } else if (args._input_arguments.length > 0) {
