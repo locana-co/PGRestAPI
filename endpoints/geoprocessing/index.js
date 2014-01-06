@@ -97,7 +97,6 @@ function (req, res) {
                 }
             }
 
-
             //Now get other args (if any) and process them
             if (this.args.formfields.length == this.args._input_arguments.length) {
                 //We've got all of the required arguments
