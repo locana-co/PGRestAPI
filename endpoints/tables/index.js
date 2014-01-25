@@ -482,8 +482,8 @@ app.all('/services/tables/:table/query', flow.define(
     	
     	var flo = this; //Save for closure //TODO - Use _self
     	
-    	this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
-        this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+    	this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js']; //Load external scripts for map preview
+        this.args.css = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css'];
 
         var features = [];
 
@@ -937,8 +937,8 @@ if (mapnik) {
                 this.args.extent = result.rows[0];
 
                 //load leaflet
-                this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js']; //Load external scripts for map preview
-                this.args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+                this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2']; //Load external scripts for map preview
+                this.args.css = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css'];
             }
 
             common.respond(this.req, this.res, this.args);

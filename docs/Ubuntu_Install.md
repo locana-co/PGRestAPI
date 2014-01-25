@@ -25,26 +25,23 @@ PGRestAPI - Ubuntu 12/13 Installation
 	git clone http://github.com/isaacs/npm.git 
 	cd npm 
 	sudo make install
+	cd ~
 
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/UbuntuInstallation))
 	sudo apt-get update
 	sudo apt-get upgrade
-
-	sudo apt-get install -y python-software-properties
 
 	--Mapnik 2.2.0
 	sudo add-apt-repository ppa:mapnik/v2.2.0
 	sudo apt-get update
 	sudo apt-get install libmapnik libmapnik-dev mapnik-utils python-mapnik
 	
-###Install GDAL
-	sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
+###Install GDAL (...available from Mapnik Install)
 	sudo apt-get install gdal-bin
 	
-###Install TopoJSON globally
-	sudo npm install -g topojson
 
-###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik)
+###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik) (try 
+	cd /tmp
 	sudo wget https://protobuf.googlecode.com/files/protobuf-2.3.0.tar.gz
 	sudo tar xvf protobuf-2.3.0.tar.gz
 	cd protobuf-2.3.0
@@ -67,8 +64,10 @@ Try it
 
 	protoc --version
 
-###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub)
+###Install TopoJSON globally
+	sudo npm install -g topojson
 
+###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub)
     git clone https://github.com/spatialdev/PGRestAPI.git
 
 ###Navigate to PGRestAPI folder, and npm install
