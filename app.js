@@ -29,7 +29,7 @@ app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(express.cookieParser('your secret here'));
 //app.use(express.session());
-app.use(app.router);
+
 app.use(require('less-middleware')({ src: __dirname + '/public' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'GPModels')));
@@ -69,6 +69,38 @@ try{
 
 if(mapnik) app.use(mapnik.app);
 
+var mongoose, passport;
+try{ 
+	mongoose = require("mongoose"),
+    passport = require("passport");
+} catch(e){
+   	mongoose = null;
+   	passport = null;
+    console.log("Mongoose/MongoDB not properly installed. Skipping. Also not using Passport. Reason: " + e);
+}
+   
+   debugger;
+if(mongoose && passport)  {
+	require('./endpoints/authentication/app/models/user.js');
+	
+    var env = process.env.NODE_ENV || 'development',
+    mongo_config = require('./endpoints/authentication/config/config')[env];
+    
+    mongoose.connect(settings.mongodb.db);
+    
+    require('./endpoints/authentication/config/passport')(passport, mongo_config);
+    
+    app.use(express.session({ secret: mongo_config.epxressSessionSecret }));
+    app.use(passport.initialize());
+    app.use(passport.session());
+    
+    require('./endpoints/authentication/config/routes')(app, passport);
+  
+}
+
+//This must be after app.use(passport.initialize())
+app.use(app.router);
+   
 
 //Create web server
 http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
