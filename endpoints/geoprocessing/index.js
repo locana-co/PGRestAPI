@@ -157,7 +157,7 @@ function (req, res) {
             this.args.featureCollection = features; //clone and assign output features to args variable
 
             //if GP operation specifies output image service, then spin one up
-            if (mapnik && this.gpOperation.outputImage && this.gpOperation.outputImage == true) {
+            if (mapnik && this.gpOperation.outputImage && this.gpOperation.outputImage == true && features) {
                 mapnik.createGeoJSONQueryRenderer(JSON.parse(JSON.stringify(features)), "4326", "style.xml", this.gpOperation.id, this); //Use a dyanmic GP ID here to append to the name.
             }else{
             	this(); //Just flow
