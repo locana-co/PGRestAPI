@@ -2,7 +2,8 @@
 var flow = require('flow');
 var pg = require('pg'),
         common = require("../../../common"),
-        settings = require('../../../settings');
+        settings = require('../../../settings'),
+        shortid = require('shortid');
 
 //Takes in a where clause, buffers, dissolves and zonal stats.  Return table of zonal stats.
 //Arguments are:
@@ -13,6 +14,9 @@ var operation = {};
 var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32645', name: 'bangladesh' }, 'UGA': { srid: '32635', name: 'uganda' }, 'NGA': { name: 'nigeria', srid: '32632' }, 'KEN': { name: 'kenya', srid: '32636' } };
 //SRIDs from http://www.sumapa.com/crsxpais.cfm
 /* METADATA */
+
+//Generate UniqueID for this GP Task
+operation.id = shortid.generate();
 
 operation.name = "AccessSummary";
 operation.description = "Calculates the number of people living within a certain radius of given access ponits, broken down by urban and rural locations.";
