@@ -1,13 +1,31 @@
-form(action='/login', method='post')
-    div
-        label Email:
-        input(type='text', name='email')
-      div
-        label Password:
-        input(type='password', name='password')
-      div
-        input(type='submit', value='Log In')
+extends ../../../../shared_views/layout
 
-a(href="/auth/facebook") Log In With Facebook
-br
-a(href="/auth/google") Log In With Google
+block content
+	script.
+		//Hide Nav if not logged in
+		$(".navLinks").hide();
+
+	div.heading Login
+
+	form(action='/login', method='post')
+		table.inputTable
+			tr
+				td
+					label(for='email') Email
+				td
+					input(type='text', name='email', id='email')
+	
+			tr
+				td
+					label(for='password') Password
+				td
+					input(type='password', name='password', id='password')
+					
+		div(data-role='fieldcontain')   
+			input(id='loginSubmit',type='submit',value='Login',data-transition='fade', data-theme='c', class='blueButton')
+
+	a(href="/auth/facebook") Log In With Facebook
+	br
+	a(href="/auth/google") Log In With Google
+
+
