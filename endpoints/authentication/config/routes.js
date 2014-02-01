@@ -6,7 +6,7 @@ module.exports = function(app, passport){
 	app.set('views', './endpoints/authentication/app/views');
 	app.set('view engine', 'jade');
 
-
+		/*
         app.get("/", function(req, res){ 
                 if(req.isAuthenticated()){
                   res.render("home", { user : req.user}); 
@@ -14,10 +14,12 @@ module.exports = function(app, passport){
                         res.render("home", { user : null});
                 }
         });
-
+		*/
+		
         app.get("/login", function(req, res){ 
                 res.render("login");
         });
+        
 
         app.post("/login" 
                 ,passport.authenticate('local',{
