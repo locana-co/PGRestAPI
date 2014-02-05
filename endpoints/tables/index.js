@@ -213,6 +213,7 @@ exports.app = function(passport) {
 
 		//If there's a geom or raster column, then check for SRID
 		this.spatialTables = app.get('spatialTables');
+
 		if (rasterOrGeometry.present === true) {
 			if (this.spatialTables[this.args.table] && this.spatialTables[this.args.table].srid) {
 				this({
@@ -281,6 +282,8 @@ exports.app = function(passport) {
 			settings.columnNames = {};
 		}
 
+		this.spatialTables = app.get('spatialTables');
+
 		settings.application.host = app.get('ipaddr') || "localhost";
 
 		// arguments passed to renameAndStat() will pass through to this first function
@@ -342,6 +345,7 @@ exports.app = function(passport) {
 				link : "",
 				name : "Query"
 			}];
+			
 			this.args.SRID = this.spatialTables[this.args.table].srid//Use the stored SRID
 
 			var args = this.args;
