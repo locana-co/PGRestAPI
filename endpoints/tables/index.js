@@ -924,7 +924,6 @@ if (mapnik) {
                 this.args.errorMessage = "Problem getting the extent for this table.";
             }
             else {
-				debugger;
                 var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(","); //Should be BOX(XMIN YMIN, XMAX YMAX)
                 this.args.xmin = bboxArray[0].split(" ")[0];
                 this.args.ymin = bboxArray[0].split(" ")[1];
