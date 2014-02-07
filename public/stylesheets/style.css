@@ -29,9 +29,12 @@ a {
 a:hover {
   text-decoration: underline;
 }
+.widthRestriction {
+  margin: 0 40px;
+}
 .header {
   background-color: #fff;
-  padding: 5px;
+  padding: 5px 0;
 }
 .container {
   background-color: #f2f2f2;

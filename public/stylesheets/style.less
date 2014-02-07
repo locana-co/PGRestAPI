@@ -1,48 +1,42 @@
 @messageBorder: 1px solid #000;
-
-.clearfix:before, .clearfix:after {
-	content: " ";
-	display: table;
-}
-
+ .clearfix:before,
 .clearfix:after {
-	clear: both;
+    content: " ";
+    display: table;
+}
+.clearfix:after {
+    clear: both;
 }
 .clearfix {
-	*zoom: 1;
+    *zoom: 1;
 }
-
 .left {
-	float: left;
+    float: left;
 }
-
 .right {
-	float: right;
+    float: right;
 }
-
 body {
-  margin: 2px;
-  font: 14px Arial, sans-serif;
-  background: #e5e5e5;
-  min-width: 960px;
-  color: #424242;
+    margin: 2px;
+    font: 14px Arial, sans-serif;
+    background: #e5e5e5;
+    min-width: 960px;
+    color: #424242;
 }
-
 a {
     color: #594242;
     text-decoration: none;
 }
-
 a:hover {
-    text-decoration:underline;
+    text-decoration: underline;
 }
-
-
+.widthRestriction {
+    margin: 0 40px;
+}
 .header {
     background-color: #fff;
-    padding: 5px;
+    padding: 5px 0;
 }
-
 .container {
     background-color: #f2f2f2;
     margin: 30px 40px;
@@ -52,178 +46,141 @@ a:hover {
     padding: 0px 0px 20px 0px;
     border-radius: 5px;
 }
-
 .section {
     margin: 40px 0px;
 }
-
 /*Code Block*/
-.headingTitle {
-    font-weight:bold;
-    font-size:16px;
-}
 
+.headingTitle {
+    font-weight: bold;
+    font-size: 16px;
+}
 .sampleCodeButtonWrapper {
     margin: 15px 40px;
 }
-
 .sampleCodeButton {
     padding: 10px 20px;
     border: 1px solid #1b75ba;
     display: inline-block;
-    cursor:pointer;
+    cursor: pointer;
 }
-
 .sampleCodeButton:hover {
     background-color: #c2c2c2;
 }
-
 /*End Code Block*/
 
 .bigSpace {
     margin-top: 20px;
 }
-
 .littleSpace {
     margin-top: 5px;
     margin-bottom: 5px;
 }
-
 .spacer {
     height: 20px;
 }
-
 .propertyGroup {
-	margin: 10px 0;
+    margin: 10px 0;
 }
-
 .inputTable {
-	padding: 5px;
-	margin: 10px 0px 10px;
+    padding: 5px;
+    margin: 10px 0px 10px;
 }
-
-.inputTable td{
-	margin: 0px 0px 3px;
-	padding: 3px 11px 5px 0;
+.inputTable td {
+    margin: 0px 0px 3px;
+    padding: 3px 11px 5px 0;
 }
-
 .inputTable td label {
     float: right;
 }
-
 .infoMessage {
-	background-color: #FFFFE0;
-	padding: 20px;
-	border: @messageBorder;
-}
+    background-color: #FFFFE0;
+    padding: 20px;
+    border: @messageBorder;
 
+}
 .errorMessage {
-	background-color: pink;
-	padding: 20px;
-	border: @messageBorder;
+    background-color: pink;
+    padding: 20px;
+    border: @messageBorder;
+
 }
-
-textarea{
-
-	width: 200px;
-	height: 100px;
+textarea {
+    width: 200px;
+    height: 100px;
 }
-
 .preview {
-	margin-top: 50px;
+    margin-top: 50px;
 }
-
-#url{
-	width: 400px;
+#url {
+    width: 400px;
 }
-
 #requestSample {
     background-color: rgb(0, 245, 127);
     padding: 15px;
     border: @messageBorder;
-     word-wrap: break-word;
-}
 
+word-wrap: break-word;
+}
 #topofilename {
     background-color: #D5D5D5;
 }
-
-.links a:hover {
-
-}
-
-.links a {
+.links a:hover {} .links a {
     padding: 10px 20px;
     display: block;
     cursor: pointer;
 }
-
 .main-content div a {
     color: #3d87c8;
 }
-
 div.description {
     margin: 10px 0;
 }
-
 .columnList {
     font-weight: bold;
 }
-
 #rightHand {
     padding: 0 40px;
     background-color: #fff;
     min-width: 660px;
 }
-
 .innerRightHand {
     margin-top: 60px;
 }
-
 .blue {
     color: #0769ae;
 }
-
 .main-content .heading {
     font-family: futura__condensed;
     text-transform: uppercase;
     font-size: 30px;
     margin: 5px 0;
 }
-
 pre {
     background-color: lightgray;
     padding: 20px;
 }
-
 .breadcrumbs {
     background-color: #e8e8e8;
     padding: 20px;
     font-weight: bold;
     border-radius: 5px;
 }
-
 .container table {
     margin-top: 25px;
 }
-
 .container th {
     text-align: left;
 }
-
-
-
 .main-content {
     position: relative;
     padding: 20px;
 }
-
 .floatingColumns {
     float: left;
     margin-right: 20px;
     min-width: 250px;
 }
-
 .floatingColumns .littleSpace {
     margin-left: 0;
     border-bottom: 1px solid #000;
@@ -233,20 +190,15 @@ pre {
     margin: 0px;
     background-color: #f1f1f2;
 }
-
 .floatingColumns .columnList .littleSpace:first-child {
-    border-top: 1px solid #000;   
+    border-top: 1px solid #000;
 }
-
-
 .geometry {
     /*word-wrap: break-word;*/
 }
-
 .section.code {
     background-color: #fff;
 }
-
 .codeSamplesHeader {
     background-color: #297dc1;
     color: #fff;
@@ -256,27 +208,26 @@ pre {
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
 }
-
 .codeBody {
     padding: 20px;
 }
-
 .requestHeader {
     background-color: #606060;
     color: #fff;
-    font-weight:bold;
+    font-weight: bold;
     font-size: 16px;
     padding: 15px 20px;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     margin-top: 20px;
 }
-
-li.L1, li.L3, li.L5, li.L7, li.L9 {
-background: none !important;
+li.L1,
+li.L3,
+li.L5,
+li.L7,
+li.L9 {
+    background: none !important;
 }
-
-
 /*
  * Derived from einaros's Sons of Obsidian theme at
  * http://studiostyl.es/schemes/son-of-obsidian by
@@ -284,140 +235,129 @@ background: none !important;
  * http://CodeTunnel.com/blog/post/71/google-code-prettify-obsidian-theme
  */
 
-.str
-{
+.str {
     color: #8d9d6a !important;
 }
-.kwd
-{
-    color: #f9ea8d !important; /*Aptana Colors*/
+.kwd {
+    color: #f9ea8d !important;
+    /*Aptana Colors*/
 }
-.com
-{
+.com {
     color: #5f5a60 !important;
 }
-.typ
-{
+.typ {
     color: #678CB1;
 }
-.lit
-{
+.lit {
     color: #FACD22;
 }
-.pun
-{
+.pun {
     color: #fff !important;
 }
-.pln
-{
+.pln {
     color: #fff !important;
 }
-.tag
-{
+.tag {
     color: #8AC763;
 }
-.atn
-{
+.atn {
     color: #E0E2E4;
 }
-.atv
-{
+.atv {
     color: #EC7600;
 }
-.dec
-{
+.dec {
     color: purple;
 }
-pre.prettyprint
-{
+pre.prettyprint {
     border: 0px solid #888;
     margin-top: 0px;
     padding: 10px !important;
 }
-
-
-ol.linenums
-{
+ol.linenums {
     margin-top: 0;
     margin-bottom: 0;
 }
 .prettyprint {
     background: #000;
 }
-li.L0, li.L1, li.L2, li.L3, li.L4, li.L5, li.L6, li.L7, li.L8, li.L9
-{
+li.L0,
+li.L1,
+li.L2,
+li.L3,
+li.L4,
+li.L5,
+li.L6,
+li.L7,
+li.L8,
+li.L9 {
     color: #555;
     list-style-type: decimal;
 }
-li.L1, li.L3, li.L5, li.L7, li.L9 {
+li.L1,
+li.L3,
+li.L5,
+li.L7,
+li.L9 {
     background: #111;
 }
-@media print
-{
-    .str
-    {
+@media print {
+    .str {
         color: #060;
     }
-    .kwd
-    {
+    .kwd {
         color: #006;
         font-weight: bold;
     }
-    .com
-    {
+    .com {
         color: #600;
         font-style: italic;
     }
-    .typ
-    {
+    .typ {
         color: #404;
         font-weight: bold;
     }
-    .lit
-    {
+    .lit {
         color: #044;
     }
-    .pun
-    {
+    .pun {
         color: #440;
     }
-    .pln
-    {
+    .pln {
         color: #000;
     }
-    .tag
-    {
+    .tag {
         color: #006;
         font-weight: bold;
     }
-    .atn
-    {
+    .atn {
         color: #404;
     }
-    .atv
-    {
+    .atv {
         color: #060;
     }
 }
-
-li.L0, li.L1, li.L2, li.L3,
-li.L5, li.L6, li.L7, li.L8
-{ list-style-type: decimal !important }
-
+li.L0,
+li.L1,
+li.L2,
+li.L3,
+li.L5,
+li.L6,
+li.L7,
+li.L8 {
+    list-style-type: decimal !important
+}
 .white {
     color: #fff;
 }
-
 .requestContent {
     padding: 20px;
     border: 1px solid #d1d1d1;
 }
-
 footer {
     padding: 5px 40px;
     color: #9e9e9e;
 }
-
 div.navLinks a {
     float: left;
     padding: 10px;
@@ -425,52 +365,46 @@ div.navLinks a {
     font-size: 24px;
     text-transform: uppercase;
     font-family: futura__condensed;
-    cursor:pointer;
-    display:block;
-    text-decoration:none;
+    cursor: pointer;
+    display: block;
+    text-decoration: none;
 }
-
 div.navLinks a.active {
     border-bottom: 4px solid #0769ad;
     color: #0769ad;
 }
-
-    div.navLinks a:hover {
-        color: #0769ad;
-    }
-
-    #querySubmit{
-        float:right;
-    }
-
-#querySubmit, .blueButton {
+div.navLinks a:hover {
+    color: #0769ad;
+}
+#querySubmit {
+    float: right;
+}
+#querySubmit,
+.blueButton {
     padding: 5px 50px;
     background-color: #0769ad;
     color: #fff;
     font-family: futura__condensed;
     font-size: 30px;
-    border:0px;
-    text-transform:uppercase;
-    margin-bottom:20px;
-    cursor:pointer;
+    border: 0px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    cursor: pointer;
 }
-
 #map {
-    height:400px;
+    height: 400px;
     width: 400px;
-    border-top:1px solid;padding-top:20px;
+    border-top: 1px solid;
+    padding-top: 20px;
 }
-
 .truncate {
-  width: 1000px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    width: 1000px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-
 #queryMapUpdate {
     margin-top: 20px;
 }
-
 .breakword {
-    word-wrap:break-word;
+    word-wrap: break-word;
 }
