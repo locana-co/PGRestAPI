@@ -14,7 +14,6 @@ PGRestAPI - Ubuntu 12/13 Installation
 	sudo apt-get upgrade
 	sudo apt-get install g++ curl libssl-dev apache2-utils git-core
 	sudo apt-get install make
-	sudo apt-get install python-software-properties
 	sudo add-apt-repository ppa:chris-lea/node.js
 	sudo apt-get update 
 	sudo apt-get install nodejs
