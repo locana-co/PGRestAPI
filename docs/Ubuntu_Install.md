@@ -19,14 +19,6 @@ PGRestAPI - Ubuntu 12/13 Installation
 	sudo apt-get update 
 	sudo apt-get install nodejs
 
-###Install Node Package Manager (npm)
-
-	cd /tmp 
-	git clone http://github.com/isaacs/npm.git 
-	cd npm 
-	sudo make install
-	cd ~
-
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/UbuntuInstallation))
 	sudo apt-get update
 	sudo apt-get upgrade
