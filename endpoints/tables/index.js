@@ -121,7 +121,9 @@ exports.app = function(passport) {
 		this.args.link = "http://" + this.args.host + "/services/tables/" + this.args.table;
 
 		//Find Column Names
-		//Grab from stash if we have it already
+	    //Grab from stash if we have it already
+	    //TODO: don't use settings object to store column names.  use Express' app object
+	
 		if (settings.columnNames && settings.columnNames[this.args.table]) {
 			this.args.featureCollection = {};
 			this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
@@ -137,9 +139,11 @@ exports.app = function(passport) {
 				text : "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1",
 				values : [this.args.table]
 			};
+			
 			common.executePgQuery(query, function(result) {
-				//check for error
-				if (result.status == "error") {
+			    //check for error
+			    if (result.status == "error") {
+			        
 					//Report error and exit.
 					args.errorMessage = result.message;
 					flo();
@@ -159,7 +163,7 @@ exports.app = function(passport) {
 					flo(result);
 					//Call and pass to flow when done
 				} else {
-					//unknown table, or no columns?
+				    //unknown table, or no columns?
 					flo({
 						rows : []
 					});
@@ -169,7 +173,7 @@ exports.app = function(passport) {
 		}
 	}, function(result) {
 		//Expecting an array of columns and types
-
+	    
 		//Add supported operations in a property
 		this.args.featureCollection.supportedOperations = [];
 		this.args.featureCollection.supportedOperations.push({
@@ -215,20 +219,28 @@ exports.app = function(passport) {
 		this.spatialTables = app.get('spatialTables');
 
 		if (rasterOrGeometry.present === true) {
-			if (this.spatialTables[this.args.table] && this.spatialTables[this.args.table].srid) {
-				this({
-					rows : [{
-						srid : this.spatialTables[this.args.table].srid
-					}]
-				});
-			} else {
-				//check SRID
-				var query = {
-					text : "select ST_SRID(" + rasterOrGeometry.name + ") as SRID FROM " + this.args.table + " LIMIT 1;",
-					values : []
-				};
-				common.executePgQuery(query, this);
-			}
+		    if (this.spatialTables[this.args.table] && this.spatialTables[this.args.table].srid) {
+		        this({
+		            rows: [{
+		                srid: this.spatialTables[this.args.table].srid
+		            }]
+		        });
+		    } else {
+		        //check SRID
+		        var query = {
+		            text: "select ST_SRID(" + rasterOrGeometry.name + ") as SRID FROM " + this.args.table + " LIMIT 1;",
+		            values: []
+		        };
+		        common.executePgQuery(query, this);
+		    }
+		} else {
+		    //Not a spatial table
+		    //No SRID
+		    this({
+		        rows: [{
+		            srid: -1
+		        }]
+		    }); //flow to next function
 		}
 	}, function(result) {
 		//Coming from SRID check
@@ -239,7 +251,11 @@ exports.app = function(passport) {
 			//Get SRID
 			if (result.rows[0].srid == 0 || result.rows[0].srid == "0") {
 				this.args.infoMessage = "Warning:  this table's SRID is 0.  Projections and other operations will not function propertly until you <a href='http://postgis.net/docs/UpdateGeometrySRID.html' target='_blank'>set the SRID</a>.";
-			} else {
+			} else if (result.rows[0].srid == -1) {
+			    //Not a spatial table
+			    this.args.SRID = "";
+			}
+			else {
 				this.args.SRID = result.rows[0].srid;
 				//Use the SRID
 				if (this.spatialTables[this.args.table]) {
@@ -311,7 +327,12 @@ exports.app = function(passport) {
 			this.args.formatlist = settings.application.formatList;
 			//TODO - just set this once.  Not on every request
 
-			this.args.SRID = this.spatialTables[this.args.table].srid//Use the stored SRID
+			if (this.spatialTables[this.args.table]) {
+			    //Either not listed, or not a spatial table
+			    this.args.SRID = this.spatialTables[this.args.table].srid//Use the stored SRID
+			} else {
+			    this.args.SRID = ""; //Not spatial or not listed.
+			}
 
 			//See if columns exist for this table in settings.js
 			if (settings.columnNames[this.args.table]) {
@@ -346,7 +367,12 @@ exports.app = function(passport) {
 				name : "Query"
 			}];
 			
-			this.args.SRID = this.spatialTables[this.args.table].srid//Use the stored SRID
+			if (this.spatialTables[this.args.table]) {
+			    //Either not listed, or not a spatial table
+			    this.args.SRID = this.spatialTables[this.args.table].srid//Use the stored SRID
+			} else {
+			    this.args.SRID = ""; //Not spatial or not listed.
+			}
 
 			var args = this.args;
 
@@ -357,6 +383,7 @@ exports.app = function(passport) {
 
 				common.respond(req, res, args);
 			} else {
+                //TODO: I don't know if this will work.  Settings is not shared between all modules. It's static.  Use express variables instead.
 				//Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
 				common.executeSelfRESTRequest(args.table, "/services/tables/" + this.args.table, {
 					where : "1=1",
@@ -1233,6 +1260,7 @@ exports.app = function(passport) {
 }
 
 //Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
+//TODO: This can be moved to common
 exports.findSpatialTables = function(app, callback) {
 		var spatialTables = {};
 		var error;
