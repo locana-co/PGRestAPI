@@ -54,6 +54,7 @@ Buffer.execute = flow.define(
         this.args = args;
         this.callback = callback;
         //Step 1
+
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (Buffer.isInputValid(args) === true) {
             Buffer.inputs["input_geometry"] = args.input_geometry;

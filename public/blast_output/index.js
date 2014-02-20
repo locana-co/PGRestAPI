@@ -1,1 +1,1 @@
-var _blasterindex = ["Kenya_Cico_Count.js","Kenya_Cicos.js"];
+var _blasterindex = ["Nigeria_Cicos.js","Bangladesh_Cicos.js"];

@@ -15,9 +15,6 @@ var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32
 //SRIDs from http://www.sumapa.com/crsxpais.cfm
 /* METADATA */
 
-//Generate UniqueID for this GP Task
-operation.id = shortid.generate();
-
 operation.name = "AccessSummary";
 operation.description = "Calculates the number of people living within a certain radius of given access ponits, broken down by urban and rural locations.";
 operation.inputs = {};
@@ -56,6 +53,9 @@ operation.execute = flow.define(
         this.args = args;
         this.callback = callback;
         //Step 1
+
+        //Generate UniqueID for this GP Task
+        operation.id = shortid.generate();
 
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (operation.isInputValid(args) === true) {

@@ -15,9 +15,6 @@ var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32
 //SRIDs from http://www.sumapa.com/crsxpais.cfm
 /* METADATA */
 
-//Generate UniqueID for this GP Task
-operation.id = shortid.generate();
-
 operation.name = "DnDLandUseCounts";
 operation.description = "Calculates the counts of input features by a country's land use designations.";
 operation.inputs = {};
@@ -35,7 +32,7 @@ operation.Query = "DO $$DECLARE " +
 "create temporary table \"_gptemp{gpid}\" as  " +
 "select a.landuse, count(b.*) as count " +
 "from {country}_district_landuse a " +
-"inner join (SELECT ST_CollectionExtract(ST_GeomFromGeoJson('{geojson}'), 1) as geom " +
+"inner join (SELECT (ST_Dump(ST_CollectionExtract(ST_GeomFromGeoJson('{geojson}'), 1))).geom as geom " +
 ") b on " +
 "st_intersects(a.geom, b.geom) " +
 "GROUP BY a.landuse; " +
@@ -50,6 +47,9 @@ operation.execute = flow.define(
         this.args = args;
         this.callback = callback;
         //Step 1
+
+        //Generate UniqueID for this GP Task
+        operation.id = shortid.generate();
 
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (operation.isInputValid(args) === true) {
