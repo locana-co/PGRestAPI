@@ -444,7 +444,7 @@ exports.app = function(passport) {
 					} else {
 						this.args.infoMessage = "must have 2 arguments for a stats definition, such as -  sum:columnname";
 					}
-				});
+				}.bind(this));
 
 				if (this.args.infoMessage) {
 					//Friendly message
@@ -458,12 +458,26 @@ exports.app = function(passport) {
 				//We've got a new select statement. Override the old one.
 				this.returnfields = statsSQLArray.join(",");
 
-				//If we're overriding the select fields, then set returnGeometry to no. (For the time being);
-				this.args.geometryStatement = "";
-				this.args.geom_fields_array = [];
+			    //Because we're modifying the user's group-by clause by potentially adding the geometry columns, we want to clone this variable so it remains untouched when displaying in the UI
+			    //Internally, from this point on, we'll use a variable called groupby_appended, so we can return the unmolested groupby back to the UI.
+				this.args.groupby_appended = this.args.groupby;
+
+			    //If geometry is included, need to add items to the GROUP BY statement
+				if (this.args.geometryStatement) {
+				    //break up the geom statement, first by commas, then by aliases
+				    var multiGeoms = this.args.geometryStatement.split(","); //if multiple geometries, or geometry and extent
+				    multiGeoms.forEach(function (item) {
+				        this.args.groupby_appended += ("," + item.split(" As ")[0]);
+				    }.bind(this));
+				}
+
+				//this.args.geometryStatement = "";
+				//this.args.geom_fields_array = [];
+
 				//empty it
-				this.args.geom_envelope_array = [];
-				this.args.returnGeometry = "no";
+				//this.args.geom_envelope_array = [];
+			    //this.args.returnGeometry = "no";
+
 			} else {
 				//friendly message - exit out
 				this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
@@ -521,7 +535,7 @@ exports.app = function(passport) {
 				text : "SELECT " + fieldList +
 				//Dynamically plug in geometry piece depending on the geom field name(s)
 				(this.args.geometryStatement ? ", " + this.args.geometryStatement : "") + " FROM " + common.escapePostGresColumns([this.args.table]).join(",") + //escape
-				this.where + (this.args.groupby ? " GROUP BY " + this.args.groupby : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : ""),
+				this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : ""),
 				values : []
 			};
 
