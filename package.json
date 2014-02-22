@@ -23,7 +23,8 @@
     "flow": "*",
     "less-middleware": "*",
     "topojson": "*",
-	"shortid": "*"
+    "shortid": "*",
+    "socket.io": "*"
   },
   "optionalDependencies":{
   	"mapnik": "*",

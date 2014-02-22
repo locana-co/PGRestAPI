@@ -446,6 +446,77 @@ exports.createGeoJSONQueryRenderer = flow.define(function(app, geoJSON, epsgSRID
 		imageURL : dynamicURL
 	});
 })
+
+//Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
+exports.createImageFromGeoJSON = flow.define(function (geoJSON, bbox, epsgSRID, cartoFile, callback) {
+
+    this.geoJSON = geoJSON;
+    //this.geom_field = geom_field;
+    this.epsg = epsgSRID;
+
+    var _self = this;
+
+
+    //Check for correct args
+    //Needs: geojson, bbox (xmin, ymax, xmax, ymin)
+    var args = { width: 500, height: 500 };
+
+    //make a temporary geojson file for mapnik (until I figure out how to pass in an object)
+    common.writeGeoJSONFile(geoJSON, "geojson", function (err, filename, fullpath) {
+
+        if (err) {
+            //TODO: Handle this.
+            return;
+        }
+
+        if (fullpath) {
+
+            var geojson_settings = {
+                type: 'geojson',
+                file: fullpath
+            };
+
+            //We're all good. Make the picture.
+            try {
+                //create map and layer
+                var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), geographic.proj4);
+                //width, height
+                var layer = new mapnik.Layer("geojson", ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+                //check to see if 3857.  If not, assume WGS84
+                var geojson_ds = new mapnik.Datasource(geojson_settings);
+
+                var bboxArray = [bbox.xmin, bbox.ymax, bbox.xmax, bbox.ymin];
+
+                layer.datasource = geojson_ds;
+                layer.styles = ["geojson", 'style'];
+
+                map.bufferSize = 64;
+
+                var stylepath = __dirname + '/cartocss/style.xml';
+
+                map.load(path.join(stylepath), {
+                    strict: true
+                }, function (err, map) {
+
+                    console.log(map.toXML());
+                    // Debug settings
+
+                    if (err)
+                        throw err;
+                    map.add_layer(layer);
+
+                    map.extent = bboxArray;
+                    var im = new mapnik.Image(map.width, map.height);
+                    map.render(im, callback);
+                });
+            } catch (err) {
+                callback(err, null);
+            }
+        }
+
+    });
+})
+
 //This should take in a geoJSON object and create a new route on the fly - return the URL?
 exports.createDynamicGeoJSONEndpoint = function(geoJSON, name, epsgSRID, cartoCssFile) {
 	//var map = new nodetiles.Map();

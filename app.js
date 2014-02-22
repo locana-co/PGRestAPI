@@ -3,7 +3,7 @@
  */
 var pg = require('pg');
 
-var express = require('express'), http = require('http'), path = require('path'), settings = require('./settings'), common = require("./common");
+var express = require('express'), http = require('http'), path = require('path'), settings = require('./settings'), common = require("./common"), io = require('socket.io');
 
 var app = express();
 
@@ -96,8 +96,7 @@ app.use(tiles.app(passport));
 var geoprocessing = require('./endpoints/geoprocessing');
 app.use(geoprocessing.app(passport));
 
-var utilities = require('./endpoints/utilities');
-app.use(utilities.app(passport));
+
 
 var mapnik;
 try {
@@ -112,7 +111,7 @@ if (mapnik)
 	app.use(mapnik.app(passport));
 
 //Create web server
-http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
+var server = http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 	var startMessage = "Express server listening";
 
 	if (app.get('ipaddr')) {
@@ -123,6 +122,13 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 
 	console.log(startMessage);
 });
+
+//Start Socket Listener
+var socket_instance = io.listen(server);
+
+//Define Utilities Routes - pass in socket
+var utilities = require('./endpoints/utilities');
+app.use(utilities.app(passport, socket_instance));
 
 //Root Request - show table list
 app.get('/', passport.authenticationFunctions, function(req, res) {
@@ -164,3 +170,13 @@ tables.findSpatialTables(app, function(error, tables) {
 		}
 	}
 });
+
+//Socket Listener/Emitter
+socket_instance.on('connection', function (client) {
+    client.emit('message', { message: 'welcome to the chubbs server!' });
+    
+    client.on('send', function (data) {
+    	client.broadcast.emit('message', data); //send to all connected except the one who sent it.
+    });
+});
+

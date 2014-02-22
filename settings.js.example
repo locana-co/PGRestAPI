@@ -44,6 +44,10 @@ settings.application.geoJsonOutputFolder = "/public/geojson/output/";
 settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
 settings.application.publicport = "80";
 
+////////Security Setup//////////////
+//Do you want to enable secured endpoints (login/token) mechanism?
+settings.enableSecurity = false;
+
 //Epxress Session Secret
 settings.epxressSessionSecret = "secret";
 

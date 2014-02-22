@@ -1,9 +1,16 @@
 ﻿//////////Utilities
 
 //Common and settings should be used by all sub-modules
-var express = require('express'), common = require("../../common"), settings = require('../../settings');
+var express = require('express'), common = require("../../common"), settings = require('../../settings'), io = require('socket.io');
 
-exports.app = function(passport) {
+var mapnik;
+try {
+	mapnik = require('../../endpoints/mapnik');
+} catch (e) {
+	mapnik = null;
+}
+
+exports.app = function(passport, socket_instance) {
 	var app = express();
 
 	app.set('views', __dirname + '/views');
@@ -132,6 +139,130 @@ exports.app = function(passport) {
 			common.respond(req, res, args);
 		}
 	});
-	
+
+	//Add a route for posting WKT, cutting an image and auto-refreshing to see latest.
+	app.all('/services/wkttoimage', function(req, res) {
+		var args = {};
+
+		//Grab POST or QueryString args depending on type
+		if (req.method.toLowerCase() == "post") {
+			//If a post, then arguments will be members of the this.req.body property
+			args = req.body;
+		} else if (req.method.toLowerCase() == "get") {
+			//If request is a get, then args will be members of the this.req.query property
+			args = req.query;
+		}
+
+		args.path = req.path;
+		args.host = req.headers.host;
+
+		if (args.wkt) {
+			//If user passes WKT, wrap it in a PostGIS select clause.
+
+			var wkt = "ST_GeomFromText('" + args.wkt + "', " + (args.inputsrid || 4326) + ")";
+
+			if (args.outputsrid) {
+				if (common.IsNumeric(args.outputsrid) == false) {
+					//warn user and abort.
+					args.errorMessage = "Error: Output SRID must be numeric.";
+					common.respond(req, res, args);
+					return;
+				}
+				//wrap wkt in a transform
+				wkt = "ST_Transform(" + wkt + "," + args.outputsrid + ")";
+			}
+
+			//Whatever it is, wrap it as ST_GeoJSON
+			wkt = "ST_AsGeoJSON(" + wkt + ") as geom, ST_Extent(" + wkt + ") as extent";
+
+			//alias
+
+			var query = {
+				text : "SELECT " + wkt,
+				values : []
+			};
+
+			common.executePgQuery(query, function(result) {
+				var features = [];
+
+				//check for error
+				if (result.status == "error") {
+					//Report error and exit.
+					res.jsonp({
+						error : result.message
+					});
+				} else {
+					//a-ok
+					//Check which format was specified
+
+					//Cut a map image
+					features = common.formatters.geoJSONFormatter(result.rows, ["geom"]);
+					var extentBox = result.rows[0].extent;
+					//"BOX(33.9101806180002 -4.67820978199995,41.9101189990001 5.47010586055859)" - "xmin, ymin, xmax, ymax"
+					var extentArr = extentBox.replace("BOX(", "").replace(")", "").split(",");
+					var xmin = extentArr[0].split(" ")[0];
+					var ymin = extentArr[0].split(" ")[1];
+					var xmax = extentArr[1].split(" ")[0];
+					var ymax = extentArr[1].split(" ")[1];
+
+					//if GP operation specifies output image service, then spin one up
+					if (mapnik && features) {
+						mapnik.createImageFromGeoJSON(JSON.parse(JSON.stringify(features)), {
+							xmin : xmin,
+							ymin : ymin,
+							xmax : xmax,
+							ymax : ymax
+						}, "4326", "style.xml", function(err, im) {
+
+							if (err) {
+								res.writeHead(500, {
+									'Content-Type' : 'text/plain'
+								});
+								res.end(err.message);
+							} else {
+
+								im.encode('png', function(err, buffer) {
+									if (err)
+										throw err;
+
+									try {
+										//convert to base64 and send thru socket.
+										var data = "data:image/png;base64," + buffer.toString('base64');
+
+										//send to all connected
+										socket_instance.sockets.emit('message', {
+											message : 'wrote out the picture.  Wanna see?',
+											imageData :data
+										});
+										
+									} catch(e) {
+										console.log(e)
+									}
+
+									res.writeHead(200, {
+										'Content-Type' : 'image/png'
+									});
+									res.end(buffer);
+								});
+
+							}
+						});
+					} else {
+						//Return message
+						res.jsonp({
+							error : "Mapnik not installed or no features returned."
+						});
+					}
+				}
+			});
+
+		} else {
+			//send to view
+			res.jsonp({
+				error : "No WKT specified."
+			});
+		}
+	});
+
 	return app;
 }
