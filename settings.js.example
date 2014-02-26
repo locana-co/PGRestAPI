@@ -44,4 +44,16 @@ settings.application.geoJsonOutputFolder = "/public/geojson/output/";
 settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
 settings.application.publicport = "80";
 
+//Epxress Session Secret
+settings.epxressSessionSecret = "secret";
+
+//MongoDB Authentication
+settings.mongodb = {};
+settings.mongodb.db = "mongodb://localhost/authentication";
+
+//Facebook App ID
+settings.facebook = {};
+settings.facebook.appid = "12345";
+settings.facebook.secret = "secret";
+
 module.exports = settings;

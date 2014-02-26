@@ -20,13 +20,14 @@ html
 
 	body
 		div.header
-			a(href='/services/tables',alt='Table Listing')
-				img(src='/img/logo.png',alt='logo',style='height:65px;')
-			div.navLinks.right
-				a#tableListing(href='/services/tables') Table Listing
-				a#geoprocessing(href='/services/geoprocessing') Geoprocessing
-				a#utilities(href='/services/utilities') Utilities
-				a#tileStream(href='/services/tiles') TileStream Link					
+			div.widthRestriction
+				a(href='/services/tables',alt='Table Listing')
+					img(src='/img/logo.png',alt='logo',style='height:65px;')
+				div.navLinks.right
+					a#tableListing(href='/services/tables') Table Listing
+					a#geoprocessing(href='/services/geoprocessing') Geoprocessing
+					a#utilities(href='/services/utilities') Utilities
+					a#tileStream(href='/services/tiles') TileStream Link					
 
 		.container
 			-if(breadcrumbs){

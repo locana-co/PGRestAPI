@@ -8,8 +8,8 @@ block content
 	div.floatingColumns.blocks
 		div.heading #{table}
 
-		h2 SRID
 		-if(SRID){
+			h2 SRID
 			p(style="color:green")
 				| SRID is #{SRID}
 		-}
@@ -45,7 +45,7 @@ block apidoc
 
 			span Here's how to hit this endpoint programatically to get an array of these column names
 
-			div.requestHeader JSONP GET
+			div.requestHeader POST
 
 			div.requestContent
 				pre.prettyprint.linenums
@@ -54,8 +54,8 @@ block apidoc
 					|    format: 'geojson'
 					|};
 					|&nbsp;
-					|//jQuery JSONP GET
-					|$.getJSON('#{link}?callback=?', args).done(function (data) {
+					|//jQuery POST
+					|$.post('#{link}', args).done(function (data) {
 					|    //Callback on success
 					|    console.log(data);
 					|})

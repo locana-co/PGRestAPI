@@ -8,8 +8,8 @@ block content
 	div.floatingColumns.blocks
 		div.heading #{table}
 
-		h2 SRID
 		-if(SRID){
+			h2 SRID
 			p(style="color:green")
 				| SRID is #{SRID}
 		-}
@@ -175,30 +175,31 @@ block results
 
 
 					-if(featureCollection.features){
-						div(style='margin-top:40px;')
-							div Response Time: #{responseTime} ms
-							i # records: #{featureCollection.features.length}
-						each val, key in featureCollection.features
-							div.propertyGroup
-								each ival, ikey in val.properties
-									-if(ival && ival.coordinates){
-										each egval, egkey in ival
-											div.geometry.truncate #{ikey}: #{egkey}: #{egval}
-									-}else{
-										div.property #{ikey}: #{ival}
-									-}
+						div.resultsStats
+								div Response Time: #{responseTime} ms
+								i # records: #{featureCollection.features.length}
+						div.resultList
+							each val, key in featureCollection.features
+								div.propertyGroup
+									each ival, ikey in val.properties
+										-if(ival && ival.coordinates){
+											each egval, egkey in ival
+												div.geometry.truncate #{ikey}: #{egkey}: #{egval}
+										-}else{
+											div.property #{ikey}: #{ival}
+										-}
 								
-								-if(val.geometry){
-									-if(val.geometry.geometries){
-										each mgval, mgkey in val.geometry.geometries
-											-if(mgval.coordinates){
-												div.geometries #{mgval.type}: #{mgval.coordinates}
-											-}
-									-}else{
-										each gval, gkey in val.geometry
-											div.geometry.truncate geometry: #{gkey}: #{gval}
+									-if(val.geometry){
+										-if(val.geometry.geometries){
+											each mgval, mgkey in val.geometry.geometries
+												-if(mgval.coordinates){
+													div.geometries #{mgval.type}: #{mgval.coordinates}
+												-}
+										-}else{
+											each gval, gkey in val.geometry
+												div.geometry.truncate geometry: #{gkey}: #{gval}
+										-}
 									-}
-								-}
 							
 					-}else{
 						div.propertyGroup No results found
@@ -265,7 +266,7 @@ block apidoc
 
 			span Here's how to hit this endpoint programatically to get this data
 
-			div.requestHeader JSONP GET
+			div.requestHeader POST
 			div.requestContent
 				pre.prettyprint.linenums.breakword
 					|//define arguments
@@ -273,8 +274,8 @@ block apidoc
 					|     #{postSample.join(",\n    ")}
 					|};
 					|&nbsp;
-					|//jQuery JSONP GET
-					|$.getJSON('#{host}#{path}?callback=?', args).done(function (data) {
+					|//jQuery POST
+					|$.post('http://#{host}#{path}', args).done(function (data) {
 					|    //Callback on success
 					|    console.log(data);
 					|})

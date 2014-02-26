@@ -1,6 +1,10 @@
 extends ../../../shared_views/layout
 
 block content
+	script.
+		//Trigger Active Nav Link
+		$("#utilities").addClass("active");
+
 	p
 		| Paste in a WKT string to see a preview on the map, and get a GeoJSON representation
 	form(action='',method='post',id='queryForm')
@@ -133,3 +137,4 @@ block results
 						-}
 					-}
 	-}
+			

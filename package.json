@@ -22,7 +22,8 @@
     "flow": "*",
     "less-middleware": "*",
     "topojson": "*",
-	"shortid": "*"
+	"shortid": "*",
+	"cors": "*"
   },
   "optionalDependencies":{
   	"mapnik": "*",

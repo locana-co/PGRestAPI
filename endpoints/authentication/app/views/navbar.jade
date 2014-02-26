@@ -1,0 +1,31 @@
+a.brand(href="/") Super Site !
+button.btn.btn-navbar(type="button", data-toggle="collapse", data-target=".nav-collapse")
+    span.icon-bar
+    span.icon-bar
+    span.icon-bar
+div#main-menu.nav-collapse.collapse
+    if user
+        ul.nav
+            each data, section in menu
+                - var activeClass = '';
+                - var navClass = '';
+                - if (section == activeSection)
+                    activeClass = 'active';
+                - if (data.child != undefined)
+                    navClass = 'dropdown';
+                li(class='#{activeClass} #{navClass}')
+                    if data.child != undefined
+                        a.dropdown-toggle(href="#", data-toggle="dropdown") #{__i(data.label)}
+                            b.caret
+                        ul.dropdown-menu
+                            each dataChild, childSection in data.child
+                                li
+                                    a(href="#{dataChild.url}") #{__i(dataChild.label)}
+                    else
+                        a(href="#{data.url}") #{__i(data.label)}
+        ul.nav.pull-right
+            a.btn(href="/logout"): i.icon-off
+    else
+        ul.nav.pull-right
+            a.btn(href="/signup") SignUp
+            a.btn(href="/login")  LogIn

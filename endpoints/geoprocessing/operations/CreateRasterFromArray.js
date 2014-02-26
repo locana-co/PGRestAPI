@@ -32,10 +32,7 @@ operation.inputs["upper_left_x"] = [];
 operation.inputs["upper_left_y"] = [];
 operation.inputs["srid"] = [];
 
-
-
-
-//This will execute just for Land Use and buffers - ~ 18 seconds for all points in bangladesh
+//The bit of SQL that will do the work. Set it up here, and execute it down below
 operation.Query = "DO $$DECLARE " +
 "orig_srid int; " +
 "BEGIN " +
@@ -45,8 +42,8 @@ operation.Query = "DO $$DECLARE " +
 "UPDATE _tempraster SET rast = ST_AddBand(rast,'32BF'::text,0) WHERE id = 1; " +
 "UPDATE _tempraster SET rast = ST_SetValues(rast, 1, 1, 1, ARRAY{values}::double precision[][], 0.0, false) WHERE id = 1; " +
 "END$$; " +
-"SELECT val, ST_AsText(ST_Transform(geom, 4326)) as wkt FROM (SELECT (ST_DumpAsPolygons(rast)).* from _tempraster) as a where val = 1"
-
+"SELECT val, ST_AsText(ST_Simplify(ST_Transform(geom, 4326), .001)) as wkt, ST_AsGeoJSON(ST_Simplify(ST_Transform(geom, 4326), .001)) as geom FROM (SELECT (ST_DumpAsPolygons(rast)).* from _tempraster) as a where val = 1"
+//any geometry that you want to get out should be wrapped in the ST_AsGeoJSON function
 
 
 operation.execute = flow.define(

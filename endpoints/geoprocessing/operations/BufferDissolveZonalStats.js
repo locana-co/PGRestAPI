@@ -2,7 +2,8 @@
 var flow = require('flow');
 var pg = require('pg'),
         common = require("../../../common"),
-        settings = require('../../../settings');
+        settings = require('../../../settings'),
+        shortid = require('shortid');
 
 //Takes in a where clause, buffers, dissolves and zonal stats.  Return table of zonal stats.
 //Arguments are:
@@ -52,6 +53,9 @@ operation.execute = flow.define(
         this.args = args;
         this.callback = callback;
         //Step 1
+
+        //Generate UniqueID for this GP Task
+        operation.id = shortid.generate();
 
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (operation.isInputValid(args) === true) {

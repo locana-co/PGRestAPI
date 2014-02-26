@@ -31,7 +31,7 @@ PGRestAPI - Ubuntu 12/13 Installation
 	sudo apt-get install gdal-bin
 	
 
-###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik) (try 
+###Install  protobuf 2.3.0 (required by Mapnik/Node-Mapnik)
 	cd /tmp
 	sudo wget https://protobuf.googlecode.com/files/protobuf-2.3.0.tar.gz
 	sudo tar xvf protobuf-2.3.0.tar.gz

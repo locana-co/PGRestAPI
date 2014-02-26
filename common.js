@@ -41,6 +41,21 @@ common.respond = function (req, res, args, callback) {
             });
         }
     }
+    else if (args.format && (args.format.toLowerCase() == "csv")) {
+        //Responsd with CSV
+        //If there's an error, return a json
+        if (args.errorMessage) {
+            res.jsonp({ error: args.errorMessage });
+        }
+        else {
+            //Send back a csv
+            res.setHeader('Content-disposition', 'attachment; filename=download.csv');
+            res.writeHead(200, {
+                'Content-Type': 'text/csv'
+            });
+            res.end(args.featureCollection);
+        }
+    }
     else {
         //If unrecognized format is specified
         if (args.errorMessage) {
@@ -235,6 +250,39 @@ common.formatters.ESRIFeatureSetJSONFormatter = function (rows, geom_fields_arra
     })
 
     return featureSet;
+}
+
+////Take in results object, return CSV (exclude geometry)
+common.formatters.CSVFormatter = function (rows, geom_fields_array) {
+    //Take in results object, return CSV
+    if (!geom_fields_array) geom_fields_array = ["geom"]; //default
+
+    //Loop thru results
+    var csvArray = []; //at the end, csvArray will be joined and separated by commas to make the csv
+
+    //Get column names
+    if (rows && rows[0]) {
+        Object.keys(rows[0]).forEach(function (column_name) {
+            if(geom_fields_array.indexOf(column_name) == -1) csvArray.push(column_name + ","); //only add if not a geom column
+        });
+
+        //Add newline
+        csvArray.push('\r\n');
+    }
+
+
+    rows.forEach(function (row) {
+        //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
+
+        for (var index in row) {
+            if (geom_fields_array.indexOf(index) == -1)
+            csvArray.push(row[index] + ",");
+        }
+        //Add newline
+        csvArray.push('\r\n');
+    })
+
+    return csvArray.join("");
 }
 
 

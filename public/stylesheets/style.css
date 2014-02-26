@@ -29,9 +29,12 @@ a {
 a:hover {
   text-decoration: underline;
 }
+.widthRestriction {
+  margin: 0 40px;
+}
 .header {
   background-color: #fff;
-  padding: 5px;
+  padding: 5px 0;
 }
 .container {
   background-color: #f2f2f2;
@@ -397,4 +400,12 @@ div.navLinks a:hover {
 }
 .breakword {
   word-wrap: break-word;
+}
+.resultList {
+  max-height: 500px;
+  overflow-y: auto;
+}
+.resultsStats {
+  margin-top: 40px;
+  margin-bottom: 20px;
 }
