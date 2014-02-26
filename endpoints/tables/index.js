@@ -638,6 +638,10 @@ exports.app = function(passport) {
 				})
 				//Write
 				shapefile.pipe(fileWriteStream);
+			} else if (this.args.format && this.args.format.toLowerCase() == "csv") {
+			    //CSV
+			    this.args.featureCollection = common.formatters.CSVFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    flo();
 			}
 		}
 	}, function() {

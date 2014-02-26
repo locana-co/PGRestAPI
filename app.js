@@ -3,7 +3,7 @@
  */
 var pg = require('pg');
 
-var express = require('express'), http = require('http'), path = require('path'), settings = require('./settings'), common = require("./common");
+var express = require('express'), http = require('http'), path = require('path'), settings = require('./settings'), common = require("./common"), cors = require('cors');
 
 var app = express();
 
@@ -17,7 +17,7 @@ app.set('ipaddr', settings.application.ip);
 app.set('port', process.env.PORT || settings.application.port);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
-app.enable("jsonp callback");
+app.enable("jsonp callback"); //TODO: Remove this if not needed because of CORS
 app.use(express.favicon(path.join(__dirname, 'public/img/favicon.png')));
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
@@ -25,14 +25,17 @@ app.use(express.methodOverride());
 app.use(express.cookieParser('your secret here'));
 app.use(express.session());
 
+//Set up a public folder.  
 app.use(require('less-middleware')({
 	src : __dirname + '/public'
 }));
 
+//Items in these folder will be served statically.
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'GPModels')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
 
+//Mongoose support for storing authentication credentials
 var mongoose, passport;
 try {
 	mongoose = require("mongoose"), passport = require("passport");
@@ -79,13 +82,11 @@ else{
 }
 
 //This must be after app.use(passport.initialize())
+app.use(cors());
 app.use(app.router);
 
 //Load in all endpoint routes
 //TODO - Loop thru endpoints folder and require everything in there
-//var services = require('./endpoints/services');
-//app.use(services);
-
 var tables = require('./endpoints/tables');
 app.use(tables.app(passport));
 //add passport reference

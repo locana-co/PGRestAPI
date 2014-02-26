@@ -265,7 +265,7 @@ block apidoc
 
 			span Here's how to hit this endpoint programatically to get this data
 
-			div.requestHeader JSONP GET
+			div.requestHeader POST
 			div.requestContent
 				pre.prettyprint.linenums.breakword
 					|//define arguments
@@ -273,8 +273,8 @@ block apidoc
 					|     #{postSample.join(",\n    ")}
 					|};
 					|&nbsp;
-					|//jQuery JSONP GET
-					|$.getJSON('#{host}#{path}?callback=?', args).done(function (data) {
+					|//jQuery POST
+					|$.post('#{host}#{path}', args).done(function (data) {
 					|    //Callback on success
 					|    console.log(data);
 					|})

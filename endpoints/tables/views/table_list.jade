@@ -31,7 +31,7 @@ block apidoc
 
             span Here's how to hit this endpoint programatically to get an array of these column names
     
-            div.requestHeader JSONP GET
+            div.requestHeader POST
     
             div.requestContent
     
@@ -41,8 +41,8 @@ block apidoc
                     |    format: 'geojson'
                     |};
                     |&nbsp;
-                    |//jQuery JSONP GET
-                    |$.getJSON('#{link}?callback=?', args).done(function (data) {
+                    |//jQuery POST
+                    |$.post('#{link}', args).done(function (data) {
                     |    //Callback on success
                     |    console.log(data);
                     |})

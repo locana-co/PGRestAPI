@@ -12,7 +12,6 @@
   ],
   "scripts": {
     "start": "node app.js",
-    "preinstall": "npm i -g nodemon",
     "test": "node_modules\\.bin\\mocha -u tdd"
   },
   "dependencies": {
@@ -23,7 +22,8 @@
     "flow": "*",
     "less-middleware": "*",
     "topojson": "*",
-	"shortid": "*"
+	"shortid": "*",
+	"cors": "*"
   },
   "optionalDependencies":{
   	"mapnik": "*",
