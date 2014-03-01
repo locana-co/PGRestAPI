@@ -453,7 +453,6 @@ exports.app = function(passport) {
 		}
 
 		//group by? must be accompanied by some stats definitions
-
 		if (this.args.groupby) {
 			if (this.args.statsdef) {
 				//If provided, a statistics definition will override the SELECT fields, and NO geometry is returned.
@@ -497,14 +496,6 @@ exports.app = function(passport) {
 				        this.args.groupby_appended += ("," + item.split(" As ")[0]);
 				    }.bind(this));
 				}
-
-				//this.args.geometryStatement = "";
-				//this.args.geom_fields_array = [];
-
-				//empty it
-				//this.args.geom_envelope_array = [];
-			    //this.args.returnGeometry = "no";
-
 			} else {
 				//friendly message - exit out
 				this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
