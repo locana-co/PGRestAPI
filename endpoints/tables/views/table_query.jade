@@ -101,12 +101,19 @@ block content
 							textarea(id='statsdef',placeholder='count:field1,sum:field2',name='statsdef')
 								|#{statsdef}
 			
-					tr
+					tr(style='display:none;')
 						td
 							label(for='wkt') Well Known Text (WKT) Geometry
 						td
 							textarea(id='wkt',placeholder='POLYGON((85.341 25.811,85.523 25.838,85.665 25.719,85.479 25.598,85.278 25.687,85.341 25.811))',name='wkt')
 								|#{wkt}
+
+					tr
+						td
+							label(for='intersects') Spatial Intersects (GeoJSON)
+						td
+							textarea(id='intersects',placeholder='{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[92.3544,20.7573]}}]}',name='intersects')
+								|#{intersects}
 
 					tr
 						td
@@ -250,6 +257,9 @@ block apidoc
 		- requestSample.push("wkt=" + encodeURIComponent(wkt))
 		- postSample.push("wkt: '" + wkt + "'")
 
+	-if(intersects)
+		- requestSample.push("intersects=" + encodeURIComponent(intersects))
+		- postSample.push("intersects: '" + intersects + "'")
 
 	-if(limit)
 		- requestSample.push("limit=" + encodeURIComponent(limit))

@@ -5,6 +5,7 @@ var express = require('express'), common = require("../../common"), settings = r
 
 //The next requires are specific to this module only
 var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), blaster = require("../../lib/datablaster"), shortid = require("shortid");
+var GeoFragger = require('../../lib/GeoFragger');
 
 var mapnik;
 try {
@@ -428,7 +429,7 @@ exports.app = function(passport) {
 			this.args.geometryStatement = geom_select_array.join(",");
 		} else {
 			//No geometry desired.  That means you can't have a 'shapefile' as output. Check
-			if (this.args.format.toLowerCase() == 'shapefile') {
+		    if (this.args.format && this.args.format.toLowerCase() == 'shapefile') {
 				this.args.errorMessage = "Format 'shapefile' requires returnGeometry to be 'yes'.";
 				common.respond(this.req, this.res, this.args);
 				return;
@@ -507,7 +508,6 @@ exports.app = function(passport) {
 
 		//Add in WKT Geometry to WHERE clause , if specified
 		//For now, assuming 4326.  TODO
-
 		if (this.args.wkt) {
 			//For each geometry in the table, give an intersects clause
 			var wkt = this.args.wkt;
@@ -516,6 +516,28 @@ exports.app = function(passport) {
 				wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
 			});
 			this.wkt = wkt_array;
+		}
+
+        //Intersects is a GeoJSON argument that needs to be parsed to create a PostGIS GeoJSON Fragment 
+		if (this.args.intersects) {
+		    //Just do the first geom field for now.  TODO
+		    var intersects = new GeoFragger();
+		    try{
+		        var geojson = JSON.parse(this.args.intersects);
+		        intersects = intersects.toPostGISFragment(geojson);
+		    } catch (e) {
+		        //friendly message - exit out
+		        this.args.errorMessage = e.message;
+
+		        common.respond(this.req, this.res, this.args);
+		        return;
+		    }
+		    
+		    var intersects_array = [];
+		    geom_fields_array.forEach(function (item) {
+		        intersects_array.push("ST_Intersects(ST_GeomFromGeoJSON('" + JSON.stringify(intersects) + "')," + item + ")");
+		    });
+		    this.intersects = intersects_array;
 		}
 
 		//Add in WHERE clause, if specified.  Don't alter the original incoming paramter.  Create this.where to hold modifications
@@ -528,11 +550,18 @@ exports.app = function(passport) {
 			if (this.wkt) {
 				this.where += (" AND (" + this.wkt.join(" OR ") + ")");
 			}
+			if (this.intersects) {
+			    this.where += (" AND (" + this.intersects.join(" OR ") + ")");
+			}
 		} else {
 			if (this.wkt) {
 				this.where += " WHERE (" + this.wkt.join(" OR ") + ")";
-			} else {
-				this.where = " WHERE 1=1";
+			}
+			else if (this.intersects) {
+			    this.where += " WHERE (" + this.wkt.join(" OR ") + ")";
+			}
+			else {
+			    this.where = " WHERE 1=1";
 			}
 		}
 

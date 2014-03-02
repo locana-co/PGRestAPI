@@ -19,13 +19,32 @@ common.respond = function (req, res, args, callback) {
         //Determine sample request based on args
         res.render(args.view, args);
     }
-    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
-        //Responsd with GeoJSON (or JSON if there is no geo)
+    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
+        //Responsd with JSON if
         if (args.errorMessage) {
             res.jsonp({ error: args.errorMessage });
         }
         else {
-            res.jsonp(args.featureCollection);
+            //Send back json file
+            res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify(args.featureCollection));
+        }
+    }
+    else if (args.format.toLowerCase() == "geojson") {
+        //Responsd with GeoJSON
+        if (args.errorMessage) {
+            res.jsonp({ error: args.errorMessage });
+        }
+        else {
+            //Send back json file
+            res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.geojson');
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify(args.featureCollection));
         }
     }
     else if(args.format && (args.format.toLowerCase() == "shapefile")){
