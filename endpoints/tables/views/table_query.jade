@@ -15,11 +15,18 @@ block content
 		-}
 
 		h2 Columns
-		div.description Below is a list of columns and data types for this table.
+		div.description 
+			|Below is a list of columns and data types for this table. <br/> Click to include/exclude from query.
+
 		div.columnList
 			-if(columnNames){
 				- each item in columnNames
-					div.littleSpace= item.column_name + " (" + item.data_type + ")"
+					-if(item.data_type == "geometry"){
+						div.columnName.geometry.littleSpace(onclick="toggleGeomColumn($('#optionsRadios1').prop('checked'),this);", class=!returnGeometry || returnGeometry == 'yes'?"active":"")=item.column_name + " (" + item.data_type + ")"
+					-}
+					-else{
+						div.columnName.littleSpace(onclick="toggleColumn('#{item.column_name}',this);", class=returnfields.indexOf(item.column_name)==-1?"":"active")=item.column_name + " (" + item.data_type + ")"
+					-}
 			-}else{
 				div.littlespace No information found for this table.
 			-}	
@@ -297,3 +304,45 @@ block apidoc
 					span.breakword.nocode.str #{"http://" + host + path + "?" + requestSample.join("&")}
 
 	-}
+
+	script.
+		//bind returnGeometry radio buttons to columnList geom div
+		//returnGeom = true
+		$('#optionsRadios1').click(function(){
+			$(this).prop('checked') === true ? $(".columnName.geometry").addClass("active") : $(".columnName.geometry").removeClass("active");
+		});
+
+		//returnGeom = false
+		$('#optionsRadios2').click(function(){
+			$(this).prop('checked') === true ? $(".columnName.geometry").removeClass("active") : $(".columnName.geometry").addClass("active");
+		});
+
+		var columnList = [];
+		var columns = $("#returnfields").val();
+		if(columns) columnList = columns.split(",");
+		function toggleColumn(columnName,btn){
+			if(columnList.indexOf(columnName) == -1){
+				columnList.push(columnName);
+				$(btn).addClass("active");	
+			}
+			else{
+				columnList.splice(columnList.indexOf(columnName), 1);
+				$(btn).removeClass("active");	
+			}
+			$("#returnfields").val(columnList.join(","));
+		}
+
+		function toggleGeomColumn(checked,btn){
+			if(checked === true){
+				$(btn).removeClass("active");	
+				$('#optionsRadios1').prop('checked', false);
+				$('#optionsRadios2').prop('checked', true);
+			}
+			else{
+				$(btn).addClass("active");	
+				$('#optionsRadios1').prop('checked', true);
+				$('#optionsRadios2').prop('checked', false);
+			}
+		}
+
+		
