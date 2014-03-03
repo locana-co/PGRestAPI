@@ -25,7 +25,7 @@ block content
 						div.columnName.geometry.littleSpace(onclick="toggleGeomColumn($('#optionsRadios1').prop('checked'),this);", class=!returnGeometry || returnGeometry == 'yes'?"active":"")=item.column_name + " (" + item.data_type + ")"
 					-}
 					-else{
-						div.columnName.littleSpace(onclick="toggleColumn('#{item.column_name}',this);", class=returnfields.indexOf(item.column_name)==-1?"":"active")=item.column_name + " (" + item.data_type + ")"
+						div.columnName.littleSpace(onclick="toggleColumn('#{item.column_name}',this);", class=(returnfields && returnfields.indexOf(item.column_name) > -1)?"active":"")=item.column_name + " (" + item.data_type + ")"
 					-}
 			-}else{
 				div.littlespace No information found for this table.

@@ -1,4 +1,5 @@
-﻿var currentTallest = 0,
+﻿//From http://css-tricks.com/equal-height-blocks-in-rows/
+var currentTallest = 0,
      currentRowStart = 0,
      rowDivs = new Array(),
      $el,
@@ -13,7 +14,7 @@ $('.blocks').each(function () {
 
         // we just came to a new row.  Set all the heights on the completed row
         for (currentDiv = 0 ; currentDiv < rowDivs.length ; currentDiv++) {
-            rowDivs[currentDiv].height(currentTallest);
+            rowDivs[currentDiv].css({ "min-height": currentTallest });
         }
 
         // set the variables for the new row
@@ -32,7 +33,7 @@ $('.blocks').each(function () {
 
     // do the last row
     for (currentDiv = 0 ; currentDiv < rowDivs.length ; currentDiv++) {
-        rowDivs[currentDiv].height(currentTallest);
+        rowDivs[currentDiv].css({ "min-height": currentTallest });
     }
 
 });
