@@ -199,17 +199,17 @@ exports.app = function(passport) {
 				rasterOrGeometry.present = true;
 				rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
 			} else if (item.data_type == "geometry") {
-				if (mapnik)
-					args.featureCollection.supportedOperations.push({
-						link : args.fullURL + "/dynamicMapLanding",
-						name : "Dynamic Map Service"
-					});
-				args.featureCollection.supportedOperations.push({
-					link : args.fullURL + "/topojson",
-					name : "TopoJSON"
-				});
-				rasterOrGeometry.present = true;
-				rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
+			    if (mapnik)
+			        args.featureCollection.supportedOperations.push({
+			            link: args.fullURL + "/dynamicMapLanding",
+			            name: "Dynamic Map Service"
+			        });
+			    args.featureCollection.supportedOperations.push({
+			        link: args.fullURL + "/topojson",
+			        name: "TopoJSON"
+			    });
+			    rasterOrGeometry.present = true;
+			    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
 			}
 		});
 

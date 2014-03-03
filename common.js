@@ -67,8 +67,9 @@ common.respond = function (req, res, args, callback) {
             res.jsonp({ error: args.errorMessage });
         }
         else {
+            var filename = (args.filename || "download") + ".csv";
             //Send back a csv
-            res.setHeader('Content-disposition', 'attachment; filename=download.csv');
+            res.setHeader('Content-disposition', 'attachment; filename=' + filename);
             res.writeHead(200, {
                 'Content-Type': 'text/csv'
             });
