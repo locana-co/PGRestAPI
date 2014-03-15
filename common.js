@@ -26,11 +26,13 @@ common.respond = function (req, res, args, callback) {
         }
         else {
             //Send back json file
-            res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
-            res.writeHead(200, {
-                'Content-Type': 'application/json'
-            });
-            res.end(JSON.stringify(args.featureCollection));
+            //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
+            //res.writeHead(200, {
+            //    'Content-Type': 'application/json'
+            //});
+            //res.end(JSON.stringify(args.featureCollection));
+            res.jsonp(args.featureCollection);
+
         }
     }
     else if (args.format.toLowerCase() == "geojson") {
@@ -40,11 +42,12 @@ common.respond = function (req, res, args, callback) {
         }
         else {
             //Send back json file
-            res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.geojson');
-            res.writeHead(200, {
-                'Content-Type': 'application/json'
-            });
-            res.end(JSON.stringify(args.featureCollection));
+            //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.geojson');
+            //res.writeHead(200, {
+            //    'Content-Type': 'application/json'
+            //});
+            //res.end(JSON.stringify(args.featureCollection));
+            res.jsonp(args.featureCollection);
         }
     }
     else if(args.format && (args.format.toLowerCase() == "shapefile")){
