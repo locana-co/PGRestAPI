@@ -20,7 +20,7 @@ common.respond = function (req, res, args, callback) {
         res.render(args.view, args);
     }
     else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
-        //Responsd with JSON if
+        //Respond with JSON
         if (args.errorMessage) {
             res.jsonp({ error: args.errorMessage });
         }
@@ -91,35 +91,25 @@ common.respond = function (req, res, args, callback) {
 }
 
 common.executePgQuery = function (query, callback) {
-    var result = { status: "success", rows: [] }; //object to store results, and whether or not we encountered an error.
-
     //Just run the query
     //Setup Connection to PG
-    var client = new pg.Client(global.conString);
-    client.connect();
+    pg.connect(global.conString, function(err, client, done) {
+        if(err){
+            //return an error
+            callback(err);
+            return;
+        }
 
-    //Log the query to the console, for debugging
-    common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ?  ", " + query.values : ""));
-    var query = client.query(query);
+        //Log the query to the console, for debugging
+        common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ?  ", " + query.values : ""));
 
-    //If query was successful, this is iterating thru result rows.
-    query.on('row', function (row) {
-        result.rows.push(row);
-    });
+        //execute query
+        client.query(query, function(err, result) {
+            done();
 
-    //Handle query error - fires before end event
-    query.on('error', function (error) {
-        //req.params.errorMessage = error;
-        result.status = "error";
-        result.message = error;
-        common.log("Error executing query: " + result.message);
-    });
-
-    //end is called whether successfull or if error was called.
-    query.on('end', function () {
-        //End PG connection
-        client.end();
-        callback(result); //pass back result to calling function
+            //go to callback
+            callback(err, result);
+        });
     });
 }
 
@@ -131,7 +121,7 @@ common.log = function(message) {
 
 common.vacuumAnalyzeAll = function(){
 	var query = { text: "VACUUM ANALYZE;", values: [] };
-	common.executePgQuery(query, function (result) {
+	common.executePgQuery(query, function (err, result) {
 		console.log("Performed VACUUM ANALYZE on ALL;")
 	});
 }
@@ -189,9 +179,18 @@ common.isValidSQL = function (item) {
 }
 
 ////Take in results object, return GeoJSON (if there is geometry)
-common.formatters.geoJSONFormatter = function (rows, geom_fields_array) {
+common.formatters.geoJSONFormatter = function (rows, geom_fields_array, geom_extent_array) {
     //Take in results object, return GeoJSON
-    if (!geom_fields_array) geom_fields_array = ["geom"]; //default
+    if (!geom_fields_array || geom_fields_array.length == 0) {
+        //See if the extent array is populated
+        if (geom_extent_array && geom_extent_array.length > 0) {
+            //If no geometry, but extent is defined, just swap out the geom field name for the extent field name
+            geom_fields_array = geom_extent_array;
+        } else {
+            //Use a default if none else are present
+            geom_fields_array = ["geom"];
+        }
+    }
 
     //Loop thru results
     var featureCollection = { "type": "FeatureCollection", "features": [] };
@@ -199,13 +198,12 @@ common.formatters.geoJSONFormatter = function (rows, geom_fields_array) {
     rows.forEach(function (row) {
 
         var feature = { "type": "Feature", "properties": {} };
-        //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
+        //Depending on whether or not there are geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
 
         if (geom_fields_array && geom_fields_array.length == 1) {
             //single geometry
             if (row[geom_fields_array[0]]) {
                 feature.geometry = JSON.parse(row[geom_fields_array[0]]);
-                //feature.geometry = row[geom_fields_array[0]];
 
                 //remove the geometry property from the row object so we're just left with non-spatial properties
                 delete row[geom_fields_array[0]];

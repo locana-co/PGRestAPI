@@ -65,13 +65,18 @@ exports.app = function(passport) {
 					text : "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
 					values : []
 				};
-				common.executePgQuery(query, function(result) {
+				common.executePgQuery(query, function(err, result) {
+                    if(err){
+                        args.errorMessage = err.text;
+                        common.respond(req, res, args);
+                        return;
+                    }
 
 					args.featureCollection = result.rows.map(function(item) {
 						return item.table_name;
 					});
-					//Get array of table names
 
+					//Get array of table names
 					//stash it for later - if not the result of a search
 					if (!args.search)
 						settings.tableList = args.featureCollection;
@@ -141,12 +146,12 @@ exports.app = function(passport) {
 				values : [this.args.table]
 			};
 			
-			common.executePgQuery(query, function(result) {
+			common.executePgQuery(query, function(err, result) {
 			    //check for error
-			    if (result.status == "error") {
+			    if (err) {
 			        
 					//Report error and exit.
-					args.errorMessage = result.message;
+					args.errorMessage = err.text;
 					flo();
 					//go to next flow
 				} else if (result && result.rows && result.rows.length > 0) {
@@ -243,11 +248,11 @@ exports.app = function(passport) {
 		        }]
 		    }); //flow to next function
 		}
-	}, function(result) {
+	}, function(err, result) {
 		//Coming from SRID check
-		if (result && result.status && result.status == "error") {
+		if (err) {
 			//Report error and exit.
-			this.args.errorMessage = result.message;
+			this.args.errorMessage = err.text;
 		} else if (result && result.rows && result.rows.length > 0) {
 			//Get SRID
 			if (result.rows[0].srid == 0 || result.rows[0].srid == "0") {
@@ -269,7 +274,7 @@ exports.app = function(passport) {
 			}
 		} else {
 			//no match found.
-			this.args.infoMessage = "Couldn't find inforamtion for this table.";
+			this.args.infoMessage = "Couldn't find information for this table.";
 		}
 
 		//Render HTML page with results at bottom
@@ -404,13 +409,15 @@ exports.app = function(passport) {
 		//either way, get the spatial columns so we can exclude them from the query
 		createSpatialQuerySelectStatement(this.args.table, this.args.outputsrid, this);
 
-	}, function(geom_fields_array, geom_select_array, geom_envelope_array) {
+	}, function (geom_fields_array, geom_select_array, geom_envelope_array, geom_envelope_fields) {
 		//Coming from createSpatialQuerySelectStatement
 		//Store the geom_fields for use later
 		this.args.geom_fields_array = geom_fields_array;
 		//hold geom column names
 		this.args.geom_envelope_array = geom_envelope_array;
-		//hold geom envelope column names
+	    //holds the envelope SELECT statement
+		this.args.geom_envelope_fields = geom_envelope_fields;
+	    //hold geom envelope column names
 		this.where = this.args.where || "";
 		//where clause - copy to local variable
 		this.args.groupby = this.args.groupby || "";
@@ -581,10 +588,10 @@ exports.app = function(passport) {
 			//Get all fields except the no fly list
 		} else {
 			//flow to next block - pass fields
-			this(this.returnfields);
+			this(null, this.returnfields);
 		}
 
-	}, function(fieldList) {
+	}, function(err, fieldList) {
 		//Coming from createSelectAllStatementWithExcept
 		//build SQL query
 		if (common.isValidSQL(fieldList) && common.isValidSQL(this.args.geometryStatement) && common.isValidSQL(this.args.table) && common.isValidSQL(this.args.where) && common.isValidSQL(this.args.groupby)) {
@@ -613,7 +620,7 @@ exports.app = function(passport) {
 			common.respond(this.req, this.res, this.args);
 			return;
 		}
-	}, function(result) {
+	}, function(err, result) {
 
 		var flo = this;
 		//Save for closure //TODO - Use _self
@@ -625,34 +632,34 @@ exports.app = function(passport) {
 		var features = [];
 
 		//check for error
-		if (result.status == "error") {
+		if (err) {
 			//Report error and exit.
-			this.args.errorMessage = result.message;
+			this.args.errorMessage = err.text;
 			flo();
 		} else {
 			//a-ok
 			//Check which format was specified
 			if (!this.args.format || this.args.format.toLowerCase() == "html") {
 				//Render HTML page with results at bottom
-				this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 				//The page will parse the geoJson to make the HTMl
 				flo();
 				//For now - hard coded.  Create new dynamic endpoint for this GeoJSON
 				//nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
 			} else if (this.args.format && this.args.format.toLowerCase() == "geojson") {
 				//Respond with JSON
-				this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 				flo();
 				//For now - hard coded.  Create new dynamic endpoint for this GeoJSON
 				//nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
 			} else if (this.args.format && this.args.format.toLowerCase() == "esrijson") {
 				//Respond with esriJSON
-				this.args.featureCollection = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    this.args.featureCollection = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 				flo();
 			} else if (this.args.format && this.args.format.toLowerCase() == "shapefile") {
 				//Make a Shapefile with the GeoJSON.  Then offer it up for download.
 				//Make a GeoJSON object from the features first.
-				features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 
 				//Convert the GeoJSON object to a shapefile
 				var shapefile = ogr2ogr(features).format('ESRI Shapefile').stream();
@@ -845,11 +852,11 @@ exports.app = function(passport) {
 			var res = this.res;
 			//copy for closure.
 
-			common.executePgQuery(query, function(result) {
+			common.executePgQuery(query, function(err, result) {
 
-				if (result.status == "error") {
+				if (err) {
 					//Report error and exit.
-					args.errorMessage = result.message;
+					args.errorMessage = err.text;
 
 				} else {
 
@@ -1068,7 +1075,7 @@ exports.app = function(passport) {
 			//Get geometry names
 			getGeometryFieldNames(this.args.table, this);
 
-		}, function(geom_fields_array) {
+		}, function(err, geom_fields_array) {
 
 			//This should have a value
 			var srid = this.spatialTables[this.args.table].srid;
@@ -1097,9 +1104,9 @@ exports.app = function(passport) {
 				common.respond(this.req, this.res, this.args);
 				return;
 			}
-		}, function(result) {
+		}, function(err, result) {
 
-			if (result.status == "error") {
+			if (err) {
 				this.args.errorMessage = "Problem getting the extent for this table.";
 			} else { 
 				var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(",");
@@ -1142,17 +1149,21 @@ exports.app = function(passport) {
 			text : "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN ($2)",
 			values : [table, except_list]
 		};
-		common.executePgQuery(query, function(result) {
+		common.executePgQuery(query, function(err, result) {
+            if(err){
+                callback(err);
+                return;
+            }
 			var rows = result.rows.map(function(item) {
 				return item.column_name;
 			});
-			//Get array of column names
 
+			//Get array of column names
 			//Wrap columns in double quotes
 			rows = common.escapePostGresColumns(rows);
 
 			//Callback
-			callback(rows.join(","));
+			callback(err, rows.join(","));
 		});
 	}
 
@@ -1160,7 +1171,7 @@ exports.app = function(passport) {
 		this.callback = callback;
 		this.outputsrid = outputsrid;
 		getGeometryFieldNames(table, this);
-	}, function(geom_fields_array) {
+	}, function(err, geom_fields_array) {
 		//Array of geometry columns
 		console.log(" in geom fields. " + geom_fields_array.length);
 		if (geom_fields_array.length == 0) {
@@ -1168,6 +1179,8 @@ exports.app = function(passport) {
 		} else {
 			var geom_query_array = [];
 			var geom_envelope_array = [];
+            var geom_envelope_names = [];
+
 			// in case they want envelopes
 			var outputsrid = this.outputsrid;
 
@@ -1176,15 +1189,17 @@ exports.app = function(passport) {
 				geom_fields_array.forEach(function(item) {
 					geom_query_array.push("ST_AsGeoJSON(ST_Transform(" + item + ", " + outputsrid + ")) As " + item);
 					geom_envelope_array.push("ST_AsGeoJSON(ST_Transform(ST_Envelope(" + item + "), " + outputsrid + ")) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
-				});
+                    geom_envelope_names.push(item.replace(/"/g, "") + "_envelope");
+                });
 			} else {
 				geom_fields_array.forEach(function(item) {
 					geom_query_array.push("ST_AsGeoJSON(" + item + ") As " + item);
 					geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(" + item + ")) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
+                    geom_envelope_names.push(item.replace(/"/g, "") + "_envelope");
 				});
 			}
 
-			this.callback(geom_fields_array, geom_query_array, geom_envelope_array);
+			this.callback(geom_fields_array, geom_query_array, geom_envelope_array, geom_envelope_names);
 		}
 	});
 
@@ -1199,7 +1214,12 @@ exports.app = function(passport) {
 			text : "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1",
 			values : [table]
 		};
-		common.executePgQuery(query, function(result) {
+		common.executePgQuery(query, function(err, result) {
+            if(err){
+                callback(err);
+                return;
+            }
+
 			var rows = result.rows.map(function(item) {
 				return item.column_name;
 			});
@@ -1208,7 +1228,7 @@ exports.app = function(passport) {
 			rows = common.escapePostGresColumns(rows);
 
 			//Callback
-			callback(rows);
+			callback(err, rows);
 		});
 	}
 
@@ -1222,7 +1242,12 @@ exports.app = function(passport) {
 			text : "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'raster') AND table_name = $1",
 			values : [table]
 		};
-		common.executePgQuery(query, function(result) {
+		common.executePgQuery(query, function(err, result){
+            if(err){
+                callback(err);
+                return;
+            }
+
 			var rows = result.rows.map(function(item) {
 				return item.column_name;
 			});
@@ -1232,7 +1257,7 @@ exports.app = function(passport) {
 			rows = common.escapePostGresColumns(rows);
 
 			//Callback
-			callback(rows);
+			callback(err, rows);
 		});
 	}
 
@@ -1297,7 +1322,6 @@ exports.app = function(passport) {
 //TODO: This can be moved to common
 exports.findSpatialTables = function(app, callback) {
 		var spatialTables = {};
-		var error;
 
 		var query = {
 			text : "select * from geometry_columns",
@@ -1305,11 +1329,10 @@ exports.findSpatialTables = function(app, callback) {
 		};
 
 		//TODO - add options to specify schema and database.  Right now it will read all
-		common.executePgQuery(query, function(result) {
-			if (result.status == "error") {
+		common.executePgQuery(query, function(err, result) {
+			if (err) {
 				//Report error and exit.
-				error = result.message;
-				console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + result.message);
+				console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + err.text);
 			} else {
 				//app.spatialTables = {};
 				//Add to list of tables.
@@ -1329,6 +1352,6 @@ exports.findSpatialTables = function(app, callback) {
 			app.set('spatialTables', spatialTables);
 
 			//return to sender
-			callback(error, spatialTables);
+			callback(err, spatialTables);
 		});
 	}

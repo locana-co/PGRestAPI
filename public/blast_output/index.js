@@ -1,1 +1,1 @@
-var _blasterindex = ["Kenya_Cico_Count.json","Kenya_Cicos.geojson"];
+var _blasterindex = ["Nigeria_Cico_Count.json"];

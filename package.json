@@ -15,15 +15,15 @@
     "test": "node_modules\\.bin\\mocha -u tdd"
   },
   "dependencies": {
-	"geojson-validation": "*",
+    "geojson-validation": "*",
     "express": "3.3.4",
     "jade": "0.35.0",
     "pg": "*",
     "flow": "*",
-    "less-middleware": "*",
+    "less-middleware": "0.1.14",
     "topojson": "*",
-	"shortid": "*",
-	"cors": "*"
+    "shortid": "*",
+    "cors": "*"
   },
   "optionalDependencies":{
   	"mapnik": "*",
