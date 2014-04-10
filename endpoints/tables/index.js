@@ -4,7 +4,7 @@
 var express = require('express'), common = require("../../common"), settings = require('../../settings');
 
 //The next requires are specific to this module only
-var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), blaster = require("../../lib/datablaster"), shortid = require("shortid");
+var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), shortid = require("shortid");
 var GeoFragger = require('../../lib/GeoFragger');
 
 var mapnik;
@@ -1134,14 +1134,6 @@ exports.app = function(passport) {
 		}));
 	}
 
-	//Test blaster route
-	app.all("/services/blaster", function(req, res) {
-		blaster.batchBlast(function(err, blastCount) {
-			//Finished blasting.
-			//say so.
-			res.end("Done blasting. Finished " + blastCount + " blast(s).");
-		});
-	});
 
 	//pass in a table, and a comma separated list of fields to NOT select
 	function createSelectAllStatementWithExcept(table, except_list, callback) {

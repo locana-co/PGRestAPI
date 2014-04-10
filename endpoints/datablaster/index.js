@@ -18,8 +18,13 @@ var querystring = require('querystring'),
     blastConfig = require('./blast_config'),
     http = require("http");
 
-var app = exports.app = express();
 
+//End module specific requires
+exports.app = function(passport) {
+	var app = express();
+
+	app.set('views', __dirname + '/views');
+	app.set('view engine', 'jade');
 
 //Let's start with an actual case I'm dealing with.
 
@@ -35,8 +40,18 @@ var app = exports.app = express();
 //7.  create index.js file to be downloaded by the client that will inform the client how to get what they want.
 //8. enjoy
 
+
+//blaster route
+app.all("/services/blaster", function(req, res) {
+	batchBlast(function (err, blastCount) {
+		//Finished blasting.
+		//say so.
+		res.end("Done blasting. Finished " + blastCount + " blast(s).");
+	});
+});
+
 //Kick off the process for a particular table
-exports.blast = function (tablename, mapper, callback) {
+function blast (tablename, mapper, callback) {
     //For now, keep hardcoded
     tablename = "tanzania_distritcs";
     var postArgs = {
@@ -87,7 +102,7 @@ exports.blast = function (tablename, mapper, callback) {
 }
 
 //Batch blast based on blast_config file.
-exports.batchBlast = flow.define(
+var batchBlast = flow.define(
 
     function (pageCallback) {
         this.rootRelativePath = "."; //TODO - make this more dynamic.  It's how we'll know how to find the 'root' + public/foo to write the output files.
@@ -189,7 +204,7 @@ exports.batchBlast = flow.define(
 );
 
 //Take the transformer and the data and get to work
-transformData = function (data, transformer, callback) {
+function transformData (data, transformer, callback) {
     //Take the data, apply the transform, if one exists
     var transformed;
 
@@ -257,3 +272,6 @@ function executeRESTRequest(table, postargs, callback) {
         post_req.write(post_data);
         post_req.end();
     }
+
+	return app;
+}
