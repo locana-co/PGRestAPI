@@ -115,6 +115,19 @@ try {
 if (mapnik)
 	app.use(mapnik.app(passport));
 
+
+var datablaster;
+try {
+	datablaster = require('./endpoints/datablaster');
+
+} catch (e) {
+	datablaster = null;
+	console.log("Datablaster not properly installed. Skipping. Reason: No blast_config.js file found in endpoints/datablaster");
+}
+
+if (datablaster)
+	app.use(datablaster.app(passport));
+
 //Create web server
 http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 	var startMessage = "Express server listening";
