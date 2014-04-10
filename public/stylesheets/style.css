@@ -73,6 +73,15 @@ a:hover {
   margin-top: 5px;
   margin-bottom: 5px;
 }
+.columnName {
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+.columnName:hover,
+.columnName.active {
+  background-color: #0769ad !important;
+  color: #fff;
+}
 .spacer {
   height: 20px;
 }

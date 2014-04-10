@@ -15,11 +15,18 @@ block content
 		-}
 
 		h2 Columns
-		div.description Below is a list of columns and data types for this table.
+		div.description 
+			|Below is a list of columns and data types for this table. <br/> Click to include/exclude from query.
+
 		div.columnList
 			-if(columnNames){
 				- each item in columnNames
-					div.littleSpace= item.column_name + " (" + item.data_type + ")"
+					-if(item.data_type == "geometry"){
+						div.columnName.geometry.littleSpace(onclick="toggleGeomColumn($('#optionsRadios1').prop('checked'),this);", class=!returnGeometry || returnGeometry == 'yes'?"active":"")=item.column_name + " (" + item.data_type + ")"
+					-}
+					-else{
+						div.columnName.littleSpace(onclick="toggleColumn('#{item.column_name}',this);", class=(returnfields && returnfields.indexOf(item.column_name) > -1)?"active":"")=item.column_name + " (" + item.data_type + ")"
+					-}
 			-}else{
 				div.littlespace No information found for this table.
 			-}	
@@ -101,12 +108,19 @@ block content
 							textarea(id='statsdef',placeholder='count:field1,sum:field2',name='statsdef')
 								|#{statsdef}
 			
-					tr
+					tr(style='display:none;')
 						td
 							label(for='wkt') Well Known Text (WKT) Geometry
 						td
 							textarea(id='wkt',placeholder='POLYGON((85.341 25.811,85.523 25.838,85.665 25.719,85.479 25.598,85.278 25.687,85.341 25.811))',name='wkt')
 								|#{wkt}
+
+					tr
+						td
+							label(for='intersects') Spatial Intersects (GeoJSON)
+						td
+							textarea(id='intersects',placeholder='{"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[92.3544,20.7573]}}]}',name='intersects')
+								|#{intersects}
 
 					tr
 						td
@@ -250,6 +264,9 @@ block apidoc
 		- requestSample.push("wkt=" + encodeURIComponent(wkt))
 		- postSample.push("wkt: '" + wkt + "'")
 
+	-if(intersects)
+		- requestSample.push("intersects=" + encodeURIComponent(intersects))
+		- postSample.push("intersects: '" + intersects + "'")
 
 	-if(limit)
 		- requestSample.push("limit=" + encodeURIComponent(limit))
@@ -287,3 +304,45 @@ block apidoc
 					span.breakword.nocode.str #{"http://" + host + path + "?" + requestSample.join("&")}
 
 	-}
+
+	script.
+		//bind returnGeometry radio buttons to columnList geom div
+		//returnGeom = true
+		$('#optionsRadios1').click(function(){
+			$(this).prop('checked') === true ? $(".columnName.geometry").addClass("active") : $(".columnName.geometry").removeClass("active");
+		});
+
+		//returnGeom = false
+		$('#optionsRadios2').click(function(){
+			$(this).prop('checked') === true ? $(".columnName.geometry").removeClass("active") : $(".columnName.geometry").addClass("active");
+		});
+
+		var columnList = [];
+		var columns = $("#returnfields").val();
+		if(columns) columnList = columns.split(",");
+		function toggleColumn(columnName,btn){
+			if(columnList.indexOf(columnName) == -1){
+				columnList.push(columnName);
+				$(btn).addClass("active");	
+			}
+			else{
+				columnList.splice(columnList.indexOf(columnName), 1);
+				$(btn).removeClass("active");	
+			}
+			$("#returnfields").val(columnList.join(","));
+		}
+
+		function toggleGeomColumn(checked,btn){
+			if(checked === true){
+				$(btn).removeClass("active");	
+				$('#optionsRadios1').prop('checked', false);
+				$('#optionsRadios2').prop('checked', true);
+			}
+			else{
+				$(btn).addClass("active");	
+				$('#optionsRadios1').prop('checked', true);
+				$('#optionsRadios2').prop('checked', false);
+			}
+		}
+
+		
