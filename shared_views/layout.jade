@@ -6,16 +6,16 @@ html
 		link(rel='stylesheet', href='/fonts/fonts.css')
 
 		-if(css){
-			-each csslink in css 
+			-each csslink in css
 				link(rel='stylesheet', href= csslink)
 		-}
 
 		script(type='text/javascript', src='http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js')
-		
+
 		-if(scripts){
-		-each script in scripts 
+		-each script in scripts
 			script(type='text/javascript', src= script)
-		-}	
+		-}
 
 
 	body
@@ -26,8 +26,9 @@ html
 				div.navLinks.right
 					a#tableListing(href='/services/tables') Table Listing
 					a#geoprocessing(href='/services/geoprocessing') Geoprocessing
+					a#custom(href='/services/custom') Custom
 					a#utilities(href='/services/utilities') Utilities
-					a#tileStream(href='/services/tiles') TileStream Link					
+					a#tileStream(href='/services/tiles') TileStream Link
 
 		.container
 			-if(breadcrumbs){
@@ -61,7 +62,7 @@ html
 		script(type='text/javascript', src='/stylesheets/layout.js')
 		script(type='text/javascript', src='https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js')
 
-		
+
 	footer.clearfix
 		div.left &copy; 2013 Spatial Development International All Rights Reserved.
 		div.right

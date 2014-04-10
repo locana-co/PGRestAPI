@@ -19,23 +19,51 @@ common.respond = function (req, res, args, callback) {
         //Determine sample request based on args
         res.render(args.view, args);
     }
-    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "geojson" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
-        //Responsd with GeoJSON (or JSON if there is no geo)
+    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
+        //Respond with JSON
         if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
+            res.jsonp(500, { error: args.errorMessage });
         }
         else {
+            //Send back json file
+            //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
+            //res.writeHead(200, {
+            //    'Content-Type': 'application/json'
+            //});
+            //res.end(JSON.stringify(args.featureCollection));
             res.jsonp(args.featureCollection);
+
         }
     }
-    else if(args.format && (args.format.toLowerCase() == "shapefile")){
-    	//Requesting Shapefile Format.
-    	//If there's an error, return a json
+    else if (args.format.toLowerCase() == "geojson") {
+				//Set initial header
+				res.setHeader('Content-disposition', 'attachment; filename=' + (args.table || 'download') + '.geojson');
+
+        //Responsd with GeoJSON
         if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
+            //res.jsonp(500, { error: args.errorMessage });
+					res.writeHead(500, {
+						'Content-Type': 'application/json'
+					});
+					res.end(JSON.stringify({ error: args.errorMessage }));
         }
         else {
-        	//Send back a shapefile
+					//Send back json file
+					res.writeHead(200, {
+						'Content-Type': 'application/json'
+					});
+					res.end(JSON.stringify(args.featureCollection));
+					//res.jsonp(args.featureCollection);
+				}
+    }
+    else if(args.format && (args.format.toLowerCase() == "shapefile")){
+        //Requesting Shapefile Format.
+        //If there's an error, return a json
+        if (args.errorMessage) {
+            res.jsonp(500, { error: args.errorMessage });
+        }
+        else {
+            //Send back a shapefile
             res.download(args.file, function(){
                 callback(args.file)
             });
@@ -45,11 +73,12 @@ common.respond = function (req, res, args, callback) {
         //Responsd with CSV
         //If there's an error, return a json
         if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
+            res.jsonp(500, { error: args.errorMessage });
         }
         else {
+            var filename = (args.filename || "download") + ".csv";
             //Send back a csv
-            res.setHeader('Content-disposition', 'attachment; filename=download.csv');
+            res.setHeader('Content-disposition', 'attachment; filename=' + filename);
             res.writeHead(200, {
                 'Content-Type': 'text/csv'
             });
@@ -59,7 +88,7 @@ common.respond = function (req, res, args, callback) {
     else {
         //If unrecognized format is specified
         if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
+            res.jsonp(500, { error: args.errorMessage });
         }
         else {
             res.jsonp(args.featureCollection);
@@ -68,35 +97,25 @@ common.respond = function (req, res, args, callback) {
 }
 
 common.executePgQuery = function (query, callback) {
-    var result = { status: "success", rows: [] }; //object to store results, and whether or not we encountered an error.
-
     //Just run the query
     //Setup Connection to PG
-    var client = new pg.Client(global.conString);
-    client.connect();
+    pg.connect(global.conString, function(err, client, done) {
+        if(err){
+            //return an error
+            callback(err);
+            return;
+        }
 
-    //Log the query to the console, for debugging
-    common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ?  ", " + query.values : ""));
-    var query = client.query(query);
+        //Log the query to the console, for debugging
+        common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ?  ", " + query.values : ""));
 
-    //If query was successful, this is iterating thru result rows.
-    query.on('row', function (row) {
-        result.rows.push(row);
-    });
+        //execute query
+        client.query(query, function(err, result) {
+            done();
 
-    //Handle query error - fires before end event
-    query.on('error', function (error) {
-        //req.params.errorMessage = error;
-        result.status = "error";
-        result.message = error;
-        common.log("Error executing query: " + result.message);
-    });
-
-    //end is called whether successfull or if error was called.
-    query.on('end', function () {
-        //End PG connection
-        client.end();
-        callback(result); //pass back result to calling function
+            //go to callback
+            callback(err, result);
+        });
     });
 }
 
@@ -107,10 +126,10 @@ common.log = function(message) {
 }
 
 common.vacuumAnalyzeAll = function(){
-	var query = { text: "VACUUM ANALYZE;", values: [] };
-	common.executePgQuery(query, function (result) {
-		console.log("Performed VACUUM ANALYZE on ALL;")
-	});
+    var query = { text: "VACUUM ANALYZE;", values: [] };
+    common.executePgQuery(query, function (err, result) {
+        console.log("Performed VACUUM ANALYZE on ALL;")
+    });
 }
 
 //Determine if a string contains all numbers.
@@ -118,7 +137,7 @@ common.IsNumeric = function (sText) {
     var ValidChars = "0123456789";
     var IsNumber = true;
     var Char;
-    
+
     sText.toString().replace(/\s+/g, '')
 
     for (i = 0; i < sText.length && IsNumber == true; i++) {
@@ -166,9 +185,18 @@ common.isValidSQL = function (item) {
 }
 
 ////Take in results object, return GeoJSON (if there is geometry)
-common.formatters.geoJSONFormatter = function (rows, geom_fields_array) {
+common.formatters.geoJSONFormatter = function (rows, geom_fields_array, geom_extent_array) {
     //Take in results object, return GeoJSON
-    if (!geom_fields_array) geom_fields_array = ["geom"]; //default
+    if (!geom_fields_array || geom_fields_array.length == 0) {
+        //See if the extent array is populated
+        if (geom_extent_array && geom_extent_array.length > 0) {
+            //If no geometry, but extent is defined, just swap out the geom field name for the extent field name
+            geom_fields_array = geom_extent_array;
+        } else {
+            //Use a default if none else are present
+            geom_fields_array = ["geom"];
+        }
+    }
 
     //Loop thru results
     var featureCollection = { "type": "FeatureCollection", "features": [] };
@@ -176,13 +204,12 @@ common.formatters.geoJSONFormatter = function (rows, geom_fields_array) {
     rows.forEach(function (row) {
 
         var feature = { "type": "Feature", "properties": {} };
-        //Depending on whether or not there is geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
+        //Depending on whether or not there are geometry properties, handle it.  If multiple geoms, use a GeometryCollection output for GeoJSON.
 
         if (geom_fields_array && geom_fields_array.length == 1) {
             //single geometry
             if (row[geom_fields_array[0]]) {
                 feature.geometry = JSON.parse(row[geom_fields_array[0]]);
-                //feature.geometry = row[geom_fields_array[0]];
 
                 //remove the geometry property from the row object so we're just left with non-spatial properties
                 delete row[geom_fields_array[0]];
@@ -276,7 +303,7 @@ common.formatters.CSVFormatter = function (rows, geom_fields_array) {
 
         for (var index in row) {
             if (geom_fields_array.indexOf(index) == -1)
-            csvArray.push((row[index] || '') + ",");
+                csvArray.push((row[index] || '') + ",");
         }
         //Add newline
         csvArray.push('\r\n');
@@ -293,12 +320,12 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
 
     var options = {
         host: settings.application.host,
-        path: path.replace("{table}", table), 
+        path: path.replace("{table}", table),
         port: settings.application.port,
-        method: 'POST', 
-        headers: {  
-            'Content-Type': 'application/x-www-form-urlencoded',  
-            'Content-Length': post_data.length  
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': post_data.length
         }
     };
 
@@ -312,7 +339,7 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
 
         //res.setEncoding('utf8');  
         res.on('data', function (chunk) {
-            str.push(chunk);  
+            str.push(chunk);
         });
 
         //the whole response has been recieved, so we just print it out here
@@ -320,11 +347,11 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
             console.log("ended API response");
             callback(null, JSON.parse(str));
         });
-    }); 
+    });
 
     //execute
     post_req.write(post_data);
-    post_req.end(); 
+    post_req.end();
 }
 
 

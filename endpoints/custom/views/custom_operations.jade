@@ -1,0 +1,22 @@
+extends ../../../shared_views/layout
+
+block content
+	script.
+		//Trigger Active Nav Link
+		$("#custom").addClass("active");
+
+	div.heading Custom Endpoints
+
+	span Custom Endpoints are simply custom functions (created ahead of time) exposed thru this API. The following custom endpoints are available.
+
+	div.bigSpace
+
+	- var items = opslist
+	- each item in items
+		div.littleSpace
+			a(href=url + "/" + item.link) #{item.name}
+					
+
+
+block sidebar
+	.widget

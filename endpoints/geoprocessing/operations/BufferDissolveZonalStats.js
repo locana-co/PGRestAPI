@@ -71,12 +71,12 @@ operation.execute = flow.define(
         else {
             //Invalid arguments
             //return message
-            callback({ status: "Missing required arguments", rows: [] });
+            callback({text: "Missing required arguments"}); //err is first argument
         }
     },
-    function (results) {
+    function (err, results) {
         //Step 2 - get the results and pass back to calling function
-        this.callback(results);
+        this.callback(err, results);
     }
 )
 

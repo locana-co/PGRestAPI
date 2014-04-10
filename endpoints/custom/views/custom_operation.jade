@@ -1,0 +1,124 @@
+extends ../../../shared_views/layout
+
+block content
+	script.
+		//Trigger Active Nav Link
+		$("#custom").addClass("active");
+
+	div.heading #{name}
+
+	span #{description}
+		
+	form(action='',method='post')
+		table.inputTable(style='background-color: #fff;')
+			- var requestSample = []
+			- if (name) {
+				- requestSample.push("name=" + encodeURIComponent(name))
+			- }
+			- if(_input_values && _input_values.length > 0){
+				each item in _input_values
+					- requestSample.push(item.name + "=" + encodeURIComponent(item.value))
+					tr
+						td
+							label(for=item.key) #{item.name}
+						td
+							input(id=item.name,type='text',value=item.value,name=item.name)
+
+			-}else if(formfields){
+				each item in formfields
+					tr
+						td
+							label(for=item) #{item}
+						td
+							input(id=item,type='text',name=item)
+
+			-}
+
+			tr
+				td
+					label(for='format') format
+				td
+					select(id='format',name='format')
+						formatlist = [ 'html', 'GeoJSON', 'esriJSON', 'json']
+							for item in formatlist
+								option #{item}
+			tr
+				td
+					label(for='name') name
+				td
+					input(id='name',type='text',value=name,name='name')	
+
+
+		div(data-role='fieldcontain')   
+			input.blueButton(type='submit',value='Submit',data-transition='fade', data-theme='c')
+
+
+block results
+	-if(infoMessage || errorMessage || featureCollection){
+		div.section.code
+			div.codeSamplesHeader Results
+		
+			div.codeBody
+
+				-if(infoMessage){
+					div.infoMessage
+						|#{infoMessage}
+				-}
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}
+
+			h2 Results
+			.results
+				- if (featureCollection){
+					-if(featureCollection.features){
+						i # records: #{featureCollection.features.length}
+						each val, key in featureCollection.features
+							div.propertyGroup
+								each ival, ikey in val.properties
+									-if(ival && ival.coordinates){
+										each egval, egkey in ival
+											div.geometry #{ikey}: #{egkey}: #{egval}
+									-}else{
+										div.property #{ikey}: #{ival}
+									-}
+								
+								-if(val.geometry){
+									-if(val.geometry.geometries){
+										each mgval, mgkey in val.geometry.geometries
+											-if(mgval.coordinates){
+												div.geometries #{mgval.type}: #{mgval.coordinates}
+											-}
+									-}else{
+										each gval, gkey in val.geometry
+											div.geometry geometry: #{gkey}: #{gval}
+									-}
+								-}
+							
+					-}else{
+						div.propertyGroup No results found
+					-}
+				-}
+	-}
+
+
+block apidoc
+	-if(requestSample.length > 0){
+
+		div.section.code
+
+			div.codeSamplesHeader Code Sample
+		
+			div.codeBody
+
+				span Here's how to hit this endpoint programatically.
+
+				div.requestHeader GET
+
+				div.requestContent
+
+					pre.prettyprint.linenums
+						span.nocode.str #{"http://" + host + path + "?" + requestSample.join("&")}
+				
+	-}

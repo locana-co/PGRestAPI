@@ -32,8 +32,8 @@ app.use(require('less-middleware')({
 
 //Items in these folder will be served statically.
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'GPModels')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
+app.use('/geoangular', express.static('../GeoAngular/app'));
 
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
@@ -97,6 +97,9 @@ app.use(tiles.app(passport));
 var geoprocessing = require('./endpoints/geoprocessing');
 app.use(geoprocessing.app(passport));
 
+var custom = require('./endpoints/custom');
+app.use(custom.app(passport));
+
 var utilities = require('./endpoints/utilities');
 app.use(utilities.app(passport));
 
@@ -140,7 +143,7 @@ app.use(function(err, req, res, next) {
 	console.error(err.stack);
 	common.log(err.message);
 	res.send(500, 'There was an error with the web service. Please try your operation again.');
-	common.log('There was an error with the web servcice. Please try your operation again.');
+	common.log('There was an error with the web service. Please try your operation again.');
 });
 
 //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
