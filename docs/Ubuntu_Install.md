@@ -21,7 +21,7 @@ PGRestAPI - Ubuntu 12/13 Installation
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/UbuntuInstallation))
 
 	--Mapnik 2.2.0
-	sudo add-apt-repository ppa:mapnik/v2.2.0
+	sudo apt-add-repository ppa:mapnik/v2.2.0
 	sudo apt-get update
 	sudo apt-get install libmapnik libmapnik-dev mapnik-utils python-mapnik
 	
