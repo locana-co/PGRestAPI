@@ -14,13 +14,11 @@ PGRestAPI - Ubuntu 12/13 Installation
 	sudo apt-get upgrade
 	sudo apt-get install g++ curl libssl-dev apache2-utils git-core
 	sudo apt-get install make
-	sudo add-apt-repository ppa:chris-lea/node.js
+	sudo apt-add-repository ppa:chris-lea/node.js
 	sudo apt-get update 
 	sudo apt-get install nodejs
 
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/UbuntuInstallation))
-	sudo apt-get update
-	sudo apt-get upgrade
 
 	--Mapnik 2.2.0
 	sudo add-apt-repository ppa:mapnik/v2.2.0
