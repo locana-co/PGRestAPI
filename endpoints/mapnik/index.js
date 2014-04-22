@@ -164,7 +164,7 @@ exports.createPGTileRenderer = flow.define(function (app, table, geom_field, eps
                             if (err) {
                                 throw err;
                             } else {
-                            	var duration = Date.now() - start;
+                            	var duration = Date.now() - startTime;
                             	TileStats.times.push(duration);
                                 res.writeHead(200, {
                                     'Content-Type': 'image/png'
@@ -327,7 +327,7 @@ exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field
                         if (err) {
                             throw err;
                         } else {
-                    	    var duration = Date.now() - start;
+                    	    var duration = Date.now() - startTime;
                         	SingleTileStats.times.push(duration);
                             res.writeHead(200, {
                                 'Content-Type': 'image/png'
