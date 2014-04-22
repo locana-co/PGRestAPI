@@ -19,6 +19,9 @@ var styleExtension = '.xml';
 var TileStats = { times: []};
 var SingleTileStats = { times: []};
 
+// register shapefile plugin
+if (mapnik.register_default_input_plugins) mapnik.register_default_input_plugins();
+
 exports.app = function (passport) {
     var app = express();
     //Not yet uesd 
@@ -50,14 +53,14 @@ exports.app = function (passport) {
           var averageTime = 0;
           var totalTime  = 0;
           
-          if(TileStats.times.length > 0){
-	          totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
+          if(SingleTileStats.times.length > 0){
+	          totalTime = SingleTileStats.times.reduce(function(previousValue, currentValue, index, array){
 	          		return parseInt(previousValue) + parseInt(currentValue);
 	          });
 	          totalTime = totalTime/1000;
-	          averageTime = totalTime/TileStats.times.length;
+	          averageTime = totalTime/SingleTileStats.times.length;
           }
-          res.end("For this session, " + TileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds.");
+          res.end("For this session, " + SingleTileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds.");
    	}); 
    	
     return app;
@@ -590,3 +593,109 @@ exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoC
     //app.use('/services/nodetiles/' + name + '/tiles', nodetiles.route.tilePng({ map: map })); // tile.png
     //console.log("Created dynamic service: " + '/services/nodetiles/' + name + '/tiles');
 };
+
+
+//Create a static renderer that will always use the default styling
+exports.createShapefileTileRenderer = flow.define(function (app, table, geom_field, epsgSRID, cartoFile) {
+
+    this.app = app;
+    this.table = table;
+    this.epsg = epsgSRID;
+
+    var name;
+    var stylepath = __dirname + '/cartocss/';
+    var fullpath = "";
+
+    //Set the path to the style file
+    if (cartoFile) {
+        //Passed in
+        fullpath = stylepath + cartoFile;
+    } else {
+        //default
+        fullpath = stylepath + table + styleExtension;
+    }
+
+    var flo = this;
+
+    //See if there is a <tablename>.mss/xml file for this table.
+    //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+    fs.stat(fullpath, function (err, stat) {
+        if (err) {
+            //No file.  Use defaults.
+            fullpath = stylepath + "style.xml";
+            //Default
+        }
+
+        flo(fullpath);
+        //flow to next function
+    });
+}, function (fullpath) {
+    //Flow from after getting full path to Style file
+
+	var shp = path.join(__dirname, '/data/fiscal2012');
+
+    var _self = this;
+
+    //Create Route for this table
+    this.app.use('/services/tables/' + _self.table + '/dynamicShapeMap', function (req, res) {
+    	//Start Timer to measure response speed for tile requests.
+		var startTime = Date.now();
+
+        parseXYZ(req, TMS_SCHEME, function (err, params) {
+        	debugger;
+            if (err) {
+                res.writeHead(500, {
+                    'Content-Type': 'text/plain'
+                });
+                res.end(err.message);
+            } else {
+                try {
+                    //create map and layer
+                    var map = new mapnik.Map(256, 256, mercator.proj4);
+                    var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+                    //check to see if 3857.  If not, assume WGS84
+                    var shapefile = new mapnik.Datasource({type: 'shape',file: shp});
+                    var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+
+                    layer.datasource = shapefile;
+                    layer.styles = [_self.table, 'style'];
+                    debugger;
+
+                    map.bufferSize = 64;
+                    map.load(path.join(fullpath), {
+                        strict: true
+                    }, function (err, map) {
+                        if (err)
+                            throw err;
+                        map.add_layer(layer);
+
+                        console.log(map.toXML());
+                        // Debug settings
+
+                        map.extent = bbox;
+                        var im = new mapnik.Image(map.width, map.height);
+                        map.render(im, function (err, im) {
+                            if (err) {
+                                throw err;
+                            } else {
+                            	var duration = Date.now() - startTime;
+                            	TileStats.times.push(duration);
+                                res.writeHead(200, {
+                                    'Content-Type': 'image/png'
+                                });
+                                res.end(im.encodeSync('png'));
+                            }
+                        });
+                    });
+                } catch (err) {
+                    res.writeHead(500, {
+                        'Content-Type': 'text/plain'
+                    });
+                    res.end(err.message);
+                }
+            }
+        });
+    });
+
+    console.log("Created dynamic shapefile service: " + '/services/tables/' + _self.table + '/dynamicShapeMap');
+});
