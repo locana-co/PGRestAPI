@@ -38,7 +38,7 @@ exports.app = function (passport) {
 	          averageTime = TileStats.times.length/totalTime;
           }
 
-          res.end("For this session, " + TileStats.times.length + " tiles were generated in" + totalTime  + "seconds with an average time of " + averageTime + " seconds");
+          res.end("For this session, " + TileStats.times.length + " tiles were generated in "  + totalTime  + " seconds with an average time of " + averageTime + " seconds");
    	}); 
 
     app.use('/admin/singleTileStats', function (req, res) { 
@@ -51,11 +51,11 @@ exports.app = function (passport) {
           
           if(TileStats.times.length > 0){
 	          totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
-	          		return previousValue + currentValue;
+	          		return parseInt(previousValue) + parseInt(currentValue);
 	          });
 	          averageTime = SingleTileStats.times.length/totalTime;
           }
-          res.end("For this session, " + TileStats.times.length + " tiles were generated in" + totalTime + "seconds with an average time of " + averageTime + " seconds.");
+          res.end("For this session, " + TileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds.");
    	}); 
    	
     return app;
