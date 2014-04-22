@@ -170,7 +170,7 @@ tables.findSpatialTables(app, function(error, tables) {
 					//Spin up a route to serve dynamic tiles for this table
 					mapnik.createPGTileRenderer(app, item.table, item.geometry_column, item.srid, null);
 					mapnik.createPGTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
-					mapnik.createShapefileTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
+					mapnik.createShapefileTileRenderer(app, item.table, item.geometry_column, item.srid, null);
 					//Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
 					mapnik.createCachedFolder(item.table);
 				}
