@@ -28,7 +28,9 @@
   "optionalDependencies":{
   	"mapnik": "1.4.2",
 	"carto": "*",
-	"ogr2ogr": "*"
+	"ogr2ogr": "*",
+	"mbtiles": "*",
+	"tilelive-tmsource": "mojodna/tilelive-tmsource"
   },
   "devDependencies": {
     "mocha": "*",

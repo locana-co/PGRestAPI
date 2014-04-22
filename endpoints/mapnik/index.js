@@ -503,24 +503,6 @@ exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field
 
 	var _self = this;
 
-	// tilelive.load('bridge://' + filename, function(err, source) {
-	// if (err)
-	// throw err;
-	// app.get('/vector-tiles/:z/:x/:y.*', function(req, res) {
-	// source.getTile(req.param('z'), req.param('x'), req.param('y'), function(err, tile, headers) {
-	// // `err` is an error object when generation failed, otherwise null.
-	// // `tile` contains the compressed image file as a Buffer
-	// // `headers` is a hash with HTTP headers for the image.
-	// if (!err) {
-	// res.send(tile);
-	// } else {
-	// res.send('Tile rendering error: ' + err + '\n');
-	// }
-	// });
-	// });
-	//
-	// });
-
 	//Create Route for this table
 	this.app.use('/services/tables/' + _self.table + '/vector-tiles', function(req, res) {
 		

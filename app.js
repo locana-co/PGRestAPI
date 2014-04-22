@@ -100,17 +100,20 @@ app.use(geoprocessing.app(passport));
 var utilities = require('./endpoints/utilities');
 app.use(utilities.app(passport));
 
-var mapnik;
+var mapnik, vectorTiles;
 try {
-	mapnik = require('./endpoints/mapnik');
+	mapnik = require('./endpoints/mapnik'),
+	vectorTiles = require('./endpoints/vectortiles');
 
 } catch (e) {
 	mapnik = null;
 	console.log("Mapnik not properly installed. Skipping. Reason: " + e);
 }
 
-if (mapnik)
+if (mapnik){
 	app.use(mapnik.app(passport));
+	app.use(vectorTiles.app(passport));
+}
 
 
 var datablaster;
@@ -140,12 +143,12 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 
 //Root Request - show table list
 app.get('/', passport.authenticationFunctions, function(req, res) {
-	res.redirect('/services/tables')
+	res.redirect('/services/tables');
 });
 
 //Redirect /services to table list
 app.get('/services', function(req, res) {
-	res.redirect('/services/tables')
+	res.redirect('/services/tables');
 });
 
 
