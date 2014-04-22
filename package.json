@@ -26,7 +26,7 @@
     "cors": "*"
   },
   "optionalDependencies":{
-  	"mapnik": "1.4.2",
+  	"mapnik": "*",
 	"carto": "*",
 	"ogr2ogr": "*"
   },
