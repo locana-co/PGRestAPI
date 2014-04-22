@@ -30,9 +30,10 @@ exports.app = function (passport) {
           //Get the average render time
           var averageTime = 0;
           if(TileStats.times.length > 0){
-	          averageTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
+	          var totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
 	          		return previousValue + currentValue;
 	          });
+	          averageTime = TileStats.times.length/totalTime;
           }
 
           res.end("For this session, " + TileStats.times.length + " tiles were generated with an average time of " + averageTime + " ms?");
@@ -44,10 +45,11 @@ exports.app = function (passport) {
           });
           //Get the average render time
           var averageTime = 0;
-          if(SingleTileStats.times.length > 0){
-	          averageTime = SingleTileStats.times.reduce(function(previousValue, currentValue, index, array){
+          if(TileStats.times.length > 0){
+	          var totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
 	          		return previousValue + currentValue;
 	          });
+	          averageTime = SingleTileStats.times.length/totalTime;
           }
           res.end("For this session, " + SingleTileStats.times.length + " tiles were generated with an average time of " + averageTime + " ms?");
    	}); 
