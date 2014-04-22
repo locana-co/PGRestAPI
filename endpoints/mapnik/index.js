@@ -36,7 +36,7 @@ exports.app = function (passport) {
 	          		return previousValue + currentValue;
 	          });
 	          totalTime = totalTime/1000;
-	          averageTime = TileStats.times.length/totalTime;
+	          averageTime = totalTime/TileStats.times.length;
           }
 
           res.end("For this session, " + TileStats.times.length + " tiles were generated in "  + totalTime  + " seconds with an average time of " + averageTime + " seconds");
@@ -55,7 +55,7 @@ exports.app = function (passport) {
 	          		return parseInt(previousValue) + parseInt(currentValue);
 	          });
 	          totalTime = totalTime/1000;
-	          averageTime = TileStats.times.length/totalTime;
+	          averageTime = totalTime/TileStats.times.length;
           }
           res.end("For this session, " + TileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds.");
    	}); 
