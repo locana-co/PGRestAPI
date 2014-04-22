@@ -1076,6 +1076,8 @@ exports.app = function(passport) {
 			getGeometryFieldNames(this.args.table, this);
 
 		}, function(err, geom_fields_array) {
+			
+			this.spatialTables = app.get('spatialTables');
 
 			//This should have a value
 			var srid = this.spatialTables[this.args.table].srid;

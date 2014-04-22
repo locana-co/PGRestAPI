@@ -16,12 +16,44 @@ carto = require('carto');
 var TMS_SCHEME = false;
 var styleExtension = '.xml';
 
+var TileStats = { times: []};
+var SingleTileStats = { times: []};
+
 exports.app = function (passport) {
     var app = express();
-    //Not yet uesd    
+    //Not yet uesd 
+    
+    app.use('/admin/tileStats', function (req, res) { 
+   	      res.writeHead(200, {
+                'Content-Type': 'text/plain'
+          });
+          //Get the average render time
+          var averageTime = 0;
+          if(TileStats.times.length > 0){
+	          averageTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
+	          		return previousValue + currentValue;
+	          });
+          }
 
+          res.end("For this session, " + TileStats.times.length + " tiles were generated with an average time of " + averageTime + " ms?");
+   	}); 
+
+    app.use('/admin/singleTileStats', function (req, res) { 
+   	      res.writeHead(200, {
+                'Content-Type': 'text/plain'
+          });
+          //Get the average render time
+          var averageTime = 0;
+          if(SingleTileStats.times.length > 0){
+	          averageTime = SingleTileStats.times.reduce(function(previousValue, currentValue, index, array){
+	          		return previousValue + currentValue;
+	          });
+          }
+          res.end("For this session, " + SingleTileStats.times.length + " tiles were generated with an average time of " + averageTime + " ms?");
+   	}); 
+   	
     return app;
-}
+};
 
 exports.createCachedFolder = function (table) {
     var folder = './public/cached_nodetiles/' + table;
@@ -36,7 +68,8 @@ exports.createCachedFolder = function (table) {
             //Synch
         }
     });
-}
+};
+
 //Create a static renderer that will always use the default styling
 exports.createPGTileRenderer = flow.define(function (app, table, geom_field, epsgSRID, cartoFile) {
 
@@ -91,8 +124,11 @@ exports.createPGTileRenderer = flow.define(function (app, table, geom_field, eps
 
     //Create Route for this table
     this.app.use('/services/tables/' + _self.table + '/dynamicMap', function (req, res) {
+    	//Start Timer to measure response speed for tile requests.
+		var startTime = Date.now();
 
         parseXYZ(req, TMS_SCHEME, function (err, params) {
+        	debugger;
             if (err) {
                 res.writeHead(500, {
                     'Content-Type': 'text/plain'
@@ -109,6 +145,7 @@ exports.createPGTileRenderer = flow.define(function (app, table, geom_field, eps
 
                     layer.datasource = postgis;
                     layer.styles = [_self.table, 'style'];
+                    debugger;
 
                     map.bufferSize = 64;
                     map.load(path.join(fullpath), {
@@ -127,6 +164,8 @@ exports.createPGTileRenderer = flow.define(function (app, table, geom_field, eps
                             if (err) {
                                 throw err;
                             } else {
+                            	var duration = Date.now() - start;
+                            	TileStats.times.push(duration);
                                 res.writeHead(200, {
                                     'Content-Type': 'image/png'
                                 });
@@ -145,7 +184,10 @@ exports.createPGTileRenderer = flow.define(function (app, table, geom_field, eps
     });
 
     console.log("Created dynamic service: " + '/services/tables/' + _self.table + '/dynamicMap');
-})
+});
+
+
+
 //Create a renderer that will accept dynamic queries and styling and bring back a single image to fit the map's extent.
 exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field, epsgSRID, cartoFile) {
 
@@ -188,7 +230,9 @@ exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field
 
     //Create Route for this table
     this.app.use('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
-
+    	//Start Timer to measure response speed for tile requests.
+		var startTime = Date.now();
+		
         //Check for correct args
         //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
         var args = {};
@@ -205,7 +249,7 @@ exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field
         // check to see if args were provided
         if (JSON.stringify(args) != '{}') {
             //are all mandatory args provided?
-            var missing = "Please provide"
+            var missing = "Please provide";
             var missingArray = [];
             if (!args.width) {
                 missingArray.push("width");
@@ -283,6 +327,8 @@ exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field
                         if (err) {
                             throw err;
                         } else {
+                    	    var duration = Date.now() - start;
+                        	SingleTileStats.times.push(duration);
                             res.writeHead(200, {
                                 'Content-Type': 'image/png'
                             });
@@ -304,7 +350,8 @@ exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field
     });
 
     console.log("Created dynamic query service: " + '/services/tables/' + _self.table + '/dynamicQueryMap');
-})
+});
+
 //Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
 exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRID, cartoFile, id, callback) {
 
@@ -445,7 +492,7 @@ exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRI
     callback({
         imageURL: dynamicURL
     });
-})
+});
 
 //Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
 exports.createImageFromGeoJSON = flow.define(function (geoJSON, bbox, epsgSRID, cartoFile, callback) {
@@ -515,7 +562,7 @@ exports.createImageFromGeoJSON = flow.define(function (geoJSON, bbox, epsgSRID, 
         }
 
     });
-})
+});
 
 //This should take in a geoJSON object and create a new route on the fly - return the URL?
 exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoCssFile) {
