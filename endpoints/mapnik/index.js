@@ -18,6 +18,7 @@ var styleExtension = '.xml';
 
 var TileStats = { times: []};
 var SingleTileStats = { times: []};
+var ShapeStats = { times: []};
 
 // register shapefile plugin
 if (mapnik.register_default_input_plugins) mapnik.register_default_input_plugins();
@@ -61,6 +62,24 @@ exports.app = function (passport) {
 	          averageTime = totalTime/SingleTileStats.times.length;
           }
           res.end("For this session, " + SingleTileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds.");
+   	}); 
+   	
+   	app.use('/admin/shapeTileStats', function (req, res) { 
+   	      res.writeHead(200, {
+                'Content-Type': 'text/plain'
+          });
+          //Get the average render time
+          var averageTime = 0;
+          var totalTime  = 0;
+          
+          if(ShapeStats.times.length > 0){
+	          totalTime = ShapeStats.times.reduce(function(previousValue, currentValue, index, array){
+	          		return parseInt(previousValue) + parseInt(currentValue);
+	          });
+	          totalTime = totalTime/1000;
+	          averageTime = totalTime/ShapeStats.times.length;
+          }
+          res.end("For this session, " + ShapeStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds.");
    	}); 
    	
     return app;
@@ -679,7 +698,7 @@ exports.createShapefileTileRenderer = flow.define(function (app, table, geom_fie
                                 throw err;
                             } else {
                             	var duration = Date.now() - startTime;
-                            	TileStats.times.push(duration);
+                            	ShapeStats.times.push(duration);
                                 res.writeHead(200, {
                                     'Content-Type': 'image/png'
                                 });
