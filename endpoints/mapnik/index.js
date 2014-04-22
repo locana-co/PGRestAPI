@@ -29,14 +29,16 @@ exports.app = function (passport) {
           });
           //Get the average render time
           var averageTime = 0;
+          var totalTime = 0;
+          
           if(TileStats.times.length > 0){
-	          var totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
+	          totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
 	          		return previousValue + currentValue;
 	          });
-	          averageTime = TileStats.times.length/totalTime;
+	          averageTime = TileStats.times.length/(totalTime * 1000); //to seconds
           }
 
-          res.end("For this session, " + TileStats.times.length + " tiles were generated with an average time of " + averageTime + " ms?");
+          res.end("For this session, " + TileStats.times.length + " tiles were generated in" + totalTime  + "seconds with an average time of " + averageTime + " seconds");
    	}); 
 
     app.use('/admin/singleTileStats', function (req, res) { 
@@ -45,13 +47,15 @@ exports.app = function (passport) {
           });
           //Get the average render time
           var averageTime = 0;
+          var totalTime  = 0;
+          
           if(TileStats.times.length > 0){
-	          var totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
+	          totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array){
 	          		return previousValue + currentValue;
 	          });
-	          averageTime = SingleTileStats.times.length/totalTime;
+	          averageTime = SingleTileStats.times.length/(totalTime*1000); //to seconds
           }
-          res.end("For this session, " + SingleTileStats.times.length + " tiles were generated with an average time of " + averageTime + " ms?");
+          res.end("For this session, " + TileStats.times.length + " tiles were generated in" + totalTime + "seconds with an average time of " + averageTime + " seconds.");
    	}); 
    	
     return app;
