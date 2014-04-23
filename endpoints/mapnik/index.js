@@ -147,7 +147,7 @@ exports.app = function(passport) {
 	});
 	
 	//Return json of found shapefiles
-	app.use('/shapefiles', function(req, res) {
+	app.use('/services/shapefiles', function(req, res) {
 		res.json({ shapefiles: shapefiles});
 	});
 
