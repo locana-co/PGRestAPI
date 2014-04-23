@@ -23,7 +23,8 @@
     "less-middleware": "0.1.14",
     "topojson": "*",
     "shortid": "*",
-    "cors": "*"
+    "cors": "*",
+    "generic-pool": "*"
   },
   "optionalDependencies":{
   	"mapnik": "*",

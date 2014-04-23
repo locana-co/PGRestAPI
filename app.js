@@ -37,13 +37,13 @@ app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson
 
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
-try {
-	mongoose = require("mongoose"), passport = require("passport");
-} catch(e) {
-	mongoose = null;
-	passport = null;
-	console.log("Mongoose/MongoDB not properly installed. Skipping. Also not using Passport. Reason: " + e);
-}
+// try {
+	// mongoose = require("mongoose"), passport = require("passport");
+// } catch(e) {
+	// mongoose = null;
+	// passport = null;
+	// console.log("Mongoose/MongoDB not properly installed. Skipping. Also not using Passport. Reason: " + e);
+// }
 
 //express app.get can be passed an array of intermediate functions before rendering.
 //If passport isn't installed or user hasn't enabled security, then leave the following array empty, otherwise load one or more middleware functions in there.
@@ -127,7 +127,7 @@ if (datablaster)
 
 //Create web server
 http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
-	var startMessage = "Express server listening";
+	var startMessage = "Chubbs server listening";
 
 	if (app.get('ipaddr')) {
 		startMessage += ' on IP:' + app.get('ipaddr') + ', ';
@@ -140,12 +140,12 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 
 //Root Request - show table list
 app.get('/', passport.authenticationFunctions, function(req, res) {
-	res.redirect('/services/tables')
+	res.redirect('/services/tables');
 });
 
 //Redirect /services to table list
 app.get('/services', function(req, res) {
-	res.redirect('/services/tables')
+	res.redirect('/services/tables');
 });
 
 //Look for any errors (this signature is for error handling), this is generally defined after all other app.uses.
@@ -170,9 +170,8 @@ tables.findSpatialTables(app, function(error, tables) {
 					//Spin up a route to serve dynamic tiles for this table
 					mapnik.createPGTileRenderer(app, item.table, item.geometry_column, item.srid, null);
 					mapnik.createPGTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
-					mapnik.createShapefileTileRenderer(app, item.table, item.geometry_column, item.srid, null);
 					//Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
-					mapnik.createCachedFolder(item.table);
+					//mapnik.createCachedFolder(item.table);
 				}
 			});
 		}

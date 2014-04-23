@@ -1224,7 +1224,7 @@ exports.app = function(passport) {
 			//Callback
 			callback(err, rows);
 		});
-	}
+	};
 
 	//pass in a table, get an array of geometry columns
 	function getRasterColumnName(table, callback) {
@@ -1253,7 +1253,7 @@ exports.app = function(passport) {
 			//Callback
 			callback(err, rows);
 		});
-	}
+	};
 
 	///TopoJSON functions - TODO - move to a separate module.
 
@@ -1310,16 +1310,18 @@ exports.app = function(passport) {
 	
 	
 	return app;
-}
+};
 
 //Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
 //TODO: This can be moved to common
 exports.findSpatialTables = function(app, callback) {
 		var spatialTables = {};
 
+		//TODO: text : "select f_geometry_column, srid, f_table_name from geometry_columns where f_table_name NOT IN (select table_name from INFORMATION_SCHEMA.views WHERE table_schema = ANY (current_schemas(false))) and f_table_catalog = $1",
+		//Add a property to deliniate tables vs. views.
 		var query = {
-			text : "select * from geometry_columns",
-			values : []
+			text : "select * from geometry_columns where f_table_catalog = $1",
+			values : [settings.pg.database]
 		};
 
 		//TODO - add options to specify schema and database.  Right now it will read all
@@ -1348,4 +1350,4 @@ exports.findSpatialTables = function(app, callback) {
 			//return to sender
 			callback(err, spatialTables);
 		});
-	}
+	};
