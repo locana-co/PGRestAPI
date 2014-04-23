@@ -86,6 +86,7 @@ exports.app = function(passport) {
 	//Loop thru shapes and spin up new routes
 	shapefiles.forEach(function(item){
 		createShapefileTileRenderer(app, item.split('.')[0], shpLocation + "/" + item, 4326, null);
+		createShapefileSingleTileRenderer(app, item.split('.')[0], shpLocation + "/" + item, 4326, null);
 	});
 	
 	var sessionStart = new Date().toLocaleString();
@@ -807,7 +808,7 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 });
 
 //Create a renderer that will  bring back a single image to fit the map's extent.
-exports.createShapefileSingleTileRenderer = flow.define(function(app, table, path_to_shp, epsgSRID, cartoFile) {
+var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRenderer = flow.define(function(app, table, path_to_shp, epsgSRID, cartoFile) {
 
 	this.app = app;
 	this.table = table;
