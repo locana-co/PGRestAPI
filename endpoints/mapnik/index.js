@@ -241,34 +241,30 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 				res.end(err.message);
 			} else {
 				try {
-					var xmlss = path.join(fullpath);
-					aquire(xmlss, {bufferSize :64 }, function(err, map) {
-						if (err) {
-                        	maps.release(xmlss, map);
-                        	res.writeHead(500, {
-								'Content-Type' : 'text/plain'
-							});
-							res.end(err.message);
-                        }
-						//create map and layer
-						//var map = new mapnik.Map(256, 256, mercator.proj4);
-						var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-						//check to see if 3857.  If not, assume WGS84
-						var postgis = new mapnik.Datasource(postgis_settings);
-						var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
-	
-						layer.datasource = postgis;
-						layer.styles = [_self.table, 'style'];
-	
-						map.add_layer(layer);
+					//create map and layer
+					var map = new mapnik.Map(256, 256, mercator.proj4);
+					var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+					//check to see if 3857.  If not, assume WGS84
+					var postgis = new mapnik.Datasource(postgis_settings);
+					var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
 
+					layer.datasource = postgis;
+					layer.styles = [_self.table, 'style'];
+
+					map.bufferSize = 64;
+					map.load(path.join(fullpath), {
+						strict : true
+					}, function(err, map) {
+						if (err)
+							throw err;
+						map.add_layer(layer);
 						console.log(map.toXML());
 						// Debug settings
 
 						map.extent = bbox;
 						var im = new mapnik.Image(map.width, map.height);
 						map.render(im, function(err, im) {
-							maps.release(xmlss, map);
+							
 							if (err) {
 								throw err;
 							} else {
@@ -280,8 +276,8 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 								res.end(im.encodeSync('png'));
 							}
 						});
-						//});
 					});
+				
 
 				} catch (err) {
 					res.writeHead(500, {
@@ -402,28 +398,27 @@ exports.createPGTileQueryRenderer = flow.define(function(app, table, geom_field,
 
 			//We're all good. Make the picture.
 			try {
-					var xmlss = path.join(fullpath);
-					aquire(xmlss, { width: parseInt(args.width), height: parseInt(args.height), bufferSize :64 }, function(err, map) {
-						if (err) {
-                        	maps.release(xmlss, map);
-                        	res.writeHead(500, {
-								'Content-Type' : 'text/plain'
-							});
-							res.end(err.message);
-                        }
-                        
-						//width, height
-						var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-						//check to see if 3857.  If not, assume WGS84
-						var postgis = new mapnik.Datasource(postgis_settings);
-		
-						var floatbbox = args.bbox.split(",");
-		
-						var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
-						//ll lat, ll lon, ur lat, ur lon
-		
-						layer.datasource = postgis;
-						layer.styles = [_self.table, 'style'];
+					
+				//create map and layer
+				var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
+				//width, height
+				var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+				//check to see if 3857.  If not, assume WGS84
+				var postgis = new mapnik.Datasource(postgis_settings);
+
+				var floatbbox = args.bbox.split(",");
+
+				var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
+				//ll lat, ll lon, ur lat, ur lon
+
+				layer.datasource = postgis;
+				layer.styles = [_self.table, 'style'];
+
+				map.bufferSize = 64;
+
+				map.load(path.join(fullpath), {
+					strict : true
+				}, function(err, map) {
 	
 						console.log(map.toXML());
 						// Debug settings
@@ -433,7 +428,7 @@ exports.createPGTileQueryRenderer = flow.define(function(app, table, geom_field,
 						map.extent = bbox;
 						var im = new mapnik.Image(map.width, map.height);
 						map.render(im, function(err, im) {
-							maps.release(xmlss, map);
+
 							if (err) {
 								throw err;
 							} else {
@@ -565,12 +560,14 @@ exports.createGeoJSONQueryRenderer = flow.define(function(app, geoJSON, epsgSRID
 							strict : true
 						}, function(err, map) {
 
-							console.log(map.toXML());
-							// Debug settings
 
 							if (err)
 								throw err;
 							map.add_layer(layer);
+							
+							console.log(map.toXML());
+							// Debug settings
+
 
 							map.extent = bbox;
 							var im = new mapnik.Image(map.width, map.height);
@@ -757,16 +754,9 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 				res.end(err.message);
 			} else {
 				try {
-					var xmlss = path.join(fullpath);
-					aquire(xmlss, { bufferSize :64 }, function(err, map) {
-						if (err) {
-                        	maps.release(xmlss, map);
-                        	res.writeHead(500, {
-								'Content-Type' : 'text/plain'
-							});
-							res.end(err.message);
-                        }
-
+					
+						var map = new mapnik.Map(256, 256, mercator.proj4);
+					
 						var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
 						//check to see if 3857.  If not, assume WGS84
 						var shapefile = new mapnik.Datasource({
@@ -776,7 +766,14 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 						var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
 	
 						layer.datasource = shapefile;
-						layer.styles = [_self.table, 'style']; debugger;
+						layer.styles = [_self.table, 'style']; 
+						
+						map.bufferSize = 64;
+						map.load(path.join(fullpath), {
+							strict : true
+						}, function(err, map) {
+						if (err)
+							throw err;
 
 						map.add_layer(layer);
 
@@ -905,16 +902,9 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
 
 			//We're all good. Make the picture.
 			try {
-					var xmlss = path.join(fullpath);
-					aquire(xmlss, { width: parseInt(args.width), height: parseInt(args.height), bufferSize :64 }, function(err, map) {
-						if (err) {
-                        	maps.release(xmlss, map);
-                        	res.writeHead(500, {
-								'Content-Type' : 'text/plain'
-							});
-							res.end(err.message);
-                        }
-                        
+					//create map and layer
+						var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
+
 						//width, height
 						var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
 						//check to see if 3857.  If not, assume WGS84
@@ -930,16 +920,21 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
 		
 						layer.datasource = shapefile;
 						layer.styles = [_self.table, 'style'];
-	
-						console.log(map.toXML());
-						// Debug settings
+						map.bufferSize = 64;
+
+						map.load(path.join(fullpath), {
+							strict : true
+						}, function(err, map) {
 
 						map.add_layer(layer);
+						
+						console.log(map.toXML());
+						// Debug settings
 	
 						map.extent = bbox;
 						var im = new mapnik.Image(map.width, map.height);
 						map.render(im, function(err, im) {
-							maps.release(xmlss, map);
+							
 							if (err) {
 								throw err;
 							} else {
