@@ -76,6 +76,12 @@ exports.app = function(passport) {
 	
 	//Find Shapefiles
 	shapefiles = getShapeFilePaths(shpLocation);
+	
+	//Return json of found shapefiles - setting this to /services/shapefiles causes all requests to /services/shapefiles/name/dynamicMap to simply revert to this.
+	//Probably has to do with the fact that endpoints below use this.app.use instead of this.app.all (which doesn't work for some reason')
+	app.get('/shapefiles', function(req, res) {
+		res.json({ shapefiles: shapefiles});
+	});
 
 	//Loop thru shapes and spin up new routes
 	shapefiles.forEach(function(item){
@@ -85,7 +91,7 @@ exports.app = function(passport) {
 	var sessionStart = new Date().toLocaleString();
 	
 	//Load tile rendering statistics
-	app.use('/admin', function(req, res) {
+	app.get('/admin', function(req, res) {
 		res.writeHead(200, {
 			'Content-Type' : 'text/plain'
 		});
@@ -146,10 +152,7 @@ exports.app = function(passport) {
 		res.end(resultString);
 	});
 	
-	//Return json of found shapefiles
-	app.use('/services/shapefiles', function(req, res) {
-		res.json({ shapefiles: shapefiles});
-	});
+
 
 	return app;
 };
@@ -221,13 +224,15 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 	};
 
 	var _self = this;
+		
 
 	//Create Route for this table
 	this.app.use('/services/tables/' + _self.table + '/dynamicMap', function(req, res) {
+		
 		//Start Timer to measure response speed for tile requests.
 		var startTime = Date.now();
 
-		parseXYZ(req, TMS_SCHEME, function(err, params) { debugger;
+		parseXYZ(req, TMS_SCHEME, function(err, params) {
 			if (err) {
 				res.writeHead(500, {
 					'Content-Type' : 'text/plain'
@@ -286,6 +291,7 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 			}
 		});
 	});
+	
 
 	console.log("Created dynamic service: " + '/services/tables/' + _self.table + '/dynamicMap');
 });

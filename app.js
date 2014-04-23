@@ -86,6 +86,16 @@ app.use(cors());
 app.use(app.router);
 
 //Load in all endpoint routes
+//Root Request - show table list
+app.get('/', passport.authenticationFunctions, function(req, res) {
+	res.redirect('/services/tables');
+});
+
+//Redirect /services to table list
+app.get('/services', function(req, res) {
+	res.redirect('/services/tables');
+});
+
 //TODO - Loop thru endpoints folder and require everything in there
 var tables = require('./endpoints/tables');
 app.use(tables.app(passport));
@@ -138,15 +148,7 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 	console.log(startMessage);
 });
 
-//Root Request - show table list
-app.get('/', passport.authenticationFunctions, function(req, res) {
-	res.redirect('/services/tables');
-});
 
-//Redirect /services to table list
-app.get('/services', function(req, res) {
-	res.redirect('/services/tables');
-});
 
 //Look for any errors (this signature is for error handling), this is generally defined after all other app.uses.
 app.use(function(err, req, res, next) {
