@@ -456,7 +456,10 @@ exports.createPGTileQueryRenderer = flow.define(function(app, table, geom_field,
 
 		} else {
 			//if no args, pass to regular tile renderer
-
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end("Need to supply height, width and bbox arguments.");
 		}
 	});
 
@@ -595,7 +598,10 @@ exports.createGeoJSONQueryRenderer = flow.define(function(app, geoJSON, epsgSRID
 
 		} else {
 			//if no args, pass to regular tile renderer
-
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end("Need to supply height, width and bbox arguments.");
 		}
 	});
 
@@ -956,6 +962,10 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
 
 		} else {
 			//if no args, pass to regular tile renderer
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end("Need to supply width, height and bbox arguments.");
 
 		}
 	});
