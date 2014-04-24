@@ -34,6 +34,7 @@ app.use(require('less-middleware')({
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'GPModels')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
+app.use("/fakeuser/", express.static('/home/ubuntu/fakeuser/'));
 
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
