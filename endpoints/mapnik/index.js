@@ -6,7 +6,7 @@ var express = require('express'), common = require("../../common"), settings = r
 //Module-specific requires:
 var mapnik = require('mapnik'), mercator = require('./utils/sphericalmercator.js'), // 3857
 geographic = require('./utils/geographic.js'), //4326
-mappool = require('./utils/pool.js'),
+mappool = require('./utils/pool.js'), 
 parseXYZ = require('./utils/tile.js').parseXYZ, path = require('path'), fs = require("fs"), flow = require('flow'), carto = require('carto');
 
 var TMS_SCHEME = false;
@@ -24,39 +24,51 @@ var ShapeStats = {
 var ShapeSingleTileStats = {
 	times : []
 };
+var MemShapeStats = {
+	times : []
+};
+var MemShapeSingleTileStats = {
+	times : []
+};
 
-var shapefiles = []; //Store a list of Shapefiles stored in the Mapnik/data/shapefiles folder.
+var shapefiles = []; //a list of shapefiles that will be dynamically read
+var memoryShapefileList = []; //a list of shapefile names to be loaded into memory
+var memoryShapefiles = {}; //Store the memory datasources here
+//Store a list of Shapefiles stored in the Mapnik/data/shapefiles folder.
 
 // register shapefile plugin
 if (mapnik.register_default_input_plugins)
 	mapnik.register_default_input_plugins();
 
 //Use pooling to handle concurrent map requests
-var maps = mappool.create_pool(10); //TODO: Determine the best value for this
+//var maps = mappool.create_pool(10);
+//TODO: Determine the best value for this
 
-var aquire = function(id,options,callback) {
-    methods = {
-        create: function(cb) {
-                var obj = new mapnik.Map(options.width || 256, options.height || 256, mercator.proj4);
-                obj.load(id, {strict: true},function(err,obj) {
-                    if (options.bufferSize) {
-                        obj.bufferSize = options.bufferSize;
-                    }
-                    cb(err,obj);
-                });
-            },
-            destroy: function(obj) {
-                delete obj;
-            }
-    };
-    maps.acquire(id,methods,function(err,obj) {
-      callback(err, obj);
-    });
+var aquire = function(id, options, callback) {
+	methods = {
+		create : function(cb) {
+			var obj = new mapnik.Map(options.width || 256, options.height || 256, mercator.proj4);
+			obj.load(id, {
+				strict : true
+			}, function(err, obj) {
+				if (options.bufferSize) {
+					obj.bufferSize = options.bufferSize;
+				}
+				cb(err, obj);
+			});
+		},
+		destroy : function(obj) {
+			delete obj;
+		}
+	};
+	maps.acquire(id, methods, function(err, obj) {
+		callback(err, obj);
+	});
 };
 
 //Find all shapefiles in the ./endpoints/Mapnik/data/Shapefiles folder.
 //Spin up a new endpoint for each one of those.
-function getShapeFilePaths(shpLocation){
+function getShapeFilePaths(shpLocation) {
 	var items = [];
 	//Load mbtiles from mbtiles folder.
 	require("fs").readdirSync(shpLocation).forEach(function(file) {
@@ -65,98 +77,148 @@ function getShapeFilePaths(shpLocation){
 			items.push(file);
 		}
 	});
-	
+
+	return items;
+}
+
+//Find all shapefiles in the ./endpoints/Mapnik/data/InMemory-Shapefiles folder.
+//These are shapefiles that should be loaded into memory when the server starts
+function getMemoryShapeFilePaths(shpLocation) {
+	var items = [];
+	//Load mbtiles from mbtiles folder.
+	require("fs").readdirSync(shpLocation).forEach(function(file) {
+		var ext = path.extname(file);
+		if (ext == ".shp") {
+			items.push(file);
+		}
+	});
+
 	return items;
 }
 
 exports.app = function(passport) {
 	var app = express();
-	
-	var shpLocation = path.join(__dirname,"/data/shapefiles");
-	
+
+	var shpLocation = path.join(__dirname, "/data/shapefiles");
+	var memoryShpLocation = path.join(__dirname, "/data/inmemory-shapefiles");
+
 	//Find Shapefiles
 	shapefiles = getShapeFilePaths(shpLocation);
 	
+	//Find shapefiles to be loaded into memory
+	memoryShapefileList = getMemoryShapeFilePaths(memoryShpLocation);
+
 	//Return json of found shapefiles - setting this to /services/shapefiles causes all requests to /services/shapefiles/name/dynamicMap to simply revert to this.
 	//Probably has to do with the fact that endpoints below use this.app.use instead of this.app.all (which doesn't work for some reason')
 	app.get('/shapefiles', function(req, res) {
-		res.json({ shapefiles: shapefiles});
+		
+		var resultSet = [];
+		
+		var args  = req.query;
+		if(args && args.limit){
+			resultSet = shapefiles.splice(0, args.limit);
+		}
+		else{
+			resultSet = shapefiles;
+		}
+		
+		res.json({
+			shapefiles : resultSet
+		});
+	});
+	
+	
+	//TODO:  Treat the in-memory shapefiles the same as non-memory shapefiles.  Use the same endpoints, but use a flag of some sort to determine which are in and out of memory.
+	app.get('/memshapefiles', function(req, res) {
+		
+		var resultSet = [];
+		
+		var args  = req.query;
+		if(args && args.limit){
+			resultSet = memoryShapefiles.splice(0, args.limit);
+		}
+		else{
+			resultSet = memoryShapefiles;
+		}
+		
+		res.json({
+			shapefiles : resultSet
+		});
 	});
 
+	var shpName = "";
 	//Loop thru shapes and spin up new routes
-	shapefiles.forEach(function(item){
-		createShapefileTileRenderer(app, item.split('.')[0], shpLocation + "/" + item, 4326, null);
-		createShapefileSingleTileRenderer(app, item.split('.')[0], shpLocation + "/" + item, 4326, null);
+	shapefiles.forEach(function(item) {
+		shpName = item.split('.')[0];
+		createShapefileTileRenderer(app, shpName, shpLocation + "/" + item, 4326, null);
+		createShapefileSingleTileRenderer(app, shpName, shpLocation + "/" + item, 4326, null);
 	});
 	
+	var memoryShpName = "";
+	memoryShapefileList.forEach(function(item){
+		//Also (for performance testing puproses, create in-memory versions of the .shp datasources and spin up a new route for those)
+		memoryShpName = item.split('.')[0];
+		memoryShapefiles[memoryShpName] = createInMemoryDatasource(memoryShpName, memoryShpLocation + "/" + item);
+		createMemoryShapefileSingleTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
+		createMemoryShapefileTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
+	});
+
 	var sessionStart = new Date().toLocaleString();
-	
+
 	//Load tile rendering statistics
 	app.get('/admin', function(req, res) {
 		res.writeHead(200, {
 			'Content-Type' : 'text/plain'
 		});
 		
-		var resultString = "Active Session started at: " + sessionStart + "\n\n\n";
+		var resultString = "Active Session started at: " + sessionStart + "\n\n\nUse ?reset=true to reset the stats\n\n\n";
 		
+		var args  = req.query;
+		if(args.reset){
+			//Reset the stats.
+			TileStats.times = [];
+			SingleTileStats.times = [];
+			ShapeStats.times = [];
+			ShapeSingleTileStats.times = [];
+			MemShapeStats.times = [];
+			MemShapeSingleTileStats.times = [];
+			
+			resultString += "Session Stats reset by user. \n\n\n";
+		}
+
+
 		//Get the average render time for each type
-		if (TileStats.times.length > 0) {
-			var totalTime = TileStats.times.reduce(function(previousValue, currentValue, index, array) {
-				return previousValue + currentValue;
-			});
-			totalTime = totalTime / 1000;
-			var averageTime = totalTime / TileStats.times.length;
-			resultString += "Tiles (256px) - PostGIS: For this session, " + TileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n";
-		}
-		else{
-			resultString += "Tiles (256px) - PostGIS: 0 tiles rendered.\n";
-		}
-		
-		if (SingleTileStats.times.length > 0) {
-			var totalTime = SingleTileStats.times.reduce(function(previousValue, currentValue, index, array) {
-				return parseInt(previousValue) + parseInt(currentValue);
-			});
-			totalTime = totalTime / 1000;
-			var averageTime = totalTime / SingleTileStats.times.length;
-			resultString += "Tiles (BBox View) - PostGIS: For this session, " + SingleTileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n\n";
-		}
-		else{
-			resultString += "Tiles (BBox View) - PostGIS: 0 tiles rendered.\n\n";
-		}
-		
-		if (ShapeStats.times.length > 0) {
-			var totalTime = ShapeStats.times.reduce(function(previousValue, currentValue, index, array) {
-				return parseInt(previousValue) + parseInt(currentValue);
-			});
-			totalTime = totalTime / 1000;
-			var averageTime = totalTime / ShapeStats.times.length;
-			resultString += "Tiles (256px) - Shapefiles: For this session, " + ShapeStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n";
-		}
-		else{
-			resultString += "Tiles (256px) - Shapefiles: 0 tiles rendered.\n";
-		}
-		
-		if (ShapeSingleTileStats.times.length > 0) {
-			var totalTime = ShapeSingleTileStats.times.reduce(function(previousValue, currentValue, index, array) {
-				return parseInt(previousValue) + parseInt(currentValue);
-			});
-			totalTime = totalTime / 1000;
-			var averageTime = totalTime / ShapeSingleTileStats.times.length;
-			resultString += "Tiles (BBox View) - Shapefiles: For this session, " + ShapeSingleTileStats.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n";
-		}
-		else{
-			resultString += "Tiles (BBox View) - Shapefiles: 0 tiles rendered.\n";
-		}
-		
-		
+		resultString += generateStatsString(TileStats, "256px Tile", "PostGIS");
+		resultString += generateStatsString(SingleTileStats, "SingleTile", "PostGIS");
+		resultString += "\n\n";
+		resultString += generateStatsString(ShapeStats, "256px Tile", "Disk Shapefile");
+		resultString += generateStatsString(ShapeSingleTileStats, "SingleTile", "Disk Shapefile");
+		resultString += "\n\n";
+		resultString += generateStatsString(MemShapeStats, "256px Tile", "In-Memory Shapefile");
+		resultString += generateStatsString(MemShapeSingleTileStats, "SingleTile", "In-Memory Shapefile");
 
 		res.end(resultString);
 	});
-	
-
 
 	return app;
 };
+
+function generateStatsString (statsObject, tileType, sourceName){
+	var message = "";
+	
+		if (statsObject.times.length > 0) {
+			var totalTime = statsObject.times.reduce(function(previousValue, currentValue, index, array) {
+				return parseInt(previousValue) + parseInt(currentValue);
+			});
+			totalTime = totalTime / 1000;
+			var averageTime = totalTime / statsObject.times.length;
+			message += tileType + "(BBox View) - " + sourceName + ": For this session, " + statsObject.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n";
+		} else {
+			message += tileType + "(BBox View) - " + sourceName + ": 0 tiles rendered.\n";
+		}
+	
+	return message;
+}
 
 exports.createCachedFolder = function(table) {
 	var folder = './public/cached_nodetiles/' + table;
@@ -225,11 +287,10 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 	};
 
 	var _self = this;
-		
 
 	//Create Route for this table
 	this.app.use('/services/tables/' + _self.table + '/dynamicMap', function(req, res) {
-		
+
 		//Start Timer to measure response speed for tile requests.
 		var startTime = Date.now();
 
@@ -264,7 +325,7 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 						map.extent = bbox;
 						var im = new mapnik.Image(map.width, map.height);
 						map.render(im, function(err, im) {
-							
+
 							if (err) {
 								throw err;
 							} else {
@@ -277,7 +338,6 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 							}
 						});
 					});
-				
 
 				} catch (err) {
 					res.writeHead(500, {
@@ -288,7 +348,6 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 			}
 		});
 	});
-	
 
 	console.log("Created dynamic service: " + '/services/tables/' + _self.table + '/dynamicMap');
 });
@@ -398,7 +457,7 @@ exports.createPGTileQueryRenderer = flow.define(function(app, table, geom_field,
 
 			//We're all good. Make the picture.
 			try {
-					
+
 				//create map and layer
 				var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
 				//width, height
@@ -419,29 +478,29 @@ exports.createPGTileQueryRenderer = flow.define(function(app, table, geom_field,
 				map.load(path.join(fullpath), {
 					strict : true
 				}, function(err, map) {
-	
-						console.log(map.toXML());
-						// Debug settings
 
-						map.add_layer(layer);
-	
-						map.extent = bbox;
-						var im = new mapnik.Image(map.width, map.height);
-						map.render(im, function(err, im) {
+					console.log(map.toXML());
+					// Debug settings
 
-							if (err) {
-								throw err;
-							} else {
-								var duration = Date.now() - startTime;
-								SingleTileStats.times.push(duration);
-								res.writeHead(200, {
-									'Content-Type' : 'image/png'
-								});
-								res.end(im.encodeSync('png'));
-							}
-						});
-                });
-				
+					map.add_layer(layer);
+
+					map.extent = bbox;
+					var im = new mapnik.Image(map.width, map.height);
+					map.render(im, function(err, im) {
+
+						if (err) {
+							throw err;
+						} else {
+							var duration = Date.now() - startTime;
+							SingleTileStats.times.push(duration);
+							res.writeHead(200, {
+								'Content-Type' : 'image/png'
+							});
+							res.end(im.encodeSync('png'));
+						}
+					});
+				});
+
 			} catch (err) {
 				res.writeHead(500, {
 					'Content-Type' : 'text/plain'
@@ -451,10 +510,10 @@ exports.createPGTileQueryRenderer = flow.define(function(app, table, geom_field,
 
 		} else {
 			//if no args, pass to regular tile renderer
-				res.writeHead(500, {
-					'Content-Type' : 'text/plain'
-				});
-				res.end("Need to supply height, width and bbox arguments.");
+			res.writeHead(500, {
+				'Content-Type' : 'text/plain'
+			});
+			res.end("Need to supply height, width and bbox arguments.");
 		}
 	});
 
@@ -560,14 +619,12 @@ exports.createGeoJSONQueryRenderer = flow.define(function(app, geoJSON, epsgSRID
 							strict : true
 						}, function(err, map) {
 
-
 							if (err)
 								throw err;
 							map.add_layer(layer);
-							
+
 							console.log(map.toXML());
 							// Debug settings
-
 
 							map.extent = bbox;
 							var im = new mapnik.Image(map.width, map.height);
@@ -595,10 +652,10 @@ exports.createGeoJSONQueryRenderer = flow.define(function(app, geoJSON, epsgSRID
 
 		} else {
 			//if no args, pass to regular tile renderer
-				res.writeHead(500, {
-					'Content-Type' : 'text/plain'
-				});
-				res.end("Need to supply height, width and bbox arguments.");
+			res.writeHead(500, {
+				'Content-Type' : 'text/plain'
+			});
+			res.end("Need to supply height, width and bbox arguments.");
 		}
 	});
 
@@ -699,10 +756,8 @@ exports.createDynamicGeoJSONEndpoint = function(geoJSON, name, epsgSRID, cartoCs
 	//console.log("Created dynamic service: " + '/services/nodetiles/' + name + '/tiles');
 };
 
-
 //Create a static renderer that will always use the default styling
 var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.define(function(app, table, path_to_shp, epsgSRID, cartoFile) {
-	
 
 	this.app = app;
 	this.table = table;
@@ -746,7 +801,7 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 		//Start Timer to measure response speed for tile requests.
 		var startTime = Date.now();
 
-		parseXYZ(req, TMS_SCHEME, function(err, params) { debugger;
+		parseXYZ(req, TMS_SCHEME, function(err, params) {
 			if (err) {
 				res.writeHead(500, {
 					'Content-Type' : 'text/plain'
@@ -754,28 +809,30 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 				res.end(err.message);
 			} else {
 				try {
-					
-						var map = new mapnik.Map(256, 256, mercator.proj4);
-					
-						var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-						//check to see if 3857.  If not, assume WGS84
-						var shapefile = new mapnik.Datasource({
-							type : 'shape',
-							file : _self.path_to_shp
-						});
-						var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
-	
-						layer.datasource = shapefile;
-						layer.styles = [_self.table, 'style']; 
-						
-						map.bufferSize = 64;
-						map.load(path.join(fullpath), {
-							strict : true
-						}, function(err, map) {
+
+					var map = new mapnik.Map(256, 256, mercator.proj4);
+
+					var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+					//check to see if 3857.  If not, assume WGS84
+					var shapefile = new mapnik.Datasource({
+						type : 'shape',
+						file : _self.path_to_shp
+					});
+					var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+
+					layer.datasource = shapefile;
+					layer.styles = [_self.table, 'style'];
+
+					map.bufferSize = 64;
+					map.load(path.join(fullpath), {
+						strict : true
+					}, function(err, map) {
 						if (err)
 							throw err;
 
 						map.add_layer(layer);
+						
+												debugger;
 
 						console.log(map.toXML());
 						// Debug settings
@@ -794,9 +851,9 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 								res.end(im.encodeSync('png'));
 							}
 						});
-						
-				});
-					
+
+					});
+
 				} catch (err) {
 					res.writeHead(500, {
 						'Content-Type' : 'text/plain'
@@ -902,52 +959,52 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
 
 			//We're all good. Make the picture.
 			try {
-					//create map and layer
-						var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
+				//create map and layer
+				var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
 
-						//width, height
-						var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-						//check to see if 3857.  If not, assume WGS84
-						var shapefile = new mapnik.Datasource({
-							type : 'shape',
-							file : _self.path_to_shp
-						});
-						
-						var floatbbox = args.bbox.split(",");
-		
-						var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
-						//ll lat, ll lon, ur lat, ur lon
-		
-						layer.datasource = shapefile;
-						layer.styles = [_self.table, 'style'];
-						map.bufferSize = 64;
+				//width, height
+				var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+				//check to see if 3857.  If not, assume WGS84
+				var shapefile = new mapnik.Datasource({
+					type : 'shape',
+					file : _self.path_to_shp
+				});
 
-						map.load(path.join(fullpath), {
-							strict : true
-						}, function(err, map) {
+				var floatbbox = args.bbox.split(",");
 
-						map.add_layer(layer);
-						
-						console.log(map.toXML());
-						// Debug settings
-	
-						map.extent = bbox;
-						var im = new mapnik.Image(map.width, map.height);
-						map.render(im, function(err, im) {
-							
-							if (err) {
-								throw err;
-							} else {
-								var duration = Date.now() - startTime;
-								ShapeSingleTileStats.times.push(duration);
-								res.writeHead(200, {
-									'Content-Type' : 'image/png'
-								});
-								res.end(im.encodeSync('png'));
-							}
-						});
-                });
-				
+				var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
+				//ll lat, ll lon, ur lat, ur lon
+
+				layer.datasource = shapefile;
+				layer.styles = [_self.table, 'style'];
+				map.bufferSize = 64;
+
+				map.load(path.join(fullpath), {
+					strict : true
+				}, function(err, map) {
+
+					map.add_layer(layer);
+
+					console.log(map.toXML());
+					// Debug settings
+
+					map.extent = bbox;
+					var im = new mapnik.Image(map.width, map.height);
+					map.render(im, function(err, im) {
+
+						if (err) {
+							throw err;
+						} else {
+							var duration = Date.now() - startTime;
+							ShapeSingleTileStats.times.push(duration);
+							res.writeHead(200, {
+								'Content-Type' : 'image/png'
+							});
+							res.end(im.encodeSync('png'));
+						}
+					});
+				});
+
 			} catch (err) {
 				res.writeHead(500, {
 					'Content-Type' : 'text/plain'
@@ -957,13 +1014,311 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
 
 		} else {
 			//if no args, pass to regular tile renderer
-				res.writeHead(500, {
-					'Content-Type' : 'text/plain'
-				});
-				res.end("Need to supply width, height and bbox arguments.");
+			res.writeHead(500, {
+				'Content-Type' : 'text/plain'
+			});
+			res.end("Need to supply width, height and bbox arguments.");
 
 		}
 	});
 
 	console.log("Created dynamic query service: " + '/services/shapefiles/' + _self.table + '/dynamicQueryMap');
 });
+
+
+//Create a static renderer, using in-memory shapefile
+var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRenderer = flow.define(function(app, table, memoryDatasource, epsgSRID, cartoFile) {
+
+	this.app = app;
+	this.table = table;
+	this.epsg = epsgSRID;
+	this.memoryDatasource = memoryDatasource;
+
+	var name;
+	var stylepath = __dirname + '/cartocss/';
+	var fullpath = "";
+
+	//Set the path to the style file
+	if (cartoFile) {
+		//Passed in
+		fullpath = stylepath + cartoFile;
+	} else {
+		//default
+		fullpath = stylepath + table + styleExtension;
+	}
+
+	var flo = this;
+
+	//See if there is a <tablename>.mss/xml file for this table.
+	//See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+	fs.stat(fullpath, function(err, stat) {
+		if (err) {
+			//No file.  Use defaults.
+			fullpath = stylepath + "style.xml";
+			//Default
+		}
+
+		flo(fullpath);
+		//flow to next function
+	});
+}, function(fullpath) {
+	//Flow from after getting full path to Style file
+
+	var _self = this;
+
+	//Create Route for this table
+	this.app.use('/services/memshapefiles/' + _self.table + '/dynamicMap', function(req, res) {
+		//Start Timer to measure response speed for tile requests.
+		var startTime = Date.now();
+
+		parseXYZ(req, TMS_SCHEME, function(err, params) {
+			if (err) {
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end(err.message);
+			} else {
+				try {
+
+					var map = new mapnik.Map(256, 256, mercator.proj4);
+
+					var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+					
+					var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+
+					layer.datasource = _self.memoryDatasource;
+					layer.styles = [_self.table, 'style'];
+
+					map.bufferSize = 64;
+					map.load(path.join(fullpath), {
+						strict : true
+					}, function(err, map) {
+						if (err)
+							throw err;
+
+						map.add_layer(layer);
+
+						console.log(map.toXML());
+						// Debug settings
+
+						map.extent = bbox;
+						var im = new mapnik.Image(map.width, map.height);
+						map.render(im, function(err, im) {
+							if (err) {
+								throw err;
+							} else {
+								var duration = Date.now() - startTime;
+								MemShapeStats.times.push(duration);
+								res.writeHead(200, {
+									'Content-Type' : 'image/png'
+								});
+								res.end(im.encodeSync('png'));
+							}
+						});
+
+					});
+
+				} catch (err) {
+					res.writeHead(500, {
+						'Content-Type' : 'text/plain'
+					});
+					res.end(err.message);
+				}
+			}
+		});
+	});
+
+	console.log("Created in-memory shapefile service: " + '/services/memshapefiles/' + _self.table + '/dynamicMap');
+});
+
+
+
+//Create a renderer that will  bring back a single image to fit the map's extent, using in-memory features read from a shapefile.
+var createMemoryShapefileSingleTileRenderer = exports.createMemoryShapefileSingleTileRenderer = flow.define(function(app, table, memoryDatasource, epsgSRID, cartoFile) {
+
+	this.app = app;
+	this.table = table;
+	this.memoryDatasource = memoryDatasource;
+	this.epsg = epsgSRID;
+
+	var name;
+	var stylepath = __dirname + '/cartocss/';
+	var fullpath = "";
+
+	//Set the path to the style file
+	if (cartoFile) {
+		//Passed in
+		fullpath = stylepath + cartoFile;
+	} else {
+		//default
+		fullpath = stylepath + table + styleExtension;
+	}
+
+	var flo = this;
+
+	//See if there is a <tablename>.mml file for this table.
+	//See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+	fs.stat(fullpath, function(err, stat) {
+		if (err) {
+			//No file.  Use defaults.
+			fullpath = stylepath + "style" + styleExtension;
+			; //Default
+		}
+
+		flo(fullpath);
+		//flow to next function
+	});
+}, function(fullpath) {
+	//Flow from after getting full path to Style file
+
+	var _self = this;
+
+	//Create Route for this table
+	this.app.use('/services/memshapefiles/' + _self.table + '/dynamicQueryMap', function(req, res) {
+		//Start Timer to measure response speed for tile requests.
+		var startTime = Date.now();
+
+		//Check for correct args
+		//Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
+		var args = {};
+
+		//Grab POST or QueryString args depending on type
+		if (req.method.toLowerCase() == "post") {
+			//If a post, then arguments will be members of the this.req.body property
+			args = req.body;
+		} else if (req.method.toLowerCase() == "get") {
+			//If request is a get, then args will be members of the this.req.query property
+			args = req.query;
+		}
+
+		// check to see if args were provided
+		if (JSON.stringify(args) != '{}') {
+			//are all mandatory args provided?
+			var missing = "Please provide";
+			var missingArray = [];
+			if (!args.width) {
+				missingArray.push("width");
+			}
+
+			if (!args.height) {
+				missingArray.push("height");
+			}
+
+			if (!args.bbox) {
+				missingArray.push("bbox");
+			}
+
+			if (missingArray.length > 0) {
+				missing += missingArray.join(", ");
+				//respond with message.
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end(missing);
+				return;
+			}
+
+			//If user passes in where clause, then build the query here and set it with the table property of postgis_settings
+			if (args.where) {
+				//Validate where - TODO
+			}
+
+			//We're all good. Make the picture.
+			try {
+				//create map and layer
+				var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
+
+				//width, height
+				var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+
+				var floatbbox = args.bbox.split(",");
+
+				var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
+				//ll lat, ll lon, ur lat, ur lon
+
+				layer.datasource = _self.memoryDatasource;
+				layer.styles = [_self.table, 'style'];
+				map.bufferSize = 64;
+
+				map.load(path.join(fullpath), {
+					strict : true
+				}, function(err, map) {
+
+					map.add_layer(layer);
+
+					console.log(map.toXML());
+					// Debug settings
+
+					map.extent = bbox;
+					var im = new mapnik.Image(map.width, map.height);
+					map.render(im, function(err, im) {
+
+						if (err) {
+							throw err;
+						} else {
+							var duration = Date.now() - startTime;
+							MemShapeSingleTileStats.times.push(duration);
+							res.writeHead(200, {
+								'Content-Type' : 'image/png'
+							});
+							res.end(im.encodeSync('png'));
+						}
+					});
+				});
+
+			} catch (err) {
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end(err.message);
+			}
+
+		} else {
+			//if no args, pass to regular tile renderer
+			res.writeHead(500, {
+				'Content-Type' : 'text/plain'
+			});
+			res.end("Need to supply width, height and bbox arguments.");
+
+		}
+	});
+
+	console.log("Created in-memory shapefile query service: " + '/services/memshapefiles/' + _self.table + '/dynamicQueryMap');
+});
+
+function createInMemoryDatasource(name, path_to_shp) {
+	var shapefile = new mapnik.Datasource({
+		type : 'shape',
+		file : path_to_shp
+	});
+
+	// get the featureset that exposes lazy next() iterator
+	var featureset = shapefile.featureset();
+
+	var mem_datasource = new mapnik.MemoryDatasource(
+		{}
+	);
+
+	// build up memory datasource
+	while (( feat = featureset.next(true))) {
+		var e = feat.extent();
+		// center longitude of polygon bbox
+		var x = (e[0] + e[2]) / 2;
+		// center latitude of polygon bbox
+		var y = (e[1] + e[3]) / 2;
+		var attr = feat.attributes();
+		mem_datasource.add({
+			'x' : x,
+			'y' : y,
+			'properties' : {
+				'feat_id' : feat.id()//,
+				//'NAME' : attr.NAME,
+				//'POP2005' : attr.POP2005
+			}
+		});
+	}
+	
+	return mem_datasource;
+
+}
+
