@@ -591,6 +591,9 @@ exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field
 										
 									if (solid === false){
 										//return callback(err, buffer, headers);
+										res.setHeader('content-encoding','inflate');
+										res.setHeader('content-type','application/octet-stream');
+										
 										res.send(buffer); //return response
 										return;
 									}
@@ -646,7 +649,7 @@ exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field
 		});
 	});
 
-	console.log("Created vector tile service: " + '/services/tables/' + _self.table + '/vector-tile');
+	console.log("Created vector tile service: " + '/services/tables/' + _self.table + '/vector-tiles');
 });
 
 // exports.createPGVectorTileRenderer = flow.define(function() {
