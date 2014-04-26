@@ -7,7 +7,7 @@ settings.application = {};
 settings.tilestream = {};
 
 //application port settings
-settings.application.port = 80;
+settings.application.port = 3000;
 settings.application.ip = "localhost";
 
 //Settings for postgres DB
@@ -41,7 +41,7 @@ settings.application.topoJsonOutputFolder = "/public/topojson/output/";
 settings.application.geoJsonOutputFolder = "/public/geojson/output/";
 
 //Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
-settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
+settings.application.publichost = “”; //like myhost.com. Keep this empty if you want to use the default host
 settings.application.publicport = "80";
 
 //Epxress Session Secret

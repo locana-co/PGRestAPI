@@ -27,7 +27,7 @@
     "generic-pool": "*"
   },
   "optionalDependencies":{
-  	"mapnik": "*",
+  	"mapnik": "1.4.2",
 	"carto": "*",
 	"ogr2ogr": "*"
   },
