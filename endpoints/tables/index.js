@@ -1079,6 +1079,8 @@ exports.app = function(passport) {
 			
 			this.spatialTables = app.get('spatialTables');
 
+			this.spatialTables = app.get('spatialTables');
+
 			//This should have a value
 			var srid = this.spatialTables[this.args.table].srid;
 

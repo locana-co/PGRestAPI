@@ -34,8 +34,6 @@ app.use(require('less-middleware')({
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'GPModels')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
-app.use("/fakeuser/", express.static('/home/ubuntu/fakeuser/'));
-
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
 // try {
@@ -111,17 +109,20 @@ app.use(geoprocessing.app(passport));
 var utilities = require('./endpoints/utilities');
 app.use(utilities.app(passport));
 
-var mapnik;
+var mapnik, vectorTiles;
 try {
-	mapnik = require('./endpoints/mapnik');
+	mapnik = require('./endpoints/mapnik'),
+	vectorTiles = require('./endpoints/vectortiles');
 
 } catch (e) {
 	mapnik = null;
 	console.log("Mapnik not properly installed. Skipping. Reason: " + e);
 }
 
-if (mapnik)
+if (mapnik){
 	app.use(mapnik.app(passport));
+	app.use(vectorTiles.app(passport));
+}
 
 
 var datablaster;
@@ -172,6 +173,7 @@ tables.findSpatialTables(app, function(error, tables) {
 				if (mapnik) {
 					//Spin up a route to serve dynamic tiles for this table
 					mapnik.createPGTileRenderer(app, item.table, item.geometry_column, item.srid, null);
+					mapnik.createPGVectorTileRenderer(app, item.table, item.geometry_column, item.srid, null);
 					mapnik.createPGTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
 					//Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
 					//mapnik.createCachedFolder(item.table);

@@ -6,8 +6,12 @@ var express = require('express'), common = require("../../common"), settings = r
 //Module-specific requires:
 var mapnik = require('mapnik'), mercator = require('./utils/sphericalmercator.js'), // 3857
 geographic = require('./utils/geographic.js'), //4326
-mappool = require('./utils/pool.js'), 
-parseXYZ = require('./utils/tile.js').parseXYZ, path = require('path'), fs = require("fs"), flow = require('flow'), carto = require('carto');
+mappool = require('./utils/pool.js'),
+parseXYZ = require('./utils/tile.js').parseXYZ,
+path = require('path'),
+fs = require("fs"),
+flow = require('flow'),
+carto = require('carto');
 
 var TMS_SCHEME = false;
 var styleExtension = '.xml';
@@ -274,10 +278,9 @@ exports.createPGTileRenderer = flow.define(function(app, table, geom_field, epsg
 	//Flow from after getting full path to Style file
 
 	//Vacuum Analyze needs to be run on every table in the DB.
-	//Also, data should be in 3857 SRID
 	var postgis_settings = {
 		'host' : settings.pg.server,
-		'port' : settings.pg.port = '5432',
+		'port' : settings.pg.port,
 		'dbname' : settings.pg.database,
 		'table' : this.table,
 		'user' : settings.pg.username,
@@ -1321,4 +1324,215 @@ function createInMemoryDatasource(name, path_to_shp) {
 	return mem_datasource;
 
 }
+
+
+//Create a static renderer that will always use the default styling
+exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field, epsgSRID, cartoFile) {
+
+	this.app = app;
+	this.table = table;
+	this.epsg = epsgSRID;
+
+	var name;
+	var stylepath = __dirname + '/cartocss/';
+	var fullpath = "";
+
+	//Set the path to the style file
+	if (cartoFile) {
+		//Passed in
+		fullpath = stylepath + cartoFile;
+	} else {
+		//default
+		fullpath = stylepath + table + styleExtension;
+	}
+
+	var flo = this;
+
+	//See if there is a <tablename>.mss/xml file for this table.
+	//See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+	fs.stat(fullpath, function(err, stat) {
+		if (err) {
+			//No file.  Use defaults.
+			fullpath = stylepath + "style.xml";
+			//Default
+		}
+
+		flo(fullpath);
+		//flow to next function
+	});
+}, function(fullpath) {
+	//Flow from after getting full path to Style file
+
+	//Vacuum Analyze needs to be run on every table in the DB.
+	var postgis_settings = {
+		'host' : settings.pg.server,
+		'port' : settings.pg.port = '5432',
+		'dbname' : settings.pg.database,
+		'table' : this.table,
+		'user' : settings.pg.username,
+		'password' : settings.pg.password,
+		'type' : 'postgis',
+		'estimate_extent' : 'true'
+	};
+
+	var _self = this;
+
+	//Create Route for this table
+	this.app.use('/services/tables/' + _self.table + '/vector-tiles', function(req, res) {
+		
+		parseXYZ(req, TMS_SCHEME, function(err, params) {
+			
+			if (err) {
+				res.writeHead(500, {
+					'Content-Type' : 'text/plain'
+				});
+				res.end(err.message);
+			} else {
+				try {
+					
+					//create map and layer
+					var map = new mapnik.Map(256, 256, mercator.proj4);
+					var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+					//check to see if 3857.  If not, assume WGS84
+					var postgis = new mapnik.Datasource(postgis_settings);
+					var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+
+					layer.datasource = postgis;
+					layer.styles = [_self.table, 'style'];
+
+					map.bufferSize = 64;
+					map.load(path.join(fullpath), {
+						strict : true
+					}, function(err, map) {
+						
+						//From Tilelive-Bridge - getTile
+						// set source _maxzoom cache to prevent repeat calls to map.parameters
+						if (_self._maxzoom === undefined) {
+							_self._maxzoom = map.parameters.maxzoom ? parseInt(map.parameters.maxzoom, 10) : 14;
+						}
+
+						var opts = {};
+						// use tolerance of 32 for zoom levels below max
+						opts.tolerance = params.z < _self._maxzoom ? 32 : 0;
+						// make larger than zero to enable
+						opts.simplify = 0;
+						// 'radial-distance', 'visvalingam-whyatt', 'zhao-saalfeld' (default)
+						opts.simplify_algorithm = 'radial-distance';
+
+						var headers = {};
+						headers['Content-Type'] = 'application/x-protobuf';
+						if (_self._deflate)
+							headers['Content-Encoding'] = 'deflate';
+							
+						map.add_layer(layer);
+
+						//map.resize(256, 256);
+						map.extent = bbox;
+						// also pass buffer_size in options to be forward compatible with recent node-mapnik
+						// https://github.com/mapnik/node-mapnik/issues/175
+						opts.buffer_size = map.bufferSize;
+
+						map.render(new mapnik.VectorTile(+params.z, +params.x, +params.y), opts, function(err, image) {
+							
+							//immediate(function() {
+							//	source._map.release(map);
+							//});
+
+							if (err)
+								return callback(err);
+							// Fake empty RGBA to the rest of the tilelive API for now.
+							image.isSolid(function(err, solid, key) {
+								debugger;
+								if (err){
+										res.writeHead(500, {
+											'Content-Type' : 'text/plain'
+										});
+					
+										res.end(err.message);	
+										return;	
+								}
+								// Solid handling.
+								var done = function(err, buffer) {
+									debugger;
+									if (err){
+										res.writeHead(500, {
+											'Content-Type' : 'text/plain'
+										});
+					
+										res.end(err.message);
+										return;		
+									}
+										
+									if (solid === false){
+										//return callback(err, buffer, headers);
+										res.setHeader('content-encoding','inflate');
+										res.setHeader('content-type','application/octet-stream');
+										
+										res.send(buffer); //return response
+										return;
+									}
+										
+									// Empty tiles are equivalent to no tile.
+									if (_self._blank || !key){
+										res.writeHead(500, {
+											'Content-Type' : 'text/plain'
+										});
+					
+										res.end('Tile does not exist');
+										return;
+									}
+										
+									// Fake a hex code by md5ing the key.
+									var mockrgb = crypto.createHash('md5').update(buffer).digest('hex').substr(0, 6);
+									buffer.solid = [parseInt(mockrgb.substr(0, 2), 16), parseInt(mockrgb.substr(2, 2), 16), parseInt(mockrgb.substr(4, 2), 16), 1].join(',');
+									res.send(buffer);
+									//return callback(err, buffer, headers);
+								};
+								// No deflate.
+								return !_self._deflate ? done(null, image.getData()) : zlib.deflate(image.getData(), done);
+							});
+						});
+						// if (err)
+						// throw err;
+						// map.add_layer(layer);
+						//
+						// console.log(map.toXML());
+						// // Debug settings
+						//
+						// map.extent = bbox;
+						// var im = new mapnik.Image(map.width, map.height);
+						// map.render(im, function(err, im) {
+						// if (err) {
+						// throw err;
+						// } else {
+						// res.writeHead(200, {
+						// 'Content-Type' : 'image/png'
+						// });
+						// res.end(im.encodeSync('png'));
+						// }
+						// });
+					});
+				} catch (err) {
+					res.writeHead(500, {
+						'Content-Type' : 'text/plain'
+					});
+
+					res.end(err.message);
+				}
+			}
+		});
+	});
+
+	console.log("Created vector tile service: " + '/services/tables/' + _self.table + '/vector-tiles');
+});
+
+// exports.createPGVectorTileRenderer = flow.define(function() {
+	// if (tilelive) {
+// 
+		// var filename = __dirname + '/stylesheet.xml';
+// 
+	// } else {
+		// res.send('Tilelive not installed or not found. \n');
+	// }
+// });
 
