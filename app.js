@@ -36,6 +36,7 @@ app.use(express.static(path.join(__dirname, 'GPModels')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
+//Leave this out for the time being.
 // try {
 	// mongoose = require("mongoose"), passport = require("passport");
 // } catch(e) {
@@ -111,8 +112,8 @@ app.use(utilities.app(passport));
 
 var mapnik, vectorTiles;
 try {
-	mapnik = require('./endpoints/mapnik'),
-	vectorTiles = require('./endpoints/vectortiles');
+	mapnik = require('./endpoints/mapnik')
+	//vectorTiles = require('./endpoints/vectortiles'); //Not ready yet
 
 } catch (e) {
 	mapnik = null;
@@ -121,7 +122,7 @@ try {
 
 if (mapnik){
 	app.use(mapnik.app(passport));
-	app.use(vectorTiles.app(passport));
+	//app.use(vectorTiles.app(passport));
 }
 
 

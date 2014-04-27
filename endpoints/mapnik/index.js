@@ -34,11 +34,15 @@ var MemShapeStats = {
 var MemShapeSingleTileStats = {
 	times : []
 };
+var RasterStats = {
+    times : []
+};
 
+//Store a list of Shapefiles stored in the Mapnik/data/shapefiles folder.
 var shapefiles = []; //a list of shapefiles that will be dynamically read
 var memoryShapefileList = []; //a list of shapefile names to be loaded into memory
 var memoryShapefiles = {}; //Store the memory datasources here
-//Store a list of Shapefiles stored in the Mapnik/data/shapefiles folder.
+var rasters = []; //a list of rasters that will be dynamically read
 
 // register shapefile plugin
 if (mapnik.register_default_input_plugins)
@@ -100,17 +104,36 @@ function getMemoryShapeFilePaths(shpLocation) {
 	return items;
 }
 
+//Find all rasters in the ./endpoints/Mapnik/data/rasters folder.
+//Spin up a new endpoint for each one of those.
+function getRasterPaths(rasterLocation) {
+    var items = [];
+    //Load rasters from rasters folder.
+    require("fs").readdirSync(rasterLocation).forEach(function(file) {
+        var ext = path.extname(file);
+        if (ext == ".tiff" || ext == ".tif" || ext == ".geotiff") {
+            items.push(file);
+        }
+    });
+
+    return items;
+}
+
 exports.app = function(passport) {
 	var app = express();
 
 	var shpLocation = path.join(__dirname, "/data/shapefiles");
 	var memoryShpLocation = path.join(__dirname, "/data/inmemory-shapefiles");
+    var rasterLocation = path.join(__dirname, "/data/rasters");
 
 	//Find Shapefiles
 	shapefiles = getShapeFilePaths(shpLocation);
 	
 	//Find shapefiles to be loaded into memory
 	memoryShapefileList = getMemoryShapeFilePaths(memoryShpLocation);
+
+    //Find Rasters
+    rasters = getRasterPaths(rasterLocation);
 
 	//Return json of found shapefiles - setting this to /services/shapefiles causes all requests to /services/shapefiles/name/dynamicMap to simply revert to this.
 	//Probably has to do with the fact that endpoints below use this.app.use instead of this.app.all (which doesn't work for some reason')
@@ -150,6 +173,25 @@ exports.app = function(passport) {
 		});
 	});
 
+    //Return json of found rasters - setting this to /services/rasters causes all requests to /services/rasters/name/dynamicMap to simply revert to this.
+    //Probably has to do with the fact that endpoints below use this.app.use instead of this.app.all (which doesn't work for some reason')
+    app.get('/rasters', function(req, res) {
+
+        var resultSet = [];
+
+        var args  = req.query;
+        if(args && args.limit){
+            resultSet = rasters.splice(0, args.limit);
+        }
+        else{
+            resultSet = rasters;
+        }
+
+        res.json({
+            rasters : resultSet
+        });
+    });
+
 	var shpName = "";
 	//Loop thru shapes and spin up new routes
 	shapefiles.forEach(function(item) {
@@ -166,6 +208,13 @@ exports.app = function(passport) {
 		createMemoryShapefileSingleTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
 		createMemoryShapefileTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
 	});
+
+    var rasterName = "";
+    //Loop thru rasters and spin up new routes
+    rasters.forEach(function(item) {
+        rasterName = item.split('.')[0];
+        createRasterTileRenderer(app, rasterName, rasterLocation + "/" + item, 4326, null);
+    });
 
 	var sessionStart = new Date().toLocaleString();
 
@@ -186,7 +235,8 @@ exports.app = function(passport) {
 			ShapeSingleTileStats.times = [];
 			MemShapeStats.times = [];
 			MemShapeSingleTileStats.times = [];
-			
+            RasterStats.times = [];
+
 			resultString += "Session Stats reset by user. \n\n\n";
 		}
 
@@ -200,6 +250,8 @@ exports.app = function(passport) {
 		resultString += "\n\n";
 		resultString += generateStatsString(MemShapeStats, "256px Tile", "In-Memory Shapefile");
 		resultString += generateStatsString(MemShapeSingleTileStats, "SingleTile", "In-Memory Shapefile");
+        resultString += "\n\n";
+        resultString += generateStatsString(RasterStats, "256px Tile", "Raster");
 
 		res.end(resultString);
 	});
@@ -1465,9 +1517,8 @@ exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field
 										
 									if (solid === false){
 										//return callback(err, buffer, headers);
-										res.setHeader('content-encoding','inflate');
+										res.setHeader('content-encoding','deflate');
 										res.setHeader('content-type','application/octet-stream');
-										
 										res.send(buffer); //return response
 										return;
 									}
@@ -1492,25 +1543,6 @@ exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field
 								return !_self._deflate ? done(null, image.getData()) : zlib.deflate(image.getData(), done);
 							});
 						});
-						// if (err)
-						// throw err;
-						// map.add_layer(layer);
-						//
-						// console.log(map.toXML());
-						// // Debug settings
-						//
-						// map.extent = bbox;
-						// var im = new mapnik.Image(map.width, map.height);
-						// map.render(im, function(err, im) {
-						// if (err) {
-						// throw err;
-						// } else {
-						// res.writeHead(200, {
-						// 'Content-Type' : 'image/png'
-						// });
-						// res.end(im.encodeSync('png'));
-						// }
-						// });
 					});
 				} catch (err) {
 					res.writeHead(500, {
@@ -1526,13 +1558,116 @@ exports.createPGVectorTileRenderer = flow.define(function(app, table, geom_field
 	console.log("Created vector tile service: " + '/services/tables/' + _self.table + '/vector-tiles');
 });
 
-// exports.createPGVectorTileRenderer = flow.define(function() {
-	// if (tilelive) {
-// 
-		// var filename = __dirname + '/stylesheet.xml';
-// 
-	// } else {
-		// res.send('Tilelive not installed or not found. \n');
-	// }
-// });
+
+//Create a static renderer that will always use the default styling
+var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(function(app, table, path_to_raster, epsgSRID, cartoFile) {
+
+    this.app = app;
+    this.table = table;
+    this.epsg = epsgSRID;
+    this.path_to_raster = path_to_raster;
+
+    var name;
+    var stylepath = __dirname + '/cartocss/';
+    var fullpath = "";
+
+    //Set the path to the style file
+    if (cartoFile) {
+        //Passed in
+        fullpath = stylepath + cartoFile;
+    } else {
+        //default
+        fullpath = stylepath + table + styleExtension;
+    }
+
+    var flo = this;
+
+    //See if there is a <tablename>.mss/xml file for this table.
+    //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
+    fs.stat(fullpath, function(err, stat) {
+        if (err) {
+            //No file.  Use defaults.
+            fullpath = stylepath + "style.xml";
+            //Default
+        }
+
+        flo(fullpath);
+        //flow to next function
+    });
+}, function(fullpath) {
+    //Flow from after getting full path to Style file
+
+    var _self = this;
+
+    //Create Route for this table
+    this.app.use('/services/rasters/' + _self.table + '/dynamicMap', function(req, res) {
+        //Start Timer to measure response speed for tile requests.
+        var startTime = Date.now();
+
+        parseXYZ(req, TMS_SCHEME, function(err, params) {
+            if (err) {
+                res.writeHead(500, {
+                    'Content-Type' : 'text/plain'
+                });
+                res.end(err.message);
+            } else {
+                try {
+
+                    var map = new mapnik.Map(256, 256, mercator.proj4);
+
+                    var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+                    //check to see if 3857.  If not, assume WGS84
+
+                    var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+
+                    var raster = new mapnik.Datasource({
+                        type : 'gdal',
+                        file : _self.path_to_raster,
+                        band: 1
+                    });
+
+                    layer.datasource = raster;
+                    layer.styles = [_self.table, 'raster'];
+
+                    map.bufferSize = 64;
+                    map.load(path.join(fullpath), {
+                        strict : true
+                    }, function(err, map) {
+                        if (err)
+                            throw err;
+
+                        map.add_layer(layer);
+
+                        console.log(map.toXML());
+                        // Debug settings
+
+                        map.extent = bbox;
+                        var im = new mapnik.Image(map.width, map.height);
+                        map.render(im, function(err, im) {
+                            if (err) {
+                                throw err;
+                            } else {
+                                var duration = Date.now() - startTime;
+                                RasterStats.times.push(duration);
+                                res.writeHead(200, {
+                                    'Content-Type' : 'image/png'
+                                });
+                                res.end(im.encodeSync('png'));
+                            }
+                        });
+
+                    });
+
+                } catch (err) {
+                    res.writeHead(500, {
+                        'Content-Type' : 'text/plain'
+                    });
+                    res.end(err.message);
+                }
+            }
+        });
+    });
+
+    console.log("Created dynamic raster tile service: " + '/services/rasters/' + _self.table + '/dynamicMap');
+});
 
