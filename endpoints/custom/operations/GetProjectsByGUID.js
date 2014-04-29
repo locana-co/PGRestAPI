@@ -13,7 +13,7 @@ operation.outputImage = false;
 
 operation.inputs["guids"] = {}; //comma separated list of guids
 
-operation.Query = "SELECT * FROM sf_all_projects WHERE gis_geo_id__c IN ({{guids}})";
+operation.Query = "SELECT * FROM sf_project WHERE location__r_gis_geo_id__c IN ({{guids}})";
 
 operation.execute = flow.define(
     function (args, callback) {
@@ -31,7 +31,7 @@ operation.execute = flow.define(
 
             //need to wrap ids in single quotes
             //Execute the query
-						query = { text: operation.Query.replace("{{guids}}", operation.wrapIdsInQuotes(operation.inputs["guids"])) };
+						var query = { text: operation.Query.replace("{{guids}}", operation.wrapIdsInQuotes(operation.inputs["guids"])) };
             common.executePgQuery(query, this);//Flow to next function when done.
         }
         else {
@@ -44,7 +44,7 @@ operation.execute = flow.define(
         //Step 2 - get the results and pass back to calling function
         this.callback(err, results);
     }
-)
+);
 
 //Make sure arguments are tight before executing
 operation.isInputValid = function (input) {
@@ -60,12 +60,12 @@ operation.isInputValid = function (input) {
     }
 
     return isValid;
-}
+};
 
 operation.wrapIdsInQuotes = function(ids){
     return ids.split(',').map(function(item){
         return "'" + item + "'";
     });
-}
+};
 
 module.exports = operation;
