@@ -11,6 +11,13 @@
  * LEFT JOIN sf_disaster as dis ON loc.disaster__r_id = dis.sf_id
  * WHERE location__r_gis_geo_id__c IN ('13501e00-c3a0-4772-b060-66a9c80c3702');
  *
+ * SELECT * FROM sf_request_for_assistance
+ * WHERE disaster__r_id = 'a0Fd000000TjiIzEAJ';
+ *
+ * Example Endpoint:
+ *
+ * http://localhost:3000/services/custom/custom_operation?name=getdisastersbyguid&format=json&guids=13501e00-c3a0-4772-b060-66a9c80c3702&pretty=true
+ *
  */
 
 var flow = require('flow');
@@ -29,10 +36,14 @@ operation.outputImage = false;
 
 operation.inputs["guids"] = {}; //comma separated list of guids
 
-operation.Query =
+operation.DisasterQuery =
 "SELECT * FROM sf_disaster_location AS loc \
 LEFT JOIN sf_disaster as dis ON loc.disaster__r_id = dis.sf_id \
 WHERE location__r_gis_geo_id__c IN ({{guids}});";
+
+operation.RequestForAssistanceQuery =
+"SELECT * FROM sf_request_for_assistance \
+WHERE disaster__r_id = {{guid}};";
 
 operation.execute = flow.define(
   function (args, callback) {
@@ -50,8 +61,8 @@ operation.execute = flow.define(
 
       //need to wrap ids in single quotes
       //Execute the query
-      var query = { text: operation.Query.replace("{{guids}}", operation.wrapIdsInQuotes(operation.inputs["guids"])) };
-      common.executePgQuery(query, this);//Flow to next function when done.
+      var disasterQuery = { text: operation.DisasterQuery.replace("{{guids}}", operation.wrapIdsInQuotes(operation.inputs["guids"])) };
+      common.executePgQuery(disasterQuery, this);//Flow to next function when done.
     }
     else {
       //Invalid arguments
@@ -60,8 +71,43 @@ operation.execute = flow.define(
     }
   },
   function (err, results) {
-    //Step 2 - get the results and pass back to calling function
-    this.callback(err, results);
+    if (err) {
+      this.callback(err);
+      return;
+    }
+    //Step 2 - do the request for assistance query
+    var disasters = this.disasters = results.rows;
+    for (var i = 0, len = disasters.length; i < len; ++i) {
+      var disaster = disasters[i];
+      var id = disaster.disaster__r_id;
+      var requestForAssistanceQuery = { text: operation.RequestForAssistanceQuery.replace("{{guid}}", operation.wrapIdsInQuotes(id)) };
+      common.executePgQuery(requestForAssistanceQuery, this.MULTI(id));
+    }
+  },
+  function (args) {
+    //Step 3 - get the results and pass back to calling function
+    for (var i = 0, len = this.disasters.length; i < len; ++i) {
+      var disaster = this.disasters[i];
+      var disasterId = disaster.disaster__r_id;
+      for (var key in args) {
+        if (key === disasterId) {
+          var reqForAssist = args[key];
+          // if there is an error for the request for assistance query
+          if (reqForAssist[0] !== null) {
+            this.callback(reqForAssist[0]);
+          } else {
+            // apply request for assistance data to disaster
+            if (!disaster.requestsForAssistance) {
+              disaster.requestsForAssistance = [];
+            }
+            disaster.requestsForAssistance.push(reqForAssist[1].rows); // the second arg from the query, which would be the result
+
+          }
+        }
+      }
+    }
+    var results = { rows: this.disasters };
+    this.callback(null, results);
   }
 );
 
