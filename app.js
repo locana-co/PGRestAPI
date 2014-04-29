@@ -7,8 +7,6 @@ var express = require('express'), http = require('http'), path = require('path')
 
 var app = express();
 
-var routes = [];
-
 //PostGres Connection String
 global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
 
@@ -30,10 +28,11 @@ app.use(require('less-middleware')({
 	src : __dirname + '/public'
 }));
 
-//Items in these folder will be served statically.
+//Items in these folders will be served statically.
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'GPModels')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
+
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
 //Leave this out for the time being.
@@ -151,35 +150,10 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 	console.log(startMessage);
 });
 
-
-
 //Look for any errors (this signature is for error handling), this is generally defined after all other app.uses.
 app.use(function(err, req, res, next) {
 	console.error(err.stack);
 	common.log(err.message);
 	res.send(500, 'There was an error with the web service. Please try your operation again.');
 	common.log('There was an error with the web servcice. Please try your operation again.');
-});
-
-//look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
-//on startup.  Probably move this to a 'startup' module
-//common.vacuumAnalyzeAll();
-tables.findSpatialTables(app, function(error, tables) {
-	if (error) {
-		console.log(error);
-	} else {
-		if (tables) {
-			Object.keys(tables).forEach(function(key) {
-				var item = tables[key];
-				if (mapnik) {
-					//Spin up a route to serve dynamic tiles for this table
-					mapnik.createPGTileRenderer(app, item.table, item.geometry_column, item.srid, null);
-					mapnik.createPGVectorTileRenderer(app, item.table, item.geometry_column, item.srid, null);
-					mapnik.createPGTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
-					//Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
-					//mapnik.createCachedFolder(item.table);
-				}
-			});
-		}
-	}
 });

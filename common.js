@@ -111,7 +111,48 @@ common.executePgQuery = function (query, callback) {
             callback(err, result);
         });
     });
-}
+};
+
+
+//Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
+common.findSpatialTables = function(app, callback) {
+    var spatialTables = {};
+
+    //Todo: separate views and tables with a property name, since mapnik can't render views (since no stats with analyze)
+    //TODO: text : "select f_geometry_column, srid, f_table_name from geometry_columns where f_table_name NOT IN (select table_name from INFORMATION_SCHEMA.views WHERE table_schema = ANY (current_schemas(false))) and f_table_catalog = $1",
+    //Add a property to deliniate tables vs. views.
+    var query = {
+        text : "select * from geometry_columns where f_table_catalog = $1",
+        values : [settings.pg.database]
+    };
+
+    //TODO - add options to specify schema and database.  Right now it will read all
+    common.executePgQuery(query, function(err, result) {
+        if (err) {
+            //Report error and exit.
+            console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + err.text);
+        } else {
+            //app.spatialTables = {};
+            //Add to list of tables.
+            result.rows.forEach(function(item) {
+                var spTable = {
+                    table : item.f_table_name,
+                    geometry_column : item.f_geometry_column,
+                    srid : item.srid
+                };
+                //spatialTables.push(spTable);
+                spatialTables[item.f_table_name] = spTable;
+                //Keep a copy in tables for later.
+            });
+        }
+
+        //Set spatialTables in express app
+        app.set('spatialTables', spatialTables);
+
+        //return to sender
+        callback(err, spatialTables);
+    });
+};
 
 //Utilities
 common.log = function(message) {
@@ -176,7 +217,23 @@ common.isValidSQL = function (item) {
     //}
     return true;
     //TODO - add validation code.
+};
+
+common.getArguments = function(req){
+    var args;
+
+    //Grab POST or QueryString args depending on type
+    if (req.method.toLowerCase() == "post") {
+        //If a post, then arguments will be members of the this.req.body property
+        args = req.body;
+    } else if (req.method.toLowerCase() == "get") {
+        //If request is a get, then args will be members of the this.req.query property
+        args = req.query;
+    }
+
+    return args;
 }
+
 
 ////Take in results object, return GeoJSON (if there is geometry)
 common.formatters.geoJSONFormatter = function (rows, geom_fields_array, geom_extent_array) {
