@@ -1,0 +1,124 @@
+extends ../../../shared_views/layout
+
+block content
+	script.
+		//Trigger Active Nav Link
+		$("#custom").addClass("active");
+
+	p
+		| Provide either:
+	ol
+		li
+			|a feature ID 
+		li	
+			|a stack ID, level and datasource, OR
+		li
+			|a Well Known Text representation of a lat/lon and datasource
+
+	form(action='',method='post')
+		table.inputTable
+
+			tr
+				td
+					label(for='featureid') Feature ID
+				td
+					input(id='featureid',type='text',value=featureid,placeholder='featureid',name='featureid')
+
+			tr
+				td
+					label(for='stackid') Stack ID
+				td
+					input(id='stackid',type='text',value=stackid,placeholder='stackid',name='stackid')
+
+			tr
+				td
+					label(for='adminlevel') Administrative Level
+				td
+					input(id='adminlevel',type='text',value=adminlevel,placeholder='0',name='adminlevel')
+
+			tr
+				td
+					label(for='datasource') Data Source
+				td
+					input(id='datasource',type='text',value=datasource,placeholder='GADM',name='datasource')
+
+			tr
+				td
+					label(for='format') Format
+				td
+					select(id='format',name='format')
+						formatlist = [ 'html', 'GeoJSON']
+							for item in formatlist
+								option #{item}
+
+			tr
+				td
+					label(for='wkt') Well Known Text (WKT) Geometry
+				td
+					textarea(id='wkt',placeholder='POINT(85.341 25.811)',name='wkt')
+						|#{wkt}
+
+			tr
+				td
+					span Return geometry
+				td
+					-if(!returnGeometry || returnGeometry == 'no'){
+						label(for='optionsRadios1') Yes
+						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes") Yes
+						label(for='optionsRadios2') No
+						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no", checked="") No
+					-}else{
+						label(for='optionsRadios1') Yes
+						input(type="radio", name="returnGeometry", id="optionsRadios1", value="yes", checked="") Yes
+						label(for='optionsRadios2') No
+						input(type="radio", name="returnGeometry", id="optionsRadios2", value="no") No
+					-}
+
+		div(data-role='fieldcontain')   
+			input(type='submit',value='Submit',data-transition='fade', data-theme='c')
+
+	
+	-if(infoMessage){
+		div.infoMessage
+			|#{infoMessage}
+	-}
+	-if(errorMessage){
+		div.errorMessage
+			|#{errorMessage}
+	-}
+
+
+block sidebar
+	.widget
+		h1 Results
+		.results
+			- if (featureCollection){
+				-if(featureCollection.features){
+					i # records: #{featureCollection.features.length}
+					each val, key in featureCollection.features
+						div.propertyGroup
+							each ival, ikey in val.properties
+								-if(ival && ival.coordinates){
+									each egval, egkey in ival
+										div.geometry #{ikey}: #{egkey}: #{egval}
+								-}else{
+									div.property #{ikey}: #{ival}
+								-}
+								
+							-if(val.geometry){
+								-if(val.geometry.geometries){
+									each mgval, mgkey in val.geometry.geometries
+										-if(mgval.coordinates){
+											div.geometries #{mgval.type}: #{mgval.coordinates}
+										-}
+								-}else{
+									each gval, gkey in val.geometry
+										div.geometry geometry: #{gkey}: #{gval}
+								-}
+							-}
+							
+				-}else{
+					div.propertyGroup No results found
+				-}
+			-}
+			

@@ -33,7 +33,7 @@ app.use(require('less-middleware')({
 //Items in these folder will be served statically.
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
-app.use('/geoangular', express.static('../GeoAngular/app'));
+app.use('/geo-angular/', express.static('../GeoAngular/app/'));
 
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
@@ -143,7 +143,7 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
 
 //Root Request - show table list
 app.get('/', passport.authenticationFunctions, function(req, res) {
-	res.redirect('/services/tables')
+	res.redirect('/geo-angular/')
 });
 
 //Redirect /services to table list

@@ -4,8 +4,8 @@ var common = require("../../../common"),settings = require('../../../settings'),
 var operation = {};
 
 /* METADATA */
-operation.name = "GetAggregatedThemeFeaturesByID";
-operation.description = "Gets theme-based features and properties based on GADM ID and level.";
+operation.name = "GetBreadCrumbsWithThemeCountsByID";
+operation.description = "Gets full stack for breadcrumbs (including theme counts at each level) based on GADM ID and level.";
 operation.inputs = {};
 
 operation.outputImage = false;
@@ -14,7 +14,9 @@ operation.inputs["ids"] = {}; //comma separated list of ids
 operation.inputs["theme"] = {}; //string - theme name
 operation.inputs["gadm_level"] = {}; //string - gadm_level (0 -5)
 
-operation.Query = "SELECT sum(count{{gadm_level}}) as project_count, guid{{gadm_level}} as guid, ST_ASGeoJSON(geom{{gadm_level}}) as geom FROM sf_aggregated_gadm_{{theme}}_counts WHERE guid{{gadm_level}} IN ({{ids}}) GROUP BY guid{{gadm_level}}, geom{{gadm_level}}";
+//operation.Query = "SELECT sum(count{{gadm_level}}) as project_count, guid{{gadm_level}} as guid, ST_ASGeoJSON(geom{{gadm_level}}) as geom FROM sf_aggregated_gadm_{{theme}}_counts WHERE guid{{gadm_level}} IN ({{ids}}) GROUP BY guid{{gadm_level}}, geom{{gadm_level}}";
+
+//SELECT guid2, name2, guid1, name1, guid0, name0, guidarc, namearc, guidarc FROM sf_gadm_guids WHERE guid2 IN ('ca4f7dd8-3023-4e18-b644-13449e14b4b3')
 
 operation.execute = flow.define(
     function (args, callback) {
@@ -34,10 +36,7 @@ operation.execute = flow.define(
             //need to wrap ids in single quotes
             //Execute the query
             var query;
-					  if(operation.inputs["gadm_level"] == -1) {
-							operation.inputs["gadm_level"] = "arc";
-					  }
-						query = { text: operation.Query.split('{{gadm_level}}').join(operation.inputs["gadm_level"]).replace('{{theme}}', operation.inputs["theme"]).split("{{ids}}").join(operation.wrapIdsInQuotes(args.ids)) };
+						query = { text: operation.BuildSQLQuery(operation.inputs["gadm_level"]).split("{{ids}}").join(operation.wrapIdsInQuotes(args.ids)) };
             common.executePgQuery(query, this);//Flow to next function when done.
         }
         else {
@@ -65,6 +64,26 @@ operation.isInputValid = function (input) {
     }
 
     return isValid;
+}
+
+operation.BuildSQLQuery = function(deepestLevel) {
+	//given a level, build the select statement for columns related to that level as well as levels 'above' it.
+	var sql = "SELECT ";
+	var whereArray = [];
+	for (var i = deepestLevel; i >= -1; i--) {
+		//guid0, name0
+		if (i == -1) {
+			whereArray.push("guidarc");
+			whereArray.push("namearc");
+		}
+		else {
+			whereArray.push("guid" + i);
+			whereArray.push("name" + i);
+		}
+	}
+
+	sql += whereArray.join(", ") + " FROM sf_gadm_guids WHERE guid" + deepestLevel + " IN ({{ids}}) GROUP BY " + whereArray.join(", ");
+	return sql;
 }
 
 operation.wrapIdsInQuotes = function(ids){

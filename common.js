@@ -11,6 +11,9 @@ common.formatters = {};
 
 common.respond = function (req, res, args, callback) {
 
+		//Show or hide different NAV elements based on whether the endpoint is installed or not
+
+
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
     if (!args.format || args.format.toLowerCase() == "html") {
         //calculate response time
