@@ -110,6 +110,7 @@ exports.app = function(passport) {
 
 				//See what the inputs are
 				//Also see if any of the inputs were provided as args.
+                var inputCount = 0; //count the inputs.  If a job has no inputs, then execute anyway.
 				for (var key in this.customOperation.inputs) {
 					if (this.customOperation.inputs.hasOwnProperty(key)) {
 						this.args.formfields.push(key);
@@ -120,11 +121,12 @@ exports.app = function(passport) {
 								value : this.args[key]
 							});
 						}
+                        inputCount++;
 					}
 				}
 
 
-        if (this.args._input_arguments.length > 0) {
+        if (this.args._input_arguments.length > 0 || inputCount == 0) {
           //We've got all of the required arguments
           this.customOperation.execute(this.args, this);
           //Flow to next bloc when done
@@ -135,7 +137,7 @@ exports.app = function(passport) {
           common.respond(this.req, this.res, this.args);
         }
 
-				//Now get other args (if any) and process them
+		//Now get other args (if any) and process them
         //Commenting out for now.  Let the individual endpoints deal with whether the args were provided or not
         /*if (this.args.formfields.length == this.args._input_arguments.length) {
 					//We've got all of the required arguments
@@ -180,7 +182,7 @@ exports.app = function(passport) {
 		if (err) {
 			//Report error and exit.
 			this.args.errorMessage = err;
-      this();
+            this();
 		} else {
 			//success
 			//Write out results to page

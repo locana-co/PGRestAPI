@@ -16,7 +16,7 @@ operation.inputs["gadm_level"] = {}; //string - gadm_level (0 -5)
 
 //operation.Query = "SELECT sum(count{{gadm_level}}) as project_count, guid{{gadm_level}} as guid, ST_ASGeoJSON(geom{{gadm_level}}) as geom FROM sf_aggregated_gadm_{{theme}}_counts WHERE guid{{gadm_level}} IN ({{ids}}) GROUP BY guid{{gadm_level}}, geom{{gadm_level}}";
 
-//SELECT guid2, name2, guid1, name1, guid0, name0, guidarc, namearc, guidarc FROM sf_gadm_guids WHERE guid2 IN ('ca4f7dd8-3023-4e18-b644-13449e14b4b3')
+//SELECT guid2, name2, guid1, name1, guid0, name0, guidarc, namearc, guidarc FROM gadmrollup WHERE guid2 IN ('ca4f7dd8-3023-4e18-b644-13449e14b4b3')
 
 operation.execute = flow.define(
     function (args, callback) {
@@ -36,7 +36,7 @@ operation.execute = flow.define(
             //need to wrap ids in single quotes
             //Execute the query
             var query;
-						query = { text: operation.BuildSQLQuery(operation.inputs["gadm_level"]).split("{{ids}}").join(operation.wrapIdsInQuotes(args.ids)) };
+			query = { text: operation.BuildSQLQuery(operation.inputs["gadm_level"]).split("{{ids}}").join(operation.wrapIdsInQuotes(args.ids)) };
             common.executePgQuery(query, this);//Flow to next function when done.
         }
         else {
@@ -82,7 +82,7 @@ operation.BuildSQLQuery = function(deepestLevel) {
 		}
 	}
 
-	sql += whereArray.join(", ") + " FROM sf_gadm_guids WHERE guid" + deepestLevel + " IN ({{ids}}) GROUP BY " + whereArray.join(", ");
+	sql += whereArray.join(", ") + " FROM gadmrollup WHERE guid" + deepestLevel + " IN ({{ids}}) GROUP BY " + whereArray.join(", ");
 	return sql;
 }
 

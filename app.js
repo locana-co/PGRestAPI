@@ -18,7 +18,7 @@ app.set('port', process.env.PORT || settings.application.port);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.enable("jsonp callback"); //TODO: Remove this if not needed because of CORS
-app.use(express.favicon(path.join(__dirname, 'public/img/favicon.png')));
+app.use(express.favicon(path.join(__dirname, 'public/img/favicon_rc.jpg')));
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
@@ -37,13 +37,13 @@ app.use('/geo-angular/', express.static('../GeoAngular/app/'));
 
 //Mongoose support for storing authentication credentials
 var mongoose, passport;
-try {
-	mongoose = require("mongoose"), passport = require("passport");
-} catch(e) {
-	mongoose = null;
-	passport = null;
-	console.log("Mongoose/MongoDB not properly installed. Skipping. Also not using Passport. Reason: " + e);
-}
+//try {
+//	mongoose = require("mongoose"), passport = require("passport");
+//} catch(e) {
+//	mongoose = null;
+//	passport = null;
+//	console.log("Mongoose/MongoDB not properly installed. Skipping. Also not using Passport. Reason: " + e);
+//}
 
 //express app.get can be passed an array of intermediate functions before rendering.
 //If passport isn't installed or user hasn't enabled security, then leave the following array empty, otherwise load one or more middleware functions in there.
@@ -177,6 +177,9 @@ tables.findSpatialTables(app, function(error, tables) {
 					//Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
 					mapnik.createCachedFolder(item.table);
 				}
+                else{
+                    common.log("Tables read, but no Mapnik.  Server ready.")
+                }
 			});
 		}
 	}

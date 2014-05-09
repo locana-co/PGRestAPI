@@ -9,7 +9,8 @@ operation.name = "GetIdsByExtent";
 operation.description = "Smartly gets GADM IDs associated with Red Cross disasters or projects based on a map viewport (extent).";
 operation.inputs = {};
 
-operation.inputs["bbox"] = {}; //SW coordiantes, NE coordinates, in lat/lng (4326).  minx, miny, maxx, maxy - example: -127.76000976562501,43.476840397778915,-113.060302734375,49.30363576187125
+//operation.inputs["bbox"] = {}; //SW coordiantes, NE coordinates, in lat/lng (4326).  minx, miny, maxx, maxy - example: -127.76000976562501,43.476840397778915,-113.060302734375,49.30363576187125
+operation.inputs["bbox"] = {}; //Tile BBox coordinates, zlevel, xmin, xmax, ymin, ymax example: 8, 44, 48, 28, 30
 operation.inputs["gadm_level"] = []; //Optional GADM level to start searching thru (default is level 0)
 
 operation.outputImage = false;
@@ -31,12 +32,21 @@ operation.execute = flow.define(
             operation.inputs["bbox"] = args.bbox;
             operation.inputs["gadm_level"] = args.gadm_level;
 
-            //Convert bbox to WKT
-            args.wkt = operation.convertBBoxToWKT(args.bbox);
+            //Check the cache first.  If it doesn't exist, then ask postgres
+            var cached = CheckCache(args.bbox);
+            if(cached){
+                this(null, cached);
+            }else{
+                //No cached
+                //Convert bbox to WKT
+                args.wkt = operation.convertBBoxToWKT(args.bbox);
 
-            //Execute the query
-            var query = { text : "select * from udf_getidsbyextent(" + (args.gadm_level || "null") + ", '" + args.wkt + "');", values: []};
-            common.executePgQuery(query, this);//Flow to next function when done.
+                //Execute the query
+                var query = { text : "select * from udf_getidsbyextent(" + (args.gadm_level || "null") + ", '" + args.wkt + "');", values: []};
+                common.executePgQuery(query, this);//Flow to next function when done.
+            }
+
+
         }
         else {
             //Invalid arguments

@@ -13,7 +13,7 @@ operation.outputImage = false;
 operation.inputs["ids"] = {}; //comma separated list of ids
 operation.inputs["theme"] = {}; //string - theme name
 
-operation.Query = "SELECT ST_AsGeoJSON(geom) as geom, project_count, level FROM vw_theme_{{theme}}_gadm WHERE stack_guid IN ({{ids}})";
+operation.Query = "SELECT ST_AsGeoJSON(geom) as geom, theme_count, level FROM vw_theme_{{theme}}_gadm WHERE stack_guid IN ({{ids}})";
 
 operation.execute = flow.define(
     function (args, callback) {

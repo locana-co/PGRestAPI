@@ -5,15 +5,16 @@ var common = require("../../../common"),settings = require('../../../settings'),
 var operation = {};
 
 /* METADATA */
-operation.name = "GetProjectsByGUID";
+operation.name = "GetProjectByGUID";
 operation.description = "Gets ECOS Projects for a given GADM boundary based on a GUID.";
 operation.inputs = {};
 
 operation.outputImage = false;
 
 operation.inputs["guids"] = {}; //comma separated list of guids
+operation.inputs["gadm_level"] = {}; //gadm_level to search thru
 
-operation.Query = "SELECT * FROM sf_project WHERE location__r_gis_geo_id__c IN ({{guids}})";
+operation.Query = "SELECT sf_project.* FROM sf_aggregated_gadm_project_counts, sf_project WHERE sf_aggregated_gadm_project_counts.sf_id = sf_project.sf_id AND guid{{gadm_level}} = {{guids}};";
 
 operation.execute = flow.define(
     function (args, callback) {
@@ -28,10 +29,11 @@ operation.execute = flow.define(
         if (operation.isInputValid(args) === true) {
             //prepare bbox string as WKT
             operation.inputs["guids"] = args.guids;
+            operation.inputs["gadm_level"] = args.gadm_level;
 
             //need to wrap ids in single quotes
             //Execute the query
-						var query = { text: operation.Query.replace("{{guids}}", operation.wrapIdsInQuotes(operation.inputs["guids"])) };
+			var query = { text: operation.Query.replace("{{guids}}", operation.wrapIdsInQuotes(operation.inputs["guids"])).replace("{{gadm_level}}", operation.inputs["gadm_level"]) };
             common.executePgQuery(query, this);//Flow to next function when done.
         }
         else {
@@ -53,7 +55,7 @@ operation.isInputValid = function (input) {
 
     if (input) {
         //make sure we have a bbox.  Other args are optional
-        if (input["guids"]) {
+        if (input["guids"] && input["gadm_level"]) {
             //It's got everything we need.
             return true;
         }
