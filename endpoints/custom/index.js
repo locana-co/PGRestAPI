@@ -5,6 +5,8 @@ var express = require('express'), common = require("../../common"), flow = requi
 
 //The next requires are specific to this module only
 var custom = require('./operations');
+var CCacher = require("../../lib/ChubbsCache");
+var cacher = new CCacher();
 
 var mapnik;
 try {
@@ -36,7 +38,7 @@ exports.app = function(passport) {
 		args.opslist = [];
 
 		if (custom && custom.names) {
-			for ( i = 0; i < custom.names.length; i++) {
+			for (i = 0; i < custom.names.length; i++) {
 				args.opslist.push({
 					name : custom.names[i],
 					link : "custom_operation?name=" + custom.names[i]
@@ -49,8 +51,19 @@ exports.app = function(passport) {
 
 	});
 
+    // listen for events to track cache rate and errors
+    cacher.on("hit", function(key) {
+        console.log("Using Cached response for: " + key)
+    })
+    cacher.on("miss", function(key) {
+        console.log("No cached response for: " + key + ".  Generating.")
+    })
+    cacher.on("error", function(key) {
+        console.log("Error with cache. " + err)
+    })
+
 	//Show specific GP operation
-	app.all('/services/custom/custom_operation', flow.define(function(req, res) {
+	app.all('/services/custom/custom_operation', cacher.cache('days', 3), flow.define(function(req, res) {
 		this.args = {};
 		this.req = req;
 		this.res = res;

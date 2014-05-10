@@ -4,7 +4,10 @@ var pg = require('pg'),
     http = require("http"),
     settings = require("./settings"),
     fs = require("fs"),
-    shortid = require("shortid");
+    shortid = require("shortid"),
+    mercator = require('./utils/sphericalmercator.js'), // 3857
+    geographic = require('./utils/geographic.js'), //4326
+    parseXYZ = require('./utils/tile.js').parseXYZ;
 
 var common = {};
 common.formatters = {};
@@ -208,6 +211,34 @@ common.isValidSQL = function (item) {
     //}
     return true;
     //TODO - add validation code.
+}
+
+
+//Take a tile bounds (along with a z) and create a bounding box for PostGIS queries.
+//Tile bounds coordinates, zlevel, xmin, xmax, ymin, ymax example: 8, 44, 48, 28, 30
+common.convertTileBoundsToBBoxWKT = function(bbox){
+    var bboxcoords = bbox.split(',');
+    var z = bboxcoords[0];
+    var xmin = bboxcoords[1];
+    var xmax = bboxcoords[2];
+    var ymin = bboxcoords[3];
+    var ymax = bboxcoords[4];
+
+    var boundsObj = { z: z, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+    var TopLeftTile = { z: z, y: ymin, x: xmin};
+    var TopRightTile = { z: z, y: ymin, x: xmax};
+    var BottomLeftTile = { z: z, y: ymax, x: xmin};
+    var BottomRightTile = { z: z, y: ymax, x: xmax};
+
+    //Get the upper left tile, upper right tile, lower left tile, lower right tile and convert to WGS84, then use the maxes and mins to create the bbox.
+    var bboxTopLeft = mercator.xyz_to_envelope(parseInt(TopLeftTile.x), parseInt(TopLeftTile.y), parseInt(TopLeftTile.z), false, true);
+    //var bboxTopRight = mercator.xyz_to_envelope(parseInt(TopRightTile.x), parseInt(TopRightTile.y), parseInt(TopRightTile.z), false, true);
+    //var bboxBottomLeft = mercator.xyz_to_envelope(parseInt(BottomLeftTile.x), parseInt(BottomLeftTile.y), parseInt(BottomLeftTile.z), false, true);
+    var bboxBottomRight = mercator.xyz_to_envelope(parseInt(BottomRightTile.x), parseInt(BottomRightTile.y), parseInt(BottomRightTile.z), false, true);
+
+    //Had to reverse the indices here, they were backwards from what I thought they should be.
+    var corners = { minx: bboxTopLeft[0], miny: bboxTopLeft[1], maxx: bboxBottomRight[2], maxy: bboxBottomRight[3]};
+    return "POLYGON((minx miny, minx maxy, maxx maxy, maxx miny, minx miny))".split('minx').join(corners.minx).split('miny').join(corners.miny).split('maxx').join(corners.maxx).split('maxy').join(corners.maxy);
 }
 
 ////Take in results object, return GeoJSON (if there is geometry)

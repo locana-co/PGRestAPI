@@ -74,16 +74,21 @@ SphericalMercator.prototype.px_to_ll = function(px, zoom) {
  * @param {Number} y longitude number.
  * @param {Number} zoom zoom.
  * @param {Boolean} tms_style whether to compute a tms tile.
+ * @param {Boolean} geographic: if true, return the bbox as WGS84
  * @return Object Mapnik envelope.
  */
-SphericalMercator.prototype.xyz_to_envelope = function(x, y, zoom, TMS_SCHEME) {
+SphericalMercator.prototype.xyz_to_envelope = function(x, y, zoom, TMS_SCHEME, geographic) {
     if (TMS_SCHEME) {
         y = (Math.pow(2, zoom) - 1) - y;
     }
     var ll = [x * this.size, (y + 1) * this.size];
     var ur = [(x + 1) * this.size, y * this.size];
-    var bbox = this.px_to_ll(ll, zoom).concat(this.px_to_ll(ur, zoom));
-    return mercator.forward(bbox);
+    var bbox;
+    if(geographic == true){
+        return this.px_to_ll(ll, zoom).concat(this.px_to_ll(ur, zoom))
+    }else{
+        mercator.forward(this.px_to_ll(ll, zoom).concat(this.px_to_ll(ur, zoom)));
+    }
 };
 
 module.exports = new SphericalMercator();

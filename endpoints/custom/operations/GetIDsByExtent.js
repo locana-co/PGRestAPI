@@ -15,7 +15,6 @@ operation.inputs["gadm_level"] = []; //Optional GADM level to start searching th
 
 operation.outputImage = false;
 
-
 operation.execute = flow.define(
     function (args, callback) {
         this.args = args;
@@ -32,21 +31,13 @@ operation.execute = flow.define(
             operation.inputs["bbox"] = args.bbox;
             operation.inputs["gadm_level"] = args.gadm_level;
 
-            //Check the cache first.  If it doesn't exist, then ask postgres
-            var cached = CheckCache(args.bbox);
-            if(cached){
-                this(null, cached);
-            }else{
-                //No cached
-                //Convert bbox to WKT
-                args.wkt = operation.convertBBoxToWKT(args.bbox);
+            //No cached
+            //Convert bbox to WKT
+            args.wkt = common.convertTileBoundsToBBoxWKT(args.bbox);
 
-                //Execute the query
-                var query = { text : "select * from udf_getidsbyextent(" + (args.gadm_level || "null") + ", '" + args.wkt + "');", values: []};
-                common.executePgQuery(query, this);//Flow to next function when done.
-            }
-
-
+            //Execute the query
+            var query = { text: "select * from udf_getidsbyextent(" + (args.gadm_level || "null") + ", '" + args.wkt + "');", values: []};
+            common.executePgQuery(query, this);//Flow to next function when done.
         }
         else {
             //Invalid arguments
@@ -67,7 +58,7 @@ operation.isInputValid = function (input) {
 
     if (input) {
         //make sure we have a bbox.  Other args are optional
-        if (input["bbox"] && input["bbox"].split(",").length == 4) {
+        if (input["bbox"] && input["bbox"].split(",").length == 5) {
             //It's got everything we need.
             return true;
         }
@@ -80,10 +71,5 @@ operation.isInputValid = function (input) {
 }
 
 
-operation.convertBBoxToWKT = function(bbox){
-   var bboxcoords = bbox.split(',');
-   var corners = { minx: bboxcoords[0], miny: bboxcoords[1], maxx: bboxcoords[2], maxy: bboxcoords[3]};
-   return "POLYGON((minx miny, minx maxy, maxx maxy, maxx miny, minx miny))".split('minx').join(corners.minx).split('miny').join(corners.miny).split('maxx').join(corners.maxx).split('maxy').join(corners.maxy);
-}
 
 module.exports = operation;

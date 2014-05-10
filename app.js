@@ -3,7 +3,14 @@
  */
 var pg = require('pg');
 
-var express = require('express'), http = require('http'), path = require('path'), settings = require('./settings'), common = require("./common"), cors = require('cors');
+var express = require('express'),
+    http = require('http'),
+    path = require('path'),
+    settings = require('./settings'),
+    common = require("./common"),
+    cors = require('cors'),
+    nodecache = require( "node-cache" );
+
 
 var app = express();
 
@@ -84,6 +91,8 @@ else{
 //This must be after app.use(passport.initialize())
 app.use(cors());
 app.use(app.router);
+
+
 
 //Load in all endpoint routes
 //TODO - Loop thru endpoints folder and require everything in there
