@@ -11,8 +11,8 @@
     } 
   ],
   "scripts": {
-    "start": "node app.js",
-    "test": "node_modules\\.bin\\mocha -u tdd"
+    "start": "node index.js",
+    "test": "node_modules\\.bin\\mocha -u tdd --reporter spec"
   },
   "dependencies": {
     "geojson-validation": "*",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "mocha": "*",
 	"sinon": "*",
-    "chai": "*",
+    "chai": "~1.4.2",
 	"express-mock-request": "*",
 	"supertest": "*"
   },

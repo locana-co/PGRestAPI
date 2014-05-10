@@ -234,6 +234,30 @@ common.getArguments = function(req){
     return args;
 }
 
+var getFilesRecursively = common.getFilesRecursively = function(dir, done) {
+    var results = [];
+    var fullPath;
+    fs.readdir(dir, function(err, list) {
+        if (err) return done(err);
+        var pending = list.length;
+        if (!pending) return done(null, results);
+        list.forEach(function(file) {
+            fullPath = dir + '/' + file;
+            fs.stat(fullPath, function(err, stat) {
+                if (stat && stat.isDirectory()) {
+                    getFilesRecursively(fullPath, function(err, res) {
+                        results = results.concat(res);
+                        if (!--pending) done(null, results);
+                    });
+                } else {
+                    results.push({file: file, fullpath: fullPath});
+                    if (!--pending) done(null, results);
+                }
+            });
+        });
+    });
+};
+
 
 ////Take in results object, return GeoJSON (if there is geometry)
 common.formatters.geoJSONFormatter = function (rows, geom_fields_array, geom_extent_array) {

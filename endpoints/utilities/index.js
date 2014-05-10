@@ -128,9 +128,9 @@ exports.app = function (passport) {
                     }
 
                     args.featureCollection = features;
-                    args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://codeorigin.jquery.com/jquery-1.10.2.min.js'];
+                    args.scripts = [settings.leaflet.js, settings.jquery.js];
                     //Load external scripts for map preview
-                    args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+                    args.css = [settings.leaflet.js];
                 }
 
                 common.respond(req, res, args);

@@ -625,9 +625,9 @@ exports.app = function(passport) {
 		var flo = this;
 		//Save for closure //TODO - Use _self
 
-		this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'];
+		this.args.scripts = [settings.leaflet.js, settings.jquery.js];
 		//Load external scripts for map preview
-		this.args.css = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css'];
+		this.args.css = [settings.leaflet.css];
 
 		var features = [];
 
@@ -1079,8 +1079,6 @@ exports.app = function(passport) {
 			
 			this.spatialTables = app.get('spatialTables');
 
-			this.spatialTables = app.get('spatialTables');
-
 			//This should have a value
 			var srid = this.spatialTables[this.args.table].srid;
 
@@ -1124,14 +1122,14 @@ exports.app = function(passport) {
 				this.args.featureCollection = [];
 				this.args.featureCollection.push({
 					name : "Map Service Endpoint",
-					link : "http://" + this.args.host + "/services/tables/" + this.args.table + "/dynamicMap"
+					link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/dynamicMap"
 				});
 				this.args.extent = result.rows[0];
 
 				//load leaflet
-				this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2'];
+				this.args.scripts = [settings.leaflet.js];
 				//Load external scripts for map preview
-				this.args.css = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css'];
+				this.args.css = [settings.leaflet.css];
 			}
 
 			common.respond(this.req, this.res, this.args);
@@ -1309,6 +1307,11 @@ exports.app = function(passport) {
 		}).end();
 	}
 
+    //Get the list of spatial tables.
+    common.findSpatialTables(app, function (error, tables) {
+        //set for this class
+        app.set('spatialTables', tables);
+    });
 	
 	
 	return app;

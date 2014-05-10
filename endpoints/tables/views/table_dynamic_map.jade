@@ -19,7 +19,7 @@ block content
 				var map = L.map('map');
 				var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
 					
-				L.tileLayer('http://{s}.tile.cloudmade.com/54e5fa0fc8e84581aa5dcb2cf29ca3af/1960/256/{z}/{x}/{y}.png').addTo(map);
+				L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-vyofok3q/{z}/{x}/{y}.png').addTo(map);
 
 				//Add preview
 				L.tileLayer(mapUrl + '/{z}/{x}/{y}.png').addTo(map);

@@ -174,38 +174,42 @@ exports.app = function (passport) {
                 Object.keys(tables).forEach(function (key) {
                     var item = tables[key];
 
-                    tileSettings.mapnik_datasource = {
-                        'host': settings.pg.server,
-                        'port': settings.pg.port,
-                        'dbname': settings.pg.database,
-                        'table': item.table,
-                        'user': settings.pg.username,
-                        'password': settings.pg.password,
-                        'type': 'postgis',
-                        'estimate_extent': 'true'
-                    };
-                    tileSettings.routeProperties.name = item.table;
-                    tileSettings.routeProperties.srid = item.srid;
-                    tileSettings.routeProperties.cartoFile = "";
-                    tileSettings.routeProperties.source = "postgis";
-                    tileSettings.routeProperties.geom_field = item.geometry_column;
-                    tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
+                    (function (item) {
 
-                    createMultiTileRoute(app, tileSettings, PGTileStats.MultiTiles);
+                        var tileSettings ={ routeProperties: {} };
+
+                        tileSettings.mapnik_datasource = {
+                            'host': settings.pg.server,
+                            'port': settings.pg.port,
+                            'dbname': settings.pg.database,
+                            'table': item.table,
+                            'user': settings.pg.username,
+                            'password': settings.pg.password,
+                            'type': 'postgis',
+                            'estimate_extent': 'true'
+                        };
+                        tileSettings.routeProperties.name = item.table;
+                        tileSettings.routeProperties.srid = item.srid;
+                        tileSettings.routeProperties.cartoFile = "";
+                        tileSettings.routeProperties.source = "postgis";
+                        tileSettings.routeProperties.geom_field = item.geometry_column;
+                        tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
+
+                        createMultiTileRoute(app, tileSettings, PGTileStats.MultiTiles);
 
 
-                    createSingleTileRoute(app, tileSettings, PGTileStats.SingleTiles);
+                        createSingleTileRoute(app, tileSettings, PGTileStats.SingleTiles);
 
 
-                    createVectorTileRoute(app, tileSettings, PGTileStats.VectorTiles);
+                        createVectorTileRoute(app, tileSettings, PGTileStats.VectorTiles);
 
-                    //Spin up a route to serve dynamic tiles for this table
-                    //createPGTileRenderer(app, item.table, item.geometry_column, item.srid, null);
-                    //createPGVectorTileRenderer(app, item.table, item.geometry_column, item.srid, null);
-                    //createPGTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
-                    //Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
-                    //mapnik.createCachedFolder(item.table);
-
+                        //Spin up a route to serve dynamic tiles for this table
+                        //createPGTileRenderer(app, item.table, item.geometry_column, item.srid, null);
+                        //createPGVectorTileRenderer(app, item.table, item.geometry_column, item.srid, null);
+                        //createPGTileQueryRenderer(app, item.table, item.geometry_column, item.srid, null);
+                        //Create output folders for each service in public/cached_nodetiles to hold any cached tiles from dynamic service
+                        //mapnik.createCachedFolder(item.table);
+                    })(item);
                 });
             }
         }
@@ -248,8 +252,8 @@ function generateStatsString(statsObject, sourceName) {
     var message = "";
     var tileType;
 
-    statsObject.forEach(function(source){
-        switch(source){
+    statsObject.forEach(function (source) {
+        switch (source) {
             case "SingleTiles":
                 tileType = "Single Tile";
                 break;
@@ -281,7 +285,7 @@ function generateStatsString(statsObject, sourceName) {
     return message;
 }
 
-function clearStatsObject(performanceObject){
+function clearStatsObject(performanceObject) {
     performanceObject.SingleTiles.times = [];
     performanceObject.MultiTiles.times = [];
     performanceObject.VectorTiles.times = [];
@@ -1748,72 +1752,212 @@ function getRasterPaths(rasterLocation) {
 
 
 //Generic implementation of multi-tiles
-var createMultiTileRoute = exports.createMultiTileRoute = flow.define(function (app, routeSettings, performanceObject) {
+var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
+    function (app, routeSettings, performanceObject) {
 
-    this.app = app;
-    this.settings = routeSettings;
-    this.performanceObject = performanceObject;
+        this.app = app;
+        this.settings = routeSettings;
+        this.performanceObject = performanceObject;
 
-    var _stylepath = path.join(__dirname, 'cartocss');
+        this._stylepath = path.join(__dirname, 'cartocss');
 
-    //Set the path to the style file
-    var fullpath = (this.settings.routeProperties.cartoFile ? path.join(_stylepath, this.settings.routeProperties.cartoFile) : _stylepath + this.settings.routeProperties.name + _styleExtension);
+        //Set the path to the style file
+        this.fullpath = (this.settings.routeProperties.cartoFile ? path.join(this._stylepath, this.settings.routeProperties.cartoFile) : path.join(this._stylepath, this.settings.routeProperties.name + _styleExtension));
 
-    //Save the flow
-    var flo = this;
-
-    //See if there is a <name>.xml file for this table.
-    fs.stat(fullpath, function (err, stat) {
+        //See if there is a <name>.xml file for this table.
+        fs.stat(this.fullpath, this);
+    },
+    function (err, stat) {
         if (err) {
             //No file.  Use defaults.
-            fullpath = path.join(_stylepath, 'style.xml');
+            this.fullpath = path.join(this._stylepath, 'style.xml');
         }
-        flo(fullpath);
-    });
-}, function (fullpath) {
-    //Flow in from getting full path to Style file
+        this(this.fullpath)
+    },
+    function (fullpath) {
+        //Flow in from getting full path to Style file
 
-    var _self = this;
+        var _self = this;
 
-    var route = '/services/' + _self.settings.routeProperties.type + '/' + _self.settings.routeProperties.name + '/dynamicMap';
+        var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicMap';
 
-    //Create Route for this table
-    this.app.use(route, function (req, res) {
+        //Create Route for this table
+        this.app.use(route, function (req, res) {
 
-        //Start Timer to measure response speed for tile requests.
-        var startTime = Date.now();
+            //Start Timer to measure response speed for tile requests.
+            var startTime = Date.now();
 
-        //Check for correct args
-        //Optional: where clause for postgis type
-        var args = common.getArguments();
+            //Check for correct args
+            //Optional: where clause for postgis type
+            var args = common.getArguments(req);
 
-        //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
-        if (args.where) {
-            //Validate where - TODO
+            //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
+            if (args.where) {
+                //Validate where - TODO
 
-            //If a where clause was passed in, and we're using a postgis datasource, allow it
-            if(_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis'){
-                _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
+                //If a where clause was passed in, and we're using a postgis datasource, allow it
+                if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
+                    _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
+                }
             }
-        }
 
-        parseXYZ(req, TMS_SCHEME, function (err, params) {
+            parseXYZ(req, TMS_SCHEME, function (err, params) {
+                if (err) {
+                    res.writeHead(500, {
+                        'Content-Type': 'text/plain'
+                    });
+                    res.end(err.message);
+                } else {
+                    try {
+                        //create map
+                        var map = new mapnik.Map(256, 256, mercator.proj4);
+
+                        //Create Layer. Check to see if 3857.  If not, assume WGS84
+                        var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
+
+                        var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
+
+                        var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+
+                        layer.datasource = datasource;
+                        layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
+
+                        map.bufferSize = 64;
+                        map.load(path.join(fullpath), {
+                            strict: true
+                        }, function (err, map) {
+                            if (err)
+                                throw err;
+
+                            map.add_layer(layer);
+
+                            //Write out the map xml
+                            console.log(map.toXML());
+
+                            map.extent = bbox;
+                            var im = new mapnik.Image(map.width, map.height);
+                            map.render(im, function (err, im) {
+
+                                if (err) {
+                                    throw err;
+                                } else {
+                                    var duration = Date.now() - startTime;
+                                    _self.performanceObject.times.push(duration);
+                                    res.writeHead(200, {
+                                        'Content-Type': 'image/png'
+                                    });
+                                    res.end(im.encodeSync('png'));
+                                }
+                            });
+                        });
+
+                    } catch (err) {
+                        res.writeHead(500, {
+                            'Content-Type': 'text/plain'
+                        });
+                        res.end(err.message);
+                    }
+                }
+            });
+        });
+
+        console.log("Created multi tile service (" + _self.settings.routeProperties.source + "): " + route);
+    }
+);
+
+
+//Generic implementation of multi-tiles
+var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
+    function (app, routeSettings, performanceObject) {
+
+        this.app = app;
+        this.settings = routeSettings;
+        this.performanceObject = performanceObject;
+
+        var _stylepath = path.join(__dirname, 'cartocss');
+
+        //Set the path to the style file
+        var fullpath = (this.settings.routeProperties.cartoFile ? path.join(_stylepath, this.settings.routeProperties.cartoFile) : _stylepath + this.settings.routeProperties.name + _styleExtension);
+
+        //Save the flow
+        var flo = this;
+
+        //See if there is a <name>.xml file for this table.
+        fs.stat(fullpath, function (err, stat) {
             if (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            } else {
-                try {
-                    //create map
-                    var map = new mapnik.Map(256, 256, mercator.proj4);
+                //No file.  Use defaults.
+                fullpath = path.join(_stylepath, 'style.xml');
+            }
+            flo(fullpath);
+        });
+    }, function (fullpath) {
+        //Flow in from getting full path to Style file
 
-                    //Create Layer. Check to see if 3857.  If not, assume WGS84
+        var _self = this;
+
+        var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicSingleMap';
+
+        //Create Route for this table
+        this.app.use(route, function (req, res) {
+
+            //Start Timer to measure response speed for tile requests.
+            var startTime = Date.now();
+
+            //Check for correct args
+            //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
+            var args = common.getArguments(req);
+
+            // check to see if args were provided
+            if (JSON.stringify(args) != '{}') {
+                //are all mandatory args provided?
+                var missing = "Please provide";
+                var missingArray = [];
+                if (!args.width) {
+                    missingArray.push("width");
+                }
+
+                if (!args.height) {
+                    missingArray.push("height");
+                }
+
+                if (!args.bbox) {
+                    missingArray.push("bbox");
+                }
+
+                if (missingArray.length > 0) {
+                    missing += missingArray.join(", ");
+                    //respond with message.
+                    res.writeHead(500, {
+                        'Content-Type': 'text/plain'
+                    });
+                    res.end(missing);
+                    return;
+                }
+
+                //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
+                if (args.where) {
+                    //Validate where - TODO
+
+                    //If a where clause was passed in, and we're using a postgis datasource, allow it
+                    if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
+                        _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
+                    }
+                }
+
+                //We're all good. Make the picture.
+                try {
+                    //create map and layer
+                    var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
+
+                    //width, height
                     var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
 
-                    var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
+                    var floatbbox = args.bbox.split(",");
 
-                    var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+                    //ll lat, ll lon, ur lat, ur lon
+                    var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
+
+                    var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
 
                     layer.datasource = datasource;
                     layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
@@ -1854,160 +1998,22 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(function (
                     res.end(err.message);
                 }
             }
-        });
-    });
-
-    console.log("Created multi tile service (" + _self.settings.routeProperties.type + "): " + route);
-});
-
-
-//Generic implementation of multi-tiles
-var createSingleTileRoute = exports.createSingleTileRoute = flow.define(function (app, routeSettings, performanceObject) {
-
-    this.app = app;
-    this.settings = settings;
-    this.performanceObject = performanceObject;
-
-    var _stylepath = path.join(__dirname, 'cartocss');
-
-    //Set the path to the style file
-    var fullpath = (this.settings.routeProperties.cartoFile ? path.join(_stylepath, this.settings.routeProperties.cartoFile) : _stylepath + this.settings.routeProperties.name + _styleExtension);
-
-    //Save the flow
-    var flo = this;
-
-    //See if there is a <name>.xml file for this table.
-    fs.stat(fullpath, function (err, stat) {
-        if (err) {
-            //No file.  Use defaults.
-            fullpath = path.join(_stylepath, 'style.xml');
-        }
-        flo(fullpath);
-    });
-}, function (fullpath) {
-    //Flow in from getting full path to Style file
-
-    var _self = this;
-
-    var route = '/services/' + _self.settings.routeProperties.type + '/' + _self.settings.routeProperties.name + '/dynamicMap';
-
-    //Create Route for this table
-    this.app.use(route, function (req, res) {
-
-        //Start Timer to measure response speed for tile requests.
-        var startTime = Date.now();
-
-        //Check for correct args
-        //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
-        var args = common.getArguments();
-
-        // check to see if args were provided
-        if (JSON.stringify(args) != '{}') {
-            //are all mandatory args provided?
-            var missing = "Please provide";
-            var missingArray = [];
-            if (!args.width) {
-                missingArray.push("width");
-            }
-
-            if (!args.height) {
-                missingArray.push("height");
-            }
-
-            if (!args.bbox) {
-                missingArray.push("bbox");
-            }
-
-            if (missingArray.length > 0) {
-                missing += missingArray.join(", ");
-                //respond with message.
+            else {
+                //No args provided
                 res.writeHead(500, {
                     'Content-Type': 'text/plain'
                 });
-                res.end(missing);
+                res.end("Needs args width, height and bbox.");
                 return;
             }
+        });
 
-            //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
-            if (args.where) {
-                //Validate where - TODO
-
-                //If a where clause was passed in, and we're using a postgis datasource, allow it
-                if(_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis'){
-                    _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
-                }
-            }
-
-            //We're all good. Make the picture.
-            try {
-                //create map and layer
-                var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
-
-                //width, height
-                var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
-
-                var floatbbox = args.bbox.split(",");
-
-                //ll lat, ll lon, ur lat, ur lon
-                var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
-
-                var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
-
-                layer.datasource = datasource;
-                layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
-
-                map.bufferSize = 64;
-                map.load(path.join(fullpath), {
-                    strict: true
-                }, function (err, map) {
-                    if (err)
-                        throw err;
-
-                    map.add_layer(layer);
-
-                    //Write out the map xml
-                    console.log(map.toXML());
-
-                    map.extent = bbox;
-                    var im = new mapnik.Image(map.width, map.height);
-                    map.render(im, function (err, im) {
-
-                        if (err) {
-                            throw err;
-                        } else {
-                            var duration = Date.now() - startTime;
-                            _self.performanceObject.times.push(duration);
-                            res.writeHead(200, {
-                                'Content-Type': 'image/png'
-                            });
-                            res.end(im.encodeSync('png'));
-                        }
-                    });
-                });
-
-            } catch (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            }
-        }
-        else{
-            //No args provided
-            res.writeHead(500, {
-                'Content-Type': 'text/plain'
-            });
-            res.end("Needs args width, height and bbox.");
-            return;
-        }
+        console.log("Created single tile service (" + _self.settings.routeProperties.source + "): " + route);
     });
-
-    console.log("Created single tile service (" + _self.settings.routeProperties.type + "): " + route);
-});
 
 
 //Generic implementation of vector tiles
-exports.createVectorTileRoute = flow.define(function (app, settings, performanceObject) {
+var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function (app, settings, performanceObject) {
 
     this.app = app;
     this.settings = settings;
@@ -2034,19 +2040,19 @@ exports.createVectorTileRoute = flow.define(function (app, settings, performance
 
     var _self = this;
 
-    var route = '/services/' + _self.settings.routeProperties.type + '/' + _self.settings.routeProperties.name + '/vector-tiles';
+    var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/vector-tiles';
 
     //Create Route for this table
     this.app.use(route, function (req, res) {
 
-        var args = common.getArguments();
+        var args = common.getArguments(req);
 
         //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
         if (args.where) {
             //Validate where - TODO
 
             //If a where clause was passed in, and we're using a postgis datasource, allow it
-            if(_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis'){
+            if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
                 _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
             }
         }
