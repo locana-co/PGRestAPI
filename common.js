@@ -4,141 +4,193 @@ var pg = require('pg'),
     http = require("http"),
     settings = require("./settings"),
     fs = require("fs"),
-    shortid = require("shortid");
+    shortid = require("shortid"),
+    mercator = require('./utils/sphericalmercator.js'), // 3857
+    geographic = require('./utils/geographic.js'), //4326
+    parseXYZ = require('./utils/tile.js').parseXYZ;
 
 var common = {};
 common.formatters = {};
 
 common.respond = function (req, res, args, callback) {
 
+    // File name the respondant JSON will be if downloaded.
+    var downloadFileName = args.name || args.table || 'download';
+
+    // makes the json pretty if desired. (2 space indent)
+    var indent = args.pretty ? 2 : null;
+
+    //Show or hide different NAV elements based on whether the endpoint is installed or not
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
     if (!args.format || args.format.toLowerCase() == "html") {
         //calculate response time
         args.responseTime = new Date - req._startTime; //ms since start of request
+        //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
+        if (!args.format || args.format.toLowerCase() == "html") {
+            //calculate response time
+            args.responseTime = new Date - req._startTime; //ms since start of request
 
-        //Determine sample request based on args
-        res.render(args.view, args);
-    }
-    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
-        //Respond with JSON
-        if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
+            //Determine sample request based on args
+            res.render(args.view, args);
         }
-        else {
-            //Send back json file
-            //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
-            //res.writeHead(200, {
-            //    'Content-Type': 'application/json'
-            //});
-            //res.end(JSON.stringify(args.featureCollection));
-            res.jsonp(args.featureCollection);
+        else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
+            //Respond with JSON
+            if (args.errorMessage) {
+                res.writeHead(500, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+            }
+            else {
+                //Send back json file
+                res.setHeader('Content-disposition', 'attachment; filename=' + downloadFileName + '.json');
+                res.writeHead(200, {
+                    'Content-Type': 'application/json'
+                });
 
+                res.end(JSON.stringify(args.featureCollection, null, indent));
+                //Determine sample request based on args
+                res.render(args.view, args);
+            }
         }
-    }
-    else if (args.format.toLowerCase() == "geojson") {
-        //Responsd with GeoJSON
-        if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
+        else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
+            //Respond with JSON
+            if (args.errorMessage) {
+                res.jsonp({ error: args.errorMessage });
+            }
+            else {
+                //Send back json file
+                //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
+                //res.writeHead(200, {
+                //    'Content-Type': 'application/json'
+                //});
+                //res.end(JSON.stringify(args.featureCollection));
+                res.jsonp(args.featureCollection);
+
+            }
+        }
+        else if (args.format.toLowerCase() == "geojson") {
+            //Set initial header
+            res.setHeader('Content-disposition', 'attachment; filename=' + downloadFileName + '.geojson');
+
+            //Responsd with GeoJSON
+            if (args.errorMessage) {
+                res.writeHead(500, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+            }
+            else {
+                //Send back json file
+                res.writeHead(200, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify(args.featureCollection, null, indent));
+            }
+        }
+        else if (args.format && (args.format.toLowerCase() == "shapefile")) {
+            //Requesting Shapefile Format.
+            //If there's an error, return a json
+            if (args.errorMessage) {
+                res.writeHead(500, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+            }
+            else {
+                //Send back a shapefile
+                res.download(args.file, function () {
+                    callback(args.file)
+                });
+            }
+        }
+        else if (args.format && (args.format.toLowerCase() == "csv")) {
+            //Responsd with CSV
+            //If there's an error, return a json
+            if (args.errorMessage) {
+                res.writeHead(500, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+            }
+            else {
+                var filename = downloadFileName + ".csv";
+                //Send back a csv
+                res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+                res.writeHead(200, {
+                    'Content-Type': 'text/csv'
+                });
+                res.end(args.featureCollection);
+            }
         }
         else {
-            //Send back json file
-            //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.geojson');
-            //res.writeHead(200, {
-            //    'Content-Type': 'application/json'
-            //});
-            //res.end(JSON.stringify(args.featureCollection));
-            res.jsonp(args.featureCollection);
+            //If unrecognized format is specified
+            if (args.errorMessage) {
+                res.writeHead(500, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+            }
+            else {
+                res.writeHead(200, {
+                    'Content-Type': 'application/json'
+                });
+                res.end(JSON.stringify(args.featureCollection, null, indent));
+            }
         }
     }
-    else if(args.format && (args.format.toLowerCase() == "shapefile")){
-    	//Requesting Shapefile Format.
-    	//If there's an error, return a json
-        if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
-        }
-        else {
-        	//Send back a shapefile
-            res.download(args.file, function(){
-                callback(args.file)
+
+
+    common.executePgQuery = function (query, callback) {
+        //Just run the query
+        //Setup Connection to PG
+        pg.connect(global.conString, function (err, client, done) {
+            if (err) {
+                //return an error
+                callback(err);
+                return;
+            }
+
+            //Log the query to the console, for debugging
+            common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ? ", " + query.values : ""));
+
+            //execute query
+            client.query(query, function (err, result) {
+                done();
+
+                //go to callback
+                callback(err, result);
             });
-        }
-    }
-    else if (args.format && (args.format.toLowerCase() == "csv")) {
-        //Responsd with CSV
-        //If there's an error, return a json
-        if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
-        }
-        else {
-            var filename = (args.filename || "download") + ".csv";
-            //Send back a csv
-            res.setHeader('Content-disposition', 'attachment; filename=' + filename);
-            res.writeHead(200, {
-                'Content-Type': 'text/csv'
-            });
-            res.end(args.featureCollection);
-        }
-    }
-    else {
-        //If unrecognized format is specified
-        if (args.errorMessage) {
-            res.jsonp({ error: args.errorMessage });
-        }
-        else {
-            res.jsonp(args.featureCollection);
-        }
-    }
-}
-
-common.executePgQuery = function (query, callback) {
-    //Just run the query
-    //Setup Connection to PG
-    pg.connect(global.conString, function(err, client, done) {
-        if(err){
-            //return an error
-            callback(err);
-            return;
-        }
-
-        //Log the query to the console, for debugging
-        common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ?  ", " + query.values : ""));
-
-        //execute query
-        client.query(query, function(err, result) {
-            done();
-
-            //go to callback
-            callback(err, result);
         });
-    });
-};
+    };
+}
 
 
 //Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
-common.findSpatialTables = function(app, callback) {
+common.findSpatialTables = function (app, callback) {
     var spatialTables = {};
 
     //Todo: separate views and tables with a property name, since mapnik can't render views (since no stats with analyze)
     //TODO: text : "select f_geometry_column, srid, f_table_name from geometry_columns where f_table_name NOT IN (select table_name from INFORMATION_SCHEMA.views WHERE table_schema = ANY (current_schemas(false))) and f_table_catalog = $1",
     //Add a property to deliniate tables vs. views.
     var query = {
-        text : "select * from geometry_columns where f_table_catalog = $1",
-        values : [settings.pg.database]
+        text: "select * from geometry_columns where f_table_catalog = $1",
+        values: [settings.pg.database]
     };
 
     //TODO - add options to specify schema and database.  Right now it will read all
-    common.executePgQuery(query, function(err, result) {
+    common.executePgQuery(query, function (err, result) {
         if (err) {
             //Report error and exit.
             console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + err.text);
         } else {
             //app.spatialTables = {};
             //Add to list of tables.
-            result.rows.forEach(function(item) {
+            result.rows.forEach(function (item) {
                 var spTable = {
-                    table : item.f_table_name,
-                    geometry_column : item.f_geometry_column,
-                    srid : item.srid
+                    table: item.f_table_name,
+                    geometry_column: item.f_geometry_column,
+                    srid: item.srid
                 };
                 //spatialTables.push(spTable);
                 spatialTables[item.f_table_name] = spTable;
@@ -155,16 +207,16 @@ common.findSpatialTables = function(app, callback) {
 };
 
 //Utilities
-common.log = function(message) {
+common.log = function (message) {
     //Write to console
     console.log(message);
 }
 
-common.vacuumAnalyzeAll = function(){
-	var query = { text: "VACUUM ANALYZE;", values: [] };
-	common.executePgQuery(query, function (err, result) {
-		console.log("Performed VACUUM ANALYZE on ALL;")
-	});
+common.vacuumAnalyzeAll = function () {
+    var query = { text: "VACUUM ANALYZE;", values: [] };
+    common.executePgQuery(query, function (err, result) {
+        console.log("Performed VACUUM ANALYZE on ALL;")
+    });
 }
 
 //Determine if a string contains all numbers.
@@ -172,7 +224,7 @@ common.IsNumeric = function (sText) {
     var ValidChars = "0123456789";
     var IsNumber = true;
     var Char;
-    
+
     sText.toString().replace(/\s+/g, '')
 
     for (i = 0; i < sText.length && IsNumber == true; i++) {
@@ -219,7 +271,7 @@ common.isValidSQL = function (item) {
     //TODO - add validation code.
 };
 
-common.getArguments = function(req){
+common.getArguments = function (req) {
     var args;
 
     //Grab POST or QueryString args depending on type
@@ -230,22 +282,50 @@ common.getArguments = function(req){
         //If request is a get, then args will be members of the this.req.query property
         args = req.query;
     }
-
     return args;
 }
 
-var getFilesRecursively = common.getFilesRecursively = function(dir, done) {
+
+//Take a tile bounds (along with a z) and create a bounding box for PostGIS queries.
+//Tile bounds coordinates, zlevel, xmin, xmax, ymin, ymax example: 8, 44, 48, 28, 30
+common.convertTileBoundsToBBoxWKT = function (bbox) {
+    var bboxcoords = bbox.split(',');
+    var z = bboxcoords[0];
+    var xmin = bboxcoords[1];
+    var xmax = bboxcoords[2];
+    var ymin = bboxcoords[3];
+    var ymax = bboxcoords[4];
+
+    var boundsObj = { z: z, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+    var TopLeftTile = { z: z, y: ymin, x: xmin};
+    var TopRightTile = { z: z, y: ymin, x: xmax};
+    var BottomLeftTile = { z: z, y: ymax, x: xmin};
+    var BottomRightTile = { z: z, y: ymax, x: xmax};
+
+    //Get the upper left tile, upper right tile, lower left tile, lower right tile and convert to WGS84, then use the maxes and mins to create the bbox.
+    var bboxTopLeft = mercator.xyz_to_envelope(parseInt(TopLeftTile.x), parseInt(TopLeftTile.y), parseInt(TopLeftTile.z), false, true);
+    //var bboxTopRight = mercator.xyz_to_envelope(parseInt(TopRightTile.x), parseInt(TopRightTile.y), parseInt(TopRightTile.z), false, true);
+    //var bboxBottomLeft = mercator.xyz_to_envelope(parseInt(BottomLeftTile.x), parseInt(BottomLeftTile.y), parseInt(BottomLeftTile.z), false, true);
+    var bboxBottomRight = mercator.xyz_to_envelope(parseInt(BottomRightTile.x), parseInt(BottomRightTile.y), parseInt(BottomRightTile.z), false, true);
+
+    //Had to reverse the indices here, they were backwards from what I thought they should be.
+    var corners = { minx: bboxTopLeft[0], miny: bboxTopLeft[1], maxx: bboxBottomRight[2], maxy: bboxBottomRight[3]};
+    return "POLYGON((minx miny, minx maxy, maxx maxy, maxx miny, minx miny))".split('minx').join(corners.minx).split('miny').join(corners.miny).split('maxx').join(corners.maxx).split('maxy').join(corners.maxy);
+}
+
+
+var getFilesRecursively = common.getFilesRecursively = function (dir, done) {
     var results = [];
     var fullPath;
-    fs.readdir(dir, function(err, list) {
+    fs.readdir(dir, function (err, list) {
         if (err) return done(err);
         var pending = list.length;
         if (!pending) return done(null, results);
-        list.forEach(function(file) {
+        list.forEach(function (file) {
             fullPath = dir + '/' + file;
-            fs.stat(fullPath, function(err, stat) {
+            fs.stat(fullPath, function (err, stat) {
                 if (stat && stat.isDirectory()) {
-                    getFilesRecursively(fullPath, function(err, res) {
+                    getFilesRecursively(fullPath, function (err, res) {
                         results = results.concat(res);
                         if (!--pending) done(null, results);
                     });
@@ -316,7 +396,7 @@ common.formatters.ESRIFeatureSetJSONFormatter = function (rows, geom_fields_arra
 
     rows.forEach(function (row) {
         var feature = { "attributes": {} };
-        //Depending on whether or not there is geometry properties, handle it.  
+        //Depending on whether or not there is geometry properties, handle it.
         //Multiple geometry featureclasses don't exist in ESRI-land.  How to handle?  For now, just take the 1st one we come across
         //TODO:  Make user choose what they want
 
@@ -365,7 +445,7 @@ common.formatters.CSVFormatter = function (rows, geom_fields_array) {
     //Get column names
     if (rows && rows[0]) {
         Object.keys(rows[0]).forEach(function (column_name) {
-            if(geom_fields_array.indexOf(column_name) == -1) csvArray.push(column_name + ","); //only add if not a geom column
+            if (geom_fields_array.indexOf(column_name) == -1) csvArray.push(column_name + ","); //only add if not a geom column
         });
 
         //Add newline
@@ -378,7 +458,7 @@ common.formatters.CSVFormatter = function (rows, geom_fields_array) {
 
         for (var index in row) {
             if (geom_fields_array.indexOf(index) == -1)
-            csvArray.push((row[index] || '') + ",");
+                csvArray.push((row[index] || '') + ",");
         }
         //Add newline
         csvArray.push('\r\n');
@@ -388,19 +468,19 @@ common.formatters.CSVFormatter = function (rows, geom_fields_array) {
 }
 
 
-common.executeSelfRESTRequest = function(table, path, postargs, callback, settings) {
+common.executeSelfRESTRequest = function (table, path, postargs, callback, settings) {
     //Grab JSON from our own rest service for a table.
     var post_data = querystring.stringify(postargs);
     console.log("Post Data: " + post_data);
 
     var options = {
         host: settings.application.host,
-        path: path.replace("{table}", table), 
+        path: path.replace("{table}", table),
         port: settings.application.port,
-        method: 'POST', 
-        headers: {  
-            'Content-Type': 'application/x-www-form-urlencoded',  
-            'Content-Length': post_data.length  
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': post_data.length
         }
     };
 
@@ -412,9 +492,9 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
             console.log("problem");
         });
 
-        //res.setEncoding('utf8');  
+        //res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            str.push(chunk);  
+            str.push(chunk);
         });
 
         //the whole response has been recieved, so we just print it out here
@@ -422,11 +502,11 @@ common.executeSelfRESTRequest = function(table, path, postargs, callback, settin
             console.log("ended API response");
             callback(null, JSON.parse(str));
         });
-    }); 
+    });
 
     //execute
     post_req.write(post_data);
-    post_req.end(); 
+    post_req.end();
 }
 
 

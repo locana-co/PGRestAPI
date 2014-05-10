@@ -4,14 +4,15 @@
 var express = require('express'), common = require("../../common"), settings = require('../../settings');
 
 //Module-specific requires:
-var mapnik = require('mapnik'), mercator = require('./utils/sphericalmercator.js'), // 3857
-    geographic = require('./utils/geographic.js'), //4326
-    mappool = require('./utils/pool.js'),
-    parseXYZ = require('./utils/tile.js').parseXYZ,
-    path = require('path'),
-    fs = require("fs"),
-    flow = require('flow'),
-    carto = require('carto');
+var mapnik = require('mapnik'),
+mercator = require('../../utils/sphericalmercator.js'), // 3857
+geographic = require('../../utils/geographic.js'), //4326
+mappool = require('./utils/pool.js'),
+parseXYZ = require('../../utils/tile.js').parseXYZ,
+path = require('path'),
+fs = require("fs"),
+flow = require('flow'),
+carto = require('carto');
 
 var TMS_SCHEME = false;
 var _styleExtension = '.xml';

@@ -29,7 +29,7 @@ operation.execute = flow.define(
 
             //assign parameters to object.
             operation.inputs["bbox"] = args.bbox;
-            operation.inputs["raster_name"] = args.gadm_level;
+            operation.inputs["raster_name"] = args.raster_name;
 
             //Convert bbox to WKT
             args.wkt = operation.convertBBoxToWKT(args.bbox);

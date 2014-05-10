@@ -24,7 +24,9 @@
     "topojson": "*",
     "shortid": "*",
     "cors": "*",
-    "generic-pool": "*"
+    "request": "*",
+    "generic-pool": "*",
+    "lru-cache": "*"
   },
   "optionalDependencies":{
   	"mapnik": "1.4.2",
