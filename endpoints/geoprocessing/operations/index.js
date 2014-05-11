@@ -10,10 +10,15 @@ var GP = { operations: {}, names: [] };
 //Dynamically load Query or Geoprocessing Options from the plugin folder.
 require("fs").readdirSync(__dirname).forEach(function (file) {
     if (file != "index.js" && file != "GeoOperation.js.example") {
-        var operation = require(__dirname + "/" + file);
-        var name = operation.name.toLowerCase(); //Lower name
-        GP.names.push(name);
-        GP.operations[name] = operation;
+        try {
+            var operation = require(__dirname + "/" + file);
+            var name = operation.name.toLowerCase(); //Lower name
+            GP.names.push(name);
+            GP.operations[name] = operation;
+        }
+        catch(e){
+            console.log("Error loading geoprocessing operation: " + e)
+        }
     }
 });
 

@@ -210,8 +210,8 @@ exports.app = function(passport) {
 			            name: "Dynamic Map Service"
 			        });
 			    args.featureCollection.supportedOperations.push({
-			        link: args.fullURL + "/topojson",
-			        name: "TopoJSON"
+			        link: args.fullURL + "/vector-tiles",
+			        name: "Dynamic Vector Tile Service"
 			    });
 			    rasterOrGeometry.present = true;
 			    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
@@ -664,7 +664,7 @@ exports.app = function(passport) {
 				//Convert the GeoJSON object to a shapefile
 				var shapefile = ogr2ogr(features).format('ESRI Shapefile').stream();
 
-				var filePath = "." + settings.application.topoJsonOutputFolder + 'shapefile_' + shortid.generate() + '.zip';
+				var filePath = "." + settings.application.geoJsonOutputFolder + 'shapefile_' + shortid.generate() + '.zip';
 				var fileWriteStream = fs.createWriteStream(filePath);
 
 				//Set the callback for when the shapefile is done writing
@@ -883,163 +883,6 @@ exports.app = function(passport) {
 		}
 	}));
 
-	//list topojson files for a particular dataset, and let user create a new one.
-	app.all('/services/tables/:table/topojson', flow.define(
-	//If the querystring is empty, just show the regular HTML form.
-
-	function(req, res) {
-		this.req = req;
-		this.res = res;
-		this.rootRelativePath = ".";
-		//TODO - make this more dynamic.  It's how we'll know how to find the 'root' + public/foo to write the output files.
-
-		this.args = {};
-
-		//Grab POST or QueryString args depending on type
-		if (this.req.method.toLowerCase() == "post") {
-			//If a post, then arguments will be members of the this.req.body property
-			this.args = this.req.body;
-		} else if (this.req.method.toLowerCase() == "get") {
-			//If request is a get, then args will be members of the this.req.query property
-			this.args = this.req.query;
-		}
-
-		if (JSON.stringify(this.args) != '{}') {
-			this.args.view = "topojson_list";
-			this.args.table = this.req.params.table;
-			this.args.breadcrumbs = [{
-				link : "/services/tables",
-				name : "Table Listing"
-			}, {
-				link : "/services/tables/" + this.args.table,
-				name : this.args.table
-			}, {
-				link : "",
-				name : "TopoJSON"
-			}];
-			this.args.path = this.req.path;
-			this.args.host = this.req.headers.host;
-			this.args.files = [];
-
-			if (this.args.topofilename) {
-				//Make the File if flag was sent
-
-				//First - check to see if GeoJSON output folder exists for this table
-				console.log("checking for folder: " + this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table);
-				fs.exists(this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table, this);
-			} else {
-				//Expecting a topofilename
-				common.respond(req, res, args);
-			}
-		} else {
-			//Respond with list.
-			this.args.view = "topojson_list";
-			this.args.table = this.req.params.table;
-			this.args.breadcrumbs = [{
-				link : "/services/tables",
-				name : "Table Listing"
-			}, {
-				link : "/services/tables/" + this.args.table,
-				name : this.args.table
-			}, {
-				link : "",
-				name : "TopoJSON"
-			}];
-			this.args.path = this.req.path;
-			this.args.host = this.req.headers.host;
-
-			this.args.files = [];
-
-			var args = this.args;
-			//copy for closure
-
-			console.log(this.rootRelativePath);
-			console.log(settings.application.topoJsonOutputFolder);
-			console.log(this.args.table);
-			//Find all existing topojson files in the public/topojson/output folder
-
-			console.log("checking for folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-
-			fs.exists(this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table, function(exists) {
-				if (exists === true) {
-					fs.readdirSync(path.join(".", settings.application.topoJsonOutputFolder, args.table)).forEach(function(file) {
-						if (file.indexOf("topo_") == 0) {
-							args.files.push({
-								link : settings.application.topoJsonOutputFolder + file,
-								name : file
-							});
-						}
-					});
-					common.respond(req, res, args);
-
-				} else {
-					//Doesn't exist
-					common.respond(req, res, args);
-				}
-			});
-		}
-	}, function(exists) {
-		//Coming from flow - check if geojson output folder exists
-		if (exists === false) {
-			//make it
-			console.log("Didn't find it.  Tyring to make folder: " + this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table);
-			fs.mkdirSync(this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table);
-			//Synch
-		}
-
-		console.log("checking for folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-		//Now, check to see if table has a topojson subfolder on disk
-		fs.exists("." + settings.application.topoJsonOutputFolder + this.args.table, this);
-
-	}, function(exists) {
-		//coming from check if topojson folder exists
-		if (exists === false) {
-			console.log("Didn't find it.  Tyring to make folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-			fs.mkdirSync(this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-			//Synch
-		}
-
-		var args = this.args;
-		//copy for closure
-		var req = this.req;
-		var res = this.res;
-		var relativeRootPath = this.rootRelativePath;
-
-		//Make the Geo File
-		makeGeoJSONFile(this.args.table, this.args.topofilename, function(error, filename, filepath) {
-			if (error) {
-				args.infoMessage = error.message;
-				common.respond(req, res, args);
-				return;
-			} else {
-				//created geojson folder
-				args.infoMessage = "Created file - " + filename;
-
-				//Now turn file into TopoJSON - pass in original file, topo file, callback
-				geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function(error, stdout) {
-					if (error) {
-						args.errorMessage = error.message;
-					} else {
-						console.log("Finished making Topo File.");
-						args.infoMessage = stdout;
-
-						//Find all existing topojson files in the public/topojson/output folder
-						fs.readdirSync(path.join(relativeRootPath, settings.application.topoJsonOutputFolder, args.table)).forEach(function(file) {
-							if (file.indexOf("topo_") == 0) {
-								args.files.push({
-									link : settings.application.topoJsonOutputFolder + args.table + "/" + file,
-									name : file
-								});
-							}
-						});
-					}
-
-					common.respond(req, res, args);
-				});
-			} //End  if error
-		});
-	}));
-
 	//If mapnik exists, then load the endpointDynamic
 	if (mapnik) {
 		//Show users about a table's dynamic map service, along with a preview
@@ -1134,6 +977,100 @@ exports.app = function(passport) {
 
 			common.respond(this.req, this.res, this.args);
 		}));
+
+
+        //Show users about a table's vector tile service
+        app.all('/services/tables/:table/vector-tiles', flow.define(function(req, res) {
+            this.args = {};
+            this.req = req;
+            this.res = res;
+
+            //Grab POST or QueryString args depending on type
+            if (this.req.method.toLowerCase() == "post") {
+                //If a post, then arguments will be members of the this.req.body property
+                this.args = this.req.body;
+            } else if (this.req.method.toLowerCase() == "get") {
+                //If request is a get, then args will be members of the this.req.query property
+                this.args = this.req.query;
+            }
+
+            this.args.view = "table_vector_tiles";
+            this.args.table = this.req.params.table;
+            this.args.breadcrumbs = [{
+                link : "/services/tables/",
+                name : "Table Listing"
+            }, {
+                link : "/services/tables/" + this.args.table,
+                name : this.args.table
+            }, {
+                link : "",
+                name : "Dynamic Vector Tiles"
+            }];
+            this.args.path = this.req.path;
+            this.args.host = settings.application.publichost || this.req.headers.host;
+
+            //Get geometry names
+            getGeometryFieldNames(this.args.table, this);
+
+        }, function(err, geom_fields_array) {
+
+            this.spatialTables = app.get('spatialTables');
+
+            //This should have a value
+            var srid = this.spatialTables[this.args.table].srid;
+
+            //coming back from getGeometryFieldNames
+            //for now, assume just 1 geometry.  TODO
+            if (geom_fields_array.length > 0) {
+                //Check for layer extent
+                //Transform to 4326 if 3857
+                var query;
+                if (srid && (srid == 3857 || srid == 3587)) {
+                    query = {
+                        text : "SELECT ST_Extent(ST_Transform(" + geom_fields_array[0] + ", 4326)) as table_extent FROM " + this.args.table + ";",
+                        values : []
+                    };
+                } else {
+                    query = {
+                        text : "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";",
+                        values : []
+                    };
+                }
+                common.executePgQuery(query, this);
+            } else {
+                //No geom column or no extent or something.
+                this.args.errorMessage = "Problem getting the geom column for this table.";
+                common.respond(this.req, this.res, this.args);
+                return;
+            }
+        }, function(err, result) {
+
+            if (err) {
+                this.args.errorMessage = "Problem getting the extent for this table.";
+            } else {
+                var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(",");
+                //Should be BOX(XMIN YMIN, XMAX YMAX)
+                this.args.xmin = bboxArray[0].split(" ")[0];
+                this.args.ymin = bboxArray[0].split(" ")[1];
+                this.args.xmax = bboxArray[1].split(" ")[0];
+                this.args.ymax = bboxArray[1].split(" ")[1];
+
+                //Write out the details for this map service
+                this.args.featureCollection = [];
+                this.args.featureCollection.push({
+                    name : "Map Service Endpoint",
+                    link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/vector-tiles"
+                });
+                this.args.extent = result.rows[0];
+
+                //load leaflet
+                this.args.scripts = [settings.leaflet.js];
+                //Load external scripts for map preview
+                this.args.css = [settings.leaflet.css];
+            }
+
+            common.respond(this.req, this.res, this.args);
+        }));
 	}
 
 
@@ -1255,21 +1192,7 @@ exports.app = function(passport) {
 		});
 	};
 
-	///TopoJSON functions - TODO - move to a separate module.
 
-	//example
-	//topojson -o output.json input.json
-	function geoJSONToTopoJSON(table, geojsonfile, topojsonfile, callback) {
-		var filename = geojsonfile.split(".")[0];
-		var outputPath = path.join(__dirname, "../..", settings.application.topoJsonOutputFolder, table);
-		var geoJsonPath = path.join(__dirname, "../..", settings.application.geoJsonOutputFolder, table);
-		var sys = require('sys');
-		var exec = require('child_process').exec
-		console.log("About to execute: " + 'topojson -o ' + path.join(outputPath, topojsonfile) + " " + path.join(geoJsonPath, geojsonfile));
-		child = exec('topojson -o ' + path.join(outputPath, topojsonfile) + " " + path.join(geoJsonPath, geojsonfile), function(error, stdout, stderr) {
-			callback(error, stdout);
-		});
-	}
 
 	//Query table's rest endpoint, write out GeoJSON file.
 	function makeGeoJSONFile(table, filename, callback) {

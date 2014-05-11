@@ -8,7 +8,7 @@ settings.tilestream = {};
 
 //application port settings
 settings.application.port = 3000;
-settings.application.ip = "localhost";
+//settings.application.ip = "localhost"; //Typically localhost.  On EC2 instances, you should just keep this commented out.
 
 //Settings for postgres DB
 settings.pg.username = 'username';
@@ -18,9 +18,9 @@ settings.pg.port = '5432';
 settings.pg.database = 'test';
 settings.pg.featureLimit = 1000; //how many features to return by default
 
-settings.tilestream.host = "54.212.254.185";
-settings.tilestream.path = "/api/Tileset";
-settings.tilestream.port = "8888";
+settings.tilestream.host = ""; //54.212.254.185
+settings.tilestream.path = ""; ///api/Tileset
+settings.tilestream.port = ""; //8888
 
 //Should the API display postgres views?
 settings.displayViews = true;
@@ -34,14 +34,11 @@ settings.pg.noFlyList = ["att_0"];
 //The list of formats to be returned by the Table Query REST endpoint.  If ogr2ogr is installed, .shp will be added automatically.
 settings.application.formatList =[ 'html', 'GeoJSON', 'esriJSON'];
 
-//Where to write out TopoJSON files?
-settings.application.topoJsonOutputFolder = "/public/topojson/output/";
-
 //Where to write out GeoJSON files?
 settings.application.geoJsonOutputFolder = "/public/geojson/output/";
 
 //Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
-settings.application.publichost = “”; //like myhost.com. Keep this empty if you want to use the default host
+settings.application.publichost = ""; //like myhost.com. Keep this empty if you want to use the default host
 settings.application.publicport = "80";
 
 //Epxress Session Secret
@@ -55,5 +52,14 @@ settings.mongodb.db = "mongodb://localhost/authentication";
 settings.facebook = {};
 settings.facebook.appid = "12345";
 settings.facebook.secret = "secret";
+
+
+//Leaflet version reference
+settings.leaflet = {};
+settings.leaflet.js = 'http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2';
+settings.leaflet.css = 'http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css';
+
+settings.jquery = {};
+settings.jquery.js = 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js';
 
 module.exports = settings;

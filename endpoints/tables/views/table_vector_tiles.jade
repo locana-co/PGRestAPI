@@ -1,7 +1,7 @@
 extends ../../../shared_views/layout
 
 block content
-	h4 Dynamic Map Service
+	h4 Vector Tile Service (No client side rendering yet!)
 	.results
 		- if (featureCollection && featureCollection.length > 0){
 			script.
@@ -21,8 +21,7 @@ block content
 					
 				L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-vyofok3q/{z}/{x}/{y}.png').addTo(map);
 
-				//Add preview
-				L.tileLayer(mapUrl + '/{z}/{x}/{y}.png').addTo(map);
+				//L.tileLayer(mapUrl + '/{z}/{x}/{y}.png').addTo(map);
 
 				// zoom the map to the rectangle bounds
 				map.fitBounds(bounds);
@@ -31,19 +30,15 @@ block content
 
 		div.section
 			h3 Code Sample
-			span Here's how to use these dynamically craeted maps in your application
+			span Here's the vector tile endpoint:
 
-			h4 Leaflet Example - add this
 			pre.codePreview
-				|//Create a leaflet map
-				|var map = L.map('map');
-				|&nbsp;
-				|//Add the tiled layer
-				|L.tileLayer('#{featureCollection[0].link}/{z}/{x}/{y}.png').addTo(map);
+				|#{featureCollection[0].link}/{z}/{x}/{y}.pbf;
 
 			div.helpLink 
 				|Get more help with 
 				a(href='http://leafletjs.com/',target='_blank') Leaflet 
+
 
 	-if(infoMessage){
 		div.infoMessage

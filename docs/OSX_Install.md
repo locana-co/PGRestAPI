@@ -3,7 +3,6 @@ PGRestAPI - OSX Installation
 
 ## Dependencies
 
-* topojson
 * [Mapnik](https://github.com/mapnik/mapnik)
 
 (Assumes you've got a PostGreSQL 9.1+ and PostGIS 2.0+ is installed somewhere)
@@ -17,9 +16,6 @@ PGRestAPI - OSX Installation
 
 	(assuming you have home-brew installed)
 	brew install mapnik —-with gdal —-with-postgresql
-
-###Install TopoJSON globally
-	sudo npm install -g topojson
 
 ###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub)
     git clone https://github.com/spatialdev/PGRestAPI.git
@@ -71,7 +67,7 @@ If there are tables or views you don't want published, add them to the 'noFlyLis
 	settings.pg.noFlyList = ["att_0", "table_1"];
 
 
-Leave the TopoJSON and GeoJSON output folders as they are.
+Leave the GeoJSON output folders as they are.
 
 On my windows installation, I use IIS URL Rewrite module to forward requests from a static IP or domain to "localhost:3000" (my node server and port).
 These config sections help the API write out fully qualified URLs using the external IP or domain rather than localhost:3000 (for example, when displaying a hyperlink to a particular web service)

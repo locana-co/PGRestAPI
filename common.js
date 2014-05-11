@@ -139,31 +139,32 @@ common.respond = function (req, res, args, callback) {
             }
         }
     }
-
-
-    common.executePgQuery = function (query, callback) {
-        //Just run the query
-        //Setup Connection to PG
-        pg.connect(global.conString, function (err, client, done) {
-            if (err) {
-                //return an error
-                callback(err);
-                return;
-            }
-
-            //Log the query to the console, for debugging
-            common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ? ", " + query.values : ""));
-
-            //execute query
-            client.query(query, function (err, result) {
-                done();
-
-                //go to callback
-                callback(err, result);
-            });
-        });
-    };
 }
+
+
+common.executePgQuery = function (query, callback) {
+    //Just run the query
+    //Setup Connection to PG
+    pg.connect(global.conString, function (err, client, done) {
+        if (err) {
+            //return an error
+            callback(err);
+            return;
+        }
+
+        //Log the query to the console, for debugging
+        common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ? ", " + query.values : ""));
+
+        //execute query
+        client.query(query, function (err, result) {
+            done();
+
+            //go to callback
+            callback(err, result);
+        });
+    });
+};
+
 
 
 //Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
@@ -179,7 +180,7 @@ common.findSpatialTables = function (app, callback) {
     };
 
     //TODO - add options to specify schema and database.  Right now it will read all
-    common.executePgQuery(query, function (err, result) {
+    this.executePgQuery(query, function (err, result) {
         if (err) {
             //Report error and exit.
             console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + err.text);
@@ -214,7 +215,7 @@ common.log = function (message) {
 
 common.vacuumAnalyzeAll = function () {
     var query = { text: "VACUUM ANALYZE;", values: [] };
-    common.executePgQuery(query, function (err, result) {
+    this.executePgQuery(query, function (err, result) {
         console.log("Performed VACUUM ANALYZE on ALL;")
     });
 }
@@ -227,7 +228,7 @@ common.IsNumeric = function (sText) {
 
     sText.toString().replace(/\s+/g, '')
 
-    for (i = 0; i < sText.length && IsNumber == true; i++) {
+    for (var i = 0; i < sText.length && IsNumber == true; i++) {
         Char = sText.charAt(i);
         if (ValidChars.indexOf(Char) == -1) {
             IsNumber = false;
@@ -283,6 +284,40 @@ common.getArguments = function (req) {
         args = req.query;
     }
     return args;
+}
+
+common.roughSizeOfObject = function(object) {
+
+    var objectList = [];
+    var stack = [ object ];
+    var bytes = 0;
+
+    while ( stack.length ) {
+        var value = stack.pop();
+
+        if ( typeof value === 'boolean' ) {
+            bytes += 4;
+        }
+        else if ( typeof value === 'string' ) {
+            bytes += value.length * 2;
+        }
+        else if ( typeof value === 'number' ) {
+            bytes += 8;
+        }
+        else if
+            (
+            typeof value === 'object'
+            && objectList.indexOf( value ) === -1
+            )
+        {
+            objectList.push( value );
+
+            for( var i in value ) {
+                stack.push( value[ i ] );
+            }
+        }
+    }
+    return bytes;
 }
 
 

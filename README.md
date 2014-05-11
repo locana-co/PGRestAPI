@@ -13,7 +13,7 @@ and you'll get a REST API that supports:
 * RESTful Query endpoint for each table and view - return GeoJSON and esriJSON.  Supports spatial and tabular queries and aggregation.
 * Geoprocessing Framework - (You still have to know how to write PostGIS logic, but...), with dynamic tiled maps available as output.
 * Reflection of TileStream API
-* TopoJSON file creation for each table or view
+
 
 Express, Jade and general structure based on:
 Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-node-js-express-app-the-right-way/
@@ -27,7 +27,6 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 ## Dependencies
 
 * PostgreSQL 9.1 + w/ PostGIS 2.0 +
-* topojson
 * [Mapnik](https://github.com/mapnik/mapnik)
 
 ##Screenshots

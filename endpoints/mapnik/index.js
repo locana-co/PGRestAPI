@@ -7,12 +7,18 @@ var express = require('express'), common = require("../../common"), settings = r
 var mapnik = require('mapnik'),
 mercator = require('../../utils/sphericalmercator.js'), // 3857
 geographic = require('../../utils/geographic.js'), //4326
-mappool = require('./utils/pool.js'),
+mappool = require('../../utils/pool.js'),
 parseXYZ = require('../../utils/tile.js').parseXYZ,
 path = require('path'),
 fs = require("fs"),
 flow = require('flow'),
-carto = require('carto');
+carto = require('carto'),
+zlib = require("zlib");
+
+//Caching
+var CCacher = require("../../lib/ChubbsCache");
+var cacher = new CCacher();
+
 
 var TMS_SCHEME = false;
 var _styleExtension = '.xml';
@@ -128,6 +134,18 @@ exports.app = function (passport) {
         });
     });
 
+
+    // listen for events to track cache rate and errors
+    cacher.on("hit", function(key) {
+        console.log("Using Cached response for: " + key)
+    });
+    cacher.on("miss", function(key) {
+        console.log("No cached response for: " + key + ".  Generating.")
+    });
+    cacher.on("error", function(key) {
+        console.log("Error with cache. " + err)
+    });
+
     var shpName = "";
     //Loop thru shapes and spin up new routes
     shapefiles.forEach(function (item) {
@@ -238,9 +256,15 @@ exports.app = function (passport) {
 
 
         //Get the average render time for each type
-        resultString += generateStatsString(PGTileStats);
-        resultString += generateStatsString(ShapeTileStats);
-        resultString += generateStatsString(ShapeTileStats);
+        resultString += generateStatsString(PGTileStats, "PostGIS");
+        resultString += generateStatsString(ShapeTileStats, "Shapefile");
+        resultString += generateStatsString(RasterTileStats, "Raster");
+
+        var cacheLength = (cacher.client.keys().length/2);
+        var cacheSize = common.roughSizeOfObject(cacher.client.values())/1000;
+
+        resultString += cacheLength.toString() + " tiles stored in cache, with a size of roughly " + cacheSize + " KB.";
+        resultString += "\n...That's an average of " + (cacheSize/cacheLength || 0) + "KB/tile. (This is usually too high)."
 
 
         res.end(resultString);
@@ -253,7 +277,7 @@ function generateStatsString(statsObject, sourceName) {
     var message = "";
     var tileType;
 
-    statsObject.forEach(function (source) {
+    Object.keys(statsObject).forEach(function (source) {
         switch (source) {
             case "SingleTiles":
                 tileType = "Single Tile";
@@ -264,24 +288,27 @@ function generateStatsString(statsObject, sourceName) {
             case "VectorTiles":
                 tileType = "Vector Tiles";
                 break;
-            case "VectorTiles":
+            case "MemoryTiles":
                 tileType = "In-Memory Tiles";
                 break;
         }
 
-        if (source.times.length > 0) {
-            var totalTime = source.times.reduce(function (previousValue, currentValue, index, array) {
+        var StatTypeObject = statsObject[source];
+
+        if (StatTypeObject.times.length > 0) {
+            var totalTime = StatTypeObject.times.reduce(function (previousValue, currentValue, index, array) {
                 return parseInt(previousValue) + parseInt(currentValue);
             });
             totalTime = totalTime / 1000;
-            var averageTime = totalTime / statsObject.times.length;
-            message += tileType + " - " + sourceName + ": For this session, " + source.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n";
+            var averageTime = totalTime / StatTypeObject.times.length;
+            message += tileType + " - " + sourceName + ": For this session, " + StatTypeObject.times.length + " tiles were generated in " + totalTime + " seconds with an average time of " + averageTime + " seconds/tile.\n";
         } else {
             message += tileType + " - " + sourceName + ": 0 tiles rendered.\n";
         }
-        //New section
-        resultString += "\n\n";
     });
+
+    //New section
+    message += "\n\n";
 
     return message;
 }
@@ -361,7 +388,7 @@ exports.createPGTileRenderer = flow.define(function (app, settings) {
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/tables/' + _self.table + '/dynamicMap', function (req, res) {
+    this.app.all('/services/tables/' + _self.table + '/dynamicMap', function (req, res) {
 
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
@@ -465,7 +492,7 @@ exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
+    this.app.all('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
 
@@ -604,7 +631,7 @@ exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRI
     var dynamicURL = '/services/GeoJSONQueryMap/' + id;
 
     //Create Route for this table - TODO:  Figure out how/when to kill this endpoint
-    this.app.use(dynamicURL, function (req, res) {
+    this.app.all(dynamicURL, function (req, res) {
 
         //Check for correct args
         //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
@@ -829,7 +856,8 @@ exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoC
 };
 
 //Create a static renderer that will always use the default styling
-var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.define(function (app, table, path_to_shp, epsgSRID, cartoFile) {
+var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.define(
+    function (app, table, path_to_shp, epsgSRID, cartoFile) {
 
     this.app = app;
     this.table = table;
@@ -869,7 +897,7 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/shapefiles/' + _self.table + '/dynamicMap', function (req, res) {
+    this.app.all('/services/shapefiles/' + _self.table + '/dynamicMap', function (req, res) {
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
 
@@ -938,7 +966,8 @@ var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.def
 });
 
 //Create a renderer that will  bring back a single image to fit the map's extent.
-var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRenderer = flow.define(function (app, table, path_to_shp, epsgSRID, cartoFile) {
+var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRenderer = flow.define(
+    function (app, table, path_to_shp, epsgSRID, cartoFile) {
 
     this.app = app;
     this.table = table;
@@ -978,7 +1007,7 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/shapefiles/' + _self.table + '/dynamicQueryMap', function (req, res) {
+    this.app.all('/services/shapefiles/' + _self.table + '/dynamicQueryMap', cacher.cache('days', 1), function (req, res) {
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
 
@@ -1097,7 +1126,8 @@ var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRendere
 
 
 //Create a static renderer, using in-memory shapefile
-var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRenderer = flow.define(function (app, table, memoryDatasource, epsgSRID, cartoFile) {
+var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRenderer = flow.define(
+    function (app, table, memoryDatasource, epsgSRID, cartoFile) {
 
     this.app = app;
     this.table = table;
@@ -1137,7 +1167,7 @@ var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRendere
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/memshapefiles/' + _self.table + '/dynamicMap', function (req, res) {
+    this.app.all('/services/memshapefiles/' + _self.table + '/dynamicMap', function (req, res) {
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
 
@@ -1243,7 +1273,7 @@ var createMemoryShapefileSingleTileRenderer = exports.createMemoryShapefileSingl
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/memshapefiles/' + _self.table + '/dynamicQueryMap', function (req, res) {
+    this.app.all('/services/memshapefiles/' + _self.table + '/dynamicQueryMap', function (req, res) {
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
 
@@ -1444,7 +1474,7 @@ exports.createPGVectorTileRenderer = flow.define(function (app, table, geom_fiel
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/tables/' + _self.table + '/vector-tiles', function (req, res) {
+    this.app.all('/services/tables/' + _self.table + '/vector-tiles', function (req, res) {
 
         parseXYZ(req, TMS_SCHEME, function (err, params) {
 
@@ -1612,7 +1642,7 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(fu
     var _self = this;
 
     //Create Route for this table
-    this.app.use('/services/rasters/' + _self.table + '/dynamicMap', function (req, res) {
+    this.app.all('/services/rasters/' + _self.table + '/dynamicMap', function (req, res) {
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
 
@@ -1780,10 +1810,10 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
 
         var _self = this;
 
-        var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicMap';
+        var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicMap/:z/:x/:y.*';
 
         //Create Route for this table
-        this.app.use(route, function (req, res) {
+        this.app.get(route,cacher.cache('day'), function (req, res) {
 
             //Start Timer to measure response speed for tile requests.
             var startTime = Date.now();
@@ -1818,7 +1848,7 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
 
                         var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
 
-                        var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+                        var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false, false);
 
                         layer.datasource = datasource;
                         layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
@@ -1896,10 +1926,10 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
 
         var _self = this;
 
-        var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicSingleMap';
+        var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicSingleMap/*';
 
         //Create Route for this table
-        this.app.use(route, function (req, res) {
+        this.app.all(route, cacher.cache('days', 1), function (req, res) {
 
             //Start Timer to measure response speed for tile requests.
             var startTime = Date.now();
@@ -2041,10 +2071,13 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function
 
     var _self = this;
 
-    var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/vector-tiles';
+    var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/vector-tiles/:z/:x/:y.*';
 
     //Create Route for this table
-    this.app.use(route, function (req, res) {
+    this.app.all(route, function (req, res) {
+
+        //Start Timer to measure response speed for tile requests.
+        var startTime = Date.now();
 
         var args = common.getArguments(req);
 
@@ -2140,7 +2173,9 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function
                                     }
 
                                     if (solid === false) {
-                                        //return callback(err, buffer, headers);
+                                        var duration = Date.now() - startTime;
+                                        _self.performanceObject.times.push(duration);
+
                                         res.send(buffer); //return response
                                         return;
                                     }

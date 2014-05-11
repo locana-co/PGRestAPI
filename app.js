@@ -48,7 +48,6 @@ var express = require('express'),
 //Items in these folders will be served statically.
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.static(path.join(__dirname, 'GPModels')));
-    app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
 
 //Mongoose support for storing authentication credentials
     var mongoose, passport;

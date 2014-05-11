@@ -3,7 +3,6 @@ PGRestAPI - Windows Installation
 
 ## Dependencies
 
-* topojson
 * (This project includes a reference to Mapnik.  If you can get it to install on Windows, congrats.  For those of us who can't yet, the install of node-mapnik will fail, but the rest of the project will still work.  You just won't get dyanmic tiled map services)
 
 (Assumes you've got a PostGreSQL 9.1+ and PostGIS 2.0+ is installed somewhere)
@@ -77,7 +76,7 @@ If there are tables or views you don't want published, add them to the 'noFlyLis
 	settings.pg.noFlyList = ["att_0", "table_1"];
 
 
-Leave the TopoJSON and GeoJSON output folders as they are.
+Leave the GeoJSON output folders as they are.
 
 On my windows installation, I use IIS URL Rewrite module to forward requests from a static IP or domain to "localhost:3000" (my node server and port).
 These config sections help the API write out fully qualified URLs using the external IP or domain rather than localhost:3000 (for example, when displaying a hyperlink to a particular web service)
@@ -86,9 +85,6 @@ These config sections help the API write out fully qualified URLs using the exte
 	settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
 	settings.application.publicport = "80";
 
-
-###Install topojson module globally
-    npm install -g topojson
 
 ###For development purposes, install nodemon
 Nodemon monitors your node project, and will automatically restart your node project if there are any file changes.

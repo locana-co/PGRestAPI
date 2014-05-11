@@ -1,7 +1,8 @@
 //8.31.2013 - Ryan Whitley
 //Starting a Plug and Play GP Workflow
 var flow = require('flow');
-var pg = require('pg');
+var pg = require('pg'),
+    common = require("../../../common");
 
 //Takes in a POINT (X Y) and returns a WKT representation of the buffer.
 //Arguments are:
