@@ -30,7 +30,7 @@ Under development:
 * Authentication with passport/MongoDB/Mongoose (Disabled for now)
 * Vector Tiles endpoint for serving .tm2 or .mbtiles sources (not working yet)
 
-Needs:
+More To-Dos:
 * CartoCSS to Mapnik XML parser (Carto module)
 * Persistent caching
 * Administrative Panel
