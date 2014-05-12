@@ -169,7 +169,7 @@ exports.app = function (passport) {
     memoryShapefileList.forEach(function (item) {
         //Also (for performance testing puproses, create in-memory versions of the .shp datasources and spin up a new route for those)
         memoryShpName = item.split('.')[0];
-        memoryShapefiles[memoryShpName] = createInMemoryDatasource(memoryShpName, memoryShpLocation + "/" + item);
+        //memoryShapefiles[memoryShpName] = createInMemoryDatasource(memoryShpName, memoryShpLocation + "/" + item);
         //createMemoryShapefileSingleTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
         //createMemoryShapefileTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
     });
