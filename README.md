@@ -54,7 +54,7 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 
 ###Table/View List:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/TableList.png "Table List Screen")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/tablelist.png "Table List Screen")
 
 ###Table Details:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/2Table_Details.png "Table List Screen")
