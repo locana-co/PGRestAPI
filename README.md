@@ -54,22 +54,37 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 
 ###Table/View List:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/tablelist.png "Table List Screen")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/TableList.png "Table List Screen")
 
 ###Table Details:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/tabledetail.png "Table List Screen")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/2Table_Details.png "Table List Screen")
 
 ###Query Endpoint:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/query.png "Query Endpoint")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/3TableQuery.png "Query Endpoint")
 
 ###Query Endpoint Results:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/query2.png "Query Endpoint Results")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/4TableQueryResult.png "Query Endpoint Results")
 
-###Dynamic Service Endpoint:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/dynamic.png "Dynamic Map endpoint")
+###Dynamic Map Tile Service Endpoint:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/5MapTiles.png "Dynamic Map endpoint")
 
-###WKT Preview endpoint:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/wktpreview.png "WKT Preview")
+###Dynamic Vector Tile Endpoint:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/6VectorTiles.png "Dynamic Vector Tile endpoint")
+
+###Geoprocessing Operations:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/7GeoprocessingList.png "List of operations")
+
+###Geoprocessing Operation:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/8GeoprocessingEndpoint.png "Single operation")
+
+###Utililties - WKT Preview endpoint:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/9WKTPreview.png "WKT Preview")
+
+###Raster Operations List:
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/10RasterOperations.png "Raster Operation List")
 
 ###Raster Operations - Zonal Statistics:
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/raster.png "Raster Zonal Statistics")
+
+###Tile Rendering Stats (/admin):
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/14Admin.png "Tile Stats")

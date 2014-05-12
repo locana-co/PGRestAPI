@@ -162,6 +162,7 @@ div.description {
 pre {
   background-color: lightgray;
   padding: 20px;
+  white-space: pre-wrap;
 }
 .breadcrumbs {
   background-color: #e8e8e8;
