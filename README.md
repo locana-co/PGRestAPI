@@ -84,7 +84,7 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/10RasterOperations.png "Raster Operation List")
 
 ###Raster Operations - Zonal Statistics:
-![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/raster.png "Raster Zonal Statistics")
+![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/11RasterOperation.png "Raster Zonal Statistics")
 
 ###Tile Rendering Stats (/admin):
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/14Admin.png "Tile Stats")
