@@ -9,10 +9,31 @@ Node.js REST API for PostgreSQL Spatial Entities.
 
 Point it at your instance of PostgreSQL and PostGIS,
 and you'll get a REST API that supports:
-* Dynamic Tiled Map Services for spatial tables and views using Mapnik (Not for Windows installs, yet)
-* RESTful Query endpoint for each table and view - return GeoJSON and esriJSON.  Supports spatial and tabular queries and aggregation.
+* Dynamic Tiled Map Services for spatial tables using Mapnik (Not for Windows installs, yet)
+* Dynamic Vector Tile Services for spatial tables using Mapnik (Not for Windows installs, yet)
+* RESTful Query endpoint for each table and view - return GeoJSON, esriJSON or Shapefile.  Supports spatial and tabular queries and aggregation.
 * Geoprocessing Framework - (You still have to know how to write PostGIS logic, but...), with dynamic tiled maps available as output.
-* Reflection of TileStream API
+* Route Caching for .pngs
+* Admin panel (/admin) to show tile generation statistics and cache size
+* Shapefile List (/shapefiles) to display shapefiles being served as map services
+
+Utilities:
+* WKT Previewer
+
+Under development:
+* GeoJSON to .png endpoint
+* Better caching for different endpoints
+* In-memory map services (Loads a Shapefile into memory for faster response times. Drop shapefiles into endpoints/mapnik/data/inmemory-shapefiles)
+* Raster map services (Drop a .tif into endpoints/mapnik/data/rasters)
+* Shapefile map services ((Drop shapefiles into endpoints/mapnik/data/shapefiles)
+* Datablaster - Sort of an ETL to pregenerate .json/.geojson files for use in your applications (similar to how Jeckyll produces HTML/CSS/Javascirpt)
+* Authentication with passport/MongoDB/Mongoose (Disabled for now)
+* Vector Tiles endpoint for serving .tm2 or .mbtiles sources (not working yet)
+
+Needs:
+* CartoCSS to Mapnik XML parser (Carto module)
+* Persistent caching
+* Administrative Panel
 
 
 Express, Jade and general structure based on:
@@ -20,7 +41,7 @@ Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-n
 
 ##Installation
 
-* [Ubuntu 12 and 13](/docs/Ubuntu_Install.md)
+* [Ubuntu 12/13/14](/docs/Ubuntu_Install.md)
 * [Windows](/docs/Windows_Install.md)
 * [OSX](/docs/OSX_Install.md)
 
