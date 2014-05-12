@@ -3,8 +3,7 @@ PGRestAPI - Windows Installation
 
 ## Dependencies
 
-* topojson
-* (This project includes a reference to Mapnik.  If you can get it to install on Windows, congrats.  For those of us who can't yet, the install of node-mapnik will fail, but the rest of the project will still work.  You just won't get dyanmic tiled map services)
+* (This project includes a reference to Mapnik.  If you can get it to install on Windows, congrats.  For those of us who can't yet, the install of node-mapnik will fail, but the rest of the project will still work.  You just won't get dyanmic tiled map services or vector tiles)
 
 (Assumes you've got a PostGreSQL 9.1+ and PostGIS 2.0+ is installed somewhere)
 
@@ -63,21 +62,11 @@ If you're using TileStream to serve static map caches, you can reference that in
 	settings.tilestream.path = "/api/Tileset";
 	settings.tilestream.port = "8888";
 
-Specify whether to show PostGreSQL Views and Tables:
-
-	//Should the API display postgres views?
-	settings.displayViews = true;
-
-	//Should the API display postgres tables?
-	settings.displayTables = true;
-
 If there are tables or views you don't want published, add them to the 'noFlyList' array:
 
 	//Should the API hide any postgres tables or views?
 	settings.pg.noFlyList = ["att_0", "table_1"];
 
-
-Leave the TopoJSON and GeoJSON output folders as they are.
 
 On my windows installation, I use IIS URL Rewrite module to forward requests from a static IP or domain to "localhost:3000" (my node server and port).
 These config sections help the API write out fully qualified URLs using the external IP or domain rather than localhost:3000 (for example, when displaying a hyperlink to a particular web service)
@@ -85,14 +74,6 @@ These config sections help the API write out fully qualified URLs using the exte
 	//Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
 	settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
 	settings.application.publicport = "80";
-
-
-###Install topojson module globally
-    npm install -g topojson
-
-###For development purposes, install nodemon
-Nodemon monitors your node project, and will automatically restart your node project if there are any file changes.
-	npm install -g nodemon
 
 ###To Run as a Windows Service
 When starting as a windows service, install winser

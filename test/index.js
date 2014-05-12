@@ -2,6 +2,7 @@
 
 var assert = require('chai').assert;
 var tables = require('../endpoints/tables');
+var request = require("request");
 
 //common and settings files
 var common = require("../common"),
@@ -10,7 +11,7 @@ var common = require("../common"),
 var gjv = require("geojson-validation");
 
 
-suite('Common', function () {
+describe('Common', function () {
     //See if the common.respond function exists
     test("response function is defined", function () {
         assert.isDefined(common.respond);
@@ -44,7 +45,7 @@ suite('Common', function () {
         });
     })
 
-    test("GeoJSON Formatter - valid GeoJSON", function () {
+    test("GeoJSON Formatter - valid GeoJSON passes validation", function () {
 
         //Pass in a mock object to format as GeoJSON
         var mockObject = [{ name: "objectName1", size: "large", geom: '{"type":"Point","coordinates":[8.234,9.2342]}' },
@@ -60,7 +61,7 @@ suite('Common', function () {
         assert(gjv.valid(outputObject) == true, "GeoJSON should be valid");
     })
 
-    test("GeoJSON Formatter - INvalid GeoJSON", function () {
+    test("GeoJSON Formatter - Invalid GeoJSON fails validation", function () {
 
         //Pass in a mock object to format as GeoJSON
         var mockObject = [{ name: "objectName1", size: "large", geom: '{"type":"Point","coordinates":[8.234,9.2342]}' },
@@ -75,13 +76,33 @@ suite('Common', function () {
 
         assert(gjv.valid(outputObject) == false, "GeoJSON should be INvalid");
     })
+
+
+    test("common.GetArguments returns arguments from POST requests", function(){
+        var postreq = { method: "POST",  body: { item: 123 }};
+        var args = common.getArguments(postreq);
+        assert.isObject(args, "we should have an args object");
+        assert(args.item == 123, "args.item should equal 123");
+    })
+
+
+
+
     
 })
 
-suite('Tables', function () {
+describe('Tables', function () {
     test("table get is defined", function () {
-        assert.isDefined(tables.get);
+        //assert.isDefined(tables.get);
     })
+
+    test('Checks existence of test application', function(done) {
+        request.get('http://localhost:3000/services/tables', function(err, response, body) {
+            response.statusCode.should.equal(200);
+            body.should.include("I'm Feeling Lucky");
+            done();
+        })
+    });
 })
 
 

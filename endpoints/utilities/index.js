@@ -99,13 +99,13 @@ exports.app = function (passport) {
                 values: []
             };
 
-            common.executePgQuery(query, function (result) {
+            common.executePgQuery(query, function (err, result) {
                 var features = [];
 
                 //check for error
-                if (result.status == "error") {
+                if (err) {
                     //Report error and exit.
-                    args.errorMessage = result.message;
+                    args.errorMessage = err.text;
                 } else {
                     //a-ok
                     //Check which format was specified
@@ -128,9 +128,9 @@ exports.app = function (passport) {
                     }
 
                     args.featureCollection = features;
-                    args.scripts = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js', 'http://codeorigin.jquery.com/jquery-1.10.2.min.js'];
+                    args.scripts = [settings.leaflet.js, settings.jquery.js];
                     //Load external scripts for map preview
-                    args.css = ['http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css'];
+                    args.css = [settings.leaflet.js];
                 }
 
                 common.respond(req, res, args);
@@ -184,13 +184,13 @@ exports.app = function (passport) {
                 values: []
             };
 
-            common.executePgQuery(query, function (result) {
+            common.executePgQuery(query, function (err, result) {
                 var features = [];
 
                 //check for error
-                if (result.status == "error") {
+                if (err) {
                     //Report error and exit.
-                    res.jsonp({ error: result.message });
+                    res.jsonp(err);
                 } else {
                     //a-ok
                     //Check which format was specified
@@ -231,6 +231,21 @@ exports.app = function (passport) {
             //send to view
             res.jsonp({ error: "No WKT specified." });
         }
+    });
+
+    app.use('/services/utilities/proxy', function (req, res) {
+        var args = {};
+
+        if (req.method.toLowerCase() == "post") {
+            //If a post, then arguments will be members of the this.req.body property
+            args = req.body;
+        } else if (req.method.toLowerCase() == "get") {
+            //If request is a get, then args will be members of the this.req.query property
+            args = req.query;
+        }
+
+        var url = args.url;
+        req.pipe(request(url)).pipe(res);
     });
 
     return app;

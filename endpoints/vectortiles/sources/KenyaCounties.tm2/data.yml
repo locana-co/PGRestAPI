@@ -1,0 +1,34 @@
+_prefs: 
+  disabled: []
+  inspector: false
+  saveCenter: true
+attribution: ''
+center: 
+  - 37.430419921875
+  - 0.3515602939922709
+  - 7
+description: Kenya Counties
+Layer: 
+  - id: kd
+    Datasource: 
+      file: /home/apollolm/Documents/PGRestAPI/endpoints/mapnik/data/Ken_CountyWithWater.shp
+      type: shape
+    description: ew
+    fields: 
+      AREA: Number
+      COUNTY: String
+      COUNTY3_: Number
+      COUNTY3_ID: Number
+      OBJECTID: Number
+      PERIMETER: Number
+      Shape_Area: Number
+      Shape_Leng: Number
+    properties: 
+      "buffer-size": 0
+      maxzoom: 10
+      minzoom: 0
+    srs: +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs
+maxzoom: 14
+minzoom: 0
+mtime: 1397879379637
+name: Kenya Districts

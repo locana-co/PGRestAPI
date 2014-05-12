@@ -4,7 +4,8 @@
 var express = require('express'), common = require("../../common"), settings = require('../../settings');
 
 //The next requires are specific to this module only
-var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), blaster = require("../../lib/datablaster"), shortid = require("shortid");
+var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), shortid = require("shortid");
+var GeoFragger = require('../../lib/GeoFragger');
 
 var mapnik;
 try {
@@ -64,13 +65,18 @@ exports.app = function(passport) {
 					text : "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
 					values : []
 				};
-				common.executePgQuery(query, function(result) {
+				common.executePgQuery(query, function(err, result) {
+                    if(err){
+                        args.errorMessage = err.text;
+                        common.respond(req, res, args);
+                        return;
+                    }
 
 					args.featureCollection = result.rows.map(function(item) {
 						return item.table_name;
 					});
-					//Get array of table names
 
+					//Get array of table names
 					//stash it for later - if not the result of a search
 					if (!args.search)
 						settings.tableList = args.featureCollection;
@@ -140,12 +146,12 @@ exports.app = function(passport) {
 				values : [this.args.table]
 			};
 			
-			common.executePgQuery(query, function(result) {
+			common.executePgQuery(query, function(err, result) {
 			    //check for error
-			    if (result.status == "error") {
+			    if (err) {
 			        
 					//Report error and exit.
-					args.errorMessage = result.message;
+					args.errorMessage = err.text;
 					flo();
 					//go to next flow
 				} else if (result && result.rows && result.rows.length > 0) {
@@ -198,17 +204,17 @@ exports.app = function(passport) {
 				rasterOrGeometry.present = true;
 				rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
 			} else if (item.data_type == "geometry") {
-				if (mapnik)
-					args.featureCollection.supportedOperations.push({
-						link : args.fullURL + "/dynamicMapLanding",
-						name : "Dynamic Map Service"
-					});
-				args.featureCollection.supportedOperations.push({
-					link : args.fullURL + "/topojson",
-					name : "TopoJSON"
-				});
-				rasterOrGeometry.present = true;
-				rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
+			    if (mapnik)
+			        args.featureCollection.supportedOperations.push({
+			            link: args.fullURL + "/dynamicMapLanding",
+			            name: "Dynamic Map Service"
+			        });
+			    args.featureCollection.supportedOperations.push({
+			        link: args.fullURL + "/vector-tiles",
+			        name: "Dynamic Vector Tile Service"
+			    });
+			    rasterOrGeometry.present = true;
+			    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
 			}
 		});
 
@@ -242,11 +248,11 @@ exports.app = function(passport) {
 		        }]
 		    }); //flow to next function
 		}
-	}, function(result) {
+	}, function(err, result) {
 		//Coming from SRID check
-		if (result && result.status && result.status == "error") {
+		if (err) {
 			//Report error and exit.
-			this.args.errorMessage = result.message;
+			this.args.errorMessage = err.text;
 		} else if (result && result.rows && result.rows.length > 0) {
 			//Get SRID
 			if (result.rows[0].srid == 0 || result.rows[0].srid == "0") {
@@ -268,7 +274,7 @@ exports.app = function(passport) {
 			}
 		} else {
 			//no match found.
-			this.args.infoMessage = "Couldn't find inforamtion for this table.";
+			this.args.infoMessage = "Couldn't find information for this table.";
 		}
 
 		//Render HTML page with results at bottom
@@ -403,20 +409,30 @@ exports.app = function(passport) {
 		//either way, get the spatial columns so we can exclude them from the query
 		createSpatialQuerySelectStatement(this.args.table, this.args.outputsrid, this);
 
-	}, function(geom_fields_array, geom_select_array, geom_envelope_array) {
+	}, function (geom_fields_array, geom_select_array, geom_envelope_array, geom_envelope_fields) {
 		//Coming from createSpatialQuerySelectStatement
 		//Store the geom_fields for use later
 		this.args.geom_fields_array = geom_fields_array;
 		//hold geom column names
 		this.args.geom_envelope_array = geom_envelope_array;
-		//hold geom envelope column names
+	    //holds the envelope SELECT statement
+		this.args.geom_envelope_fields = geom_envelope_fields;
+	    //hold geom envelope column names
 		this.where = this.args.where || "";
 		//where clause - copy to local variable
 		this.args.groupby = this.args.groupby || "";
 		//group by fields
 		this.args.statsdef = this.args.statsdef || "";
-		//statistics definition clause
-		this.limit = this.args.limit || settings.pg.featureLimit || 1000;
+        //statistics definition clause
+
+	    //Limit is mainly for the HTML response page.  Don't want too many records coming back there.
+		if (this.args.format && this.args.format.toLowerCase() == "html") {
+		    this.limit = this.args.limit || settings.pg.featureLimit || 1000;
+		}
+		else {
+		    //for other formats, only use a limit if present
+		    this.limit = this.args.limit || -1;
+		}
 
 		//requested select fields
 		this.returnfields = this.args.returnfields || "";
@@ -428,7 +444,7 @@ exports.app = function(passport) {
 			this.args.geometryStatement = geom_select_array.join(",");
 		} else {
 			//No geometry desired.  That means you can't have a 'shapefile' as output. Check
-			if (this.args.format.toLowerCase() == 'shapefile') {
+		    if (this.args.format && this.args.format.toLowerCase() == 'shapefile') {
 				this.args.errorMessage = "Format 'shapefile' requires returnGeometry to be 'yes'.";
 				common.respond(this.req, this.res, this.args);
 				return;
@@ -505,17 +521,39 @@ exports.app = function(passport) {
 			}
 		}
 
-		//Add in WKT Geometry to WHERE clause , if specified
-		//For now, assuming 4326.  TODO
 
-		if (this.args.wkt) {
-			//For each geometry in the table, give an intersects clause
-			var wkt = this.args.wkt;
-			var wkt_array = [];
-			geom_fields_array.forEach(function(item) {
-				wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
-			});
-			this.wkt = wkt_array;
+        //Intersects (GeoJSON) gets priority over wkt intersects if both are defined.
+        //Intersects is a GeoJSON argument that needs to be parsed to create a PostGIS GeoJSON Fragment 
+		if (this.args.intersects) {
+		    //Just do the first geom field for now.  TODO
+		    var intersects = new GeoFragger();
+		    try{
+		        var geojson = JSON.parse(this.args.intersects);
+		        intersects = intersects.toPostGISFragment(geojson);
+		    } catch (e) {
+		        //friendly message - exit out
+		        this.args.errorMessage = e.message;
+
+		        common.respond(this.req, this.res, this.args);
+		        return;
+		    }
+		    
+		    var intersects_array = [];
+		    geom_fields_array.forEach(function (item) {
+		        intersects_array.push("ST_Intersects(ST_GeomFromGeoJSON('" + JSON.stringify(intersects) + "')," + item + ")");
+		    });
+		    this.intersects = intersects_array;
+		}
+	    //Add in WKT Geometry to WHERE clause , if specified
+	    //For now, assuming 4326.  TODO
+		else if (this.args.wkt) {
+		    //For each geometry in the table, give an intersects clause
+		    var wkt = this.args.wkt;
+		    var wkt_array = [];
+		    geom_fields_array.forEach(function (item) {
+		        wkt_array.push("ST_Intersects(ST_GeomFromText('" + wkt + "', 4326)," + item + ")");
+		    });
+		    this.wkt = wkt_array;
 		}
 
 		//Add in WHERE clause, if specified.  Don't alter the original incoming paramter.  Create this.where to hold modifications
@@ -524,15 +562,23 @@ exports.app = function(passport) {
 
 		if (this.where.length > 0) {
 			this.where = " WHERE " + "(" + this.where + ")";
-			//make sure where clause stands on it's own by wrapping in parenthesis
-			if (this.wkt) {
+		    //make sure where clause stands on it's own by wrapping in parenthesis
+			if (this.intersects) {
+			    this.where += (" AND (" + this.intersects.join(" OR ") + ")");
+			}
+			else if (this.wkt) {
 				this.where += (" AND (" + this.wkt.join(" OR ") + ")");
 			}
 		} else {
-			if (this.wkt) {
+            //Intersects gets priority here (GeoJSON)
+		    if (this.intersects) {
+		        this.where += " WHERE (" + this.intersects.join(" OR ") + ")";
+		    }
+			else if (this.wkt) {
 				this.where += " WHERE (" + this.wkt.join(" OR ") + ")";
-			} else {
-				this.where = " WHERE 1=1";
+			}
+			else {
+			    this.where = " WHERE 1=1";
 			}
 		}
 
@@ -542,10 +588,10 @@ exports.app = function(passport) {
 			//Get all fields except the no fly list
 		} else {
 			//flow to next block - pass fields
-			this(this.returnfields);
+			this(null, this.returnfields);
 		}
 
-	}, function(fieldList) {
+	}, function(err, fieldList) {
 		//Coming from createSelectAllStatementWithExcept
 		//build SQL query
 		if (common.isValidSQL(fieldList) && common.isValidSQL(this.args.geometryStatement) && common.isValidSQL(this.args.table) && common.isValidSQL(this.args.where) && common.isValidSQL(this.args.groupby)) {
@@ -574,51 +620,51 @@ exports.app = function(passport) {
 			common.respond(this.req, this.res, this.args);
 			return;
 		}
-	}, function(result) {
+	}, function(err, result) {
 
 		var flo = this;
 		//Save for closure //TODO - Use _self
 
-		this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2', 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'];
+		this.args.scripts = [settings.leaflet.js, settings.jquery.js];
 		//Load external scripts for map preview
-		this.args.css = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css'];
+		this.args.css = [settings.leaflet.css];
 
 		var features = [];
 
 		//check for error
-		if (result.status == "error") {
+		if (err) {
 			//Report error and exit.
-			this.args.errorMessage = result.message;
+			this.args.errorMessage = err.text;
 			flo();
 		} else {
 			//a-ok
 			//Check which format was specified
 			if (!this.args.format || this.args.format.toLowerCase() == "html") {
 				//Render HTML page with results at bottom
-				this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 				//The page will parse the geoJson to make the HTMl
 				flo();
 				//For now - hard coded.  Create new dynamic endpoint for this GeoJSON
 				//nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
 			} else if (this.args.format && this.args.format.toLowerCase() == "geojson") {
 				//Respond with JSON
-				this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 				flo();
 				//For now - hard coded.  Create new dynamic endpoint for this GeoJSON
 				//nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
 			} else if (this.args.format && this.args.format.toLowerCase() == "esrijson") {
 				//Respond with esriJSON
-				this.args.featureCollection = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    this.args.featureCollection = common.formatters.ESRIFeatureSetJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 				flo();
 			} else if (this.args.format && this.args.format.toLowerCase() == "shapefile") {
 				//Make a Shapefile with the GeoJSON.  Then offer it up for download.
 				//Make a GeoJSON object from the features first.
-				features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+			    features = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
 
 				//Convert the GeoJSON object to a shapefile
 				var shapefile = ogr2ogr(features).format('ESRI Shapefile').stream();
 
-				var filePath = "." + settings.application.topoJsonOutputFolder + 'shapefile_' + shortid.generate() + '.zip';
+				var filePath = "." + settings.application.geoJsonOutputFolder + 'shapefile_' + shortid.generate() + '.zip';
 				var fileWriteStream = fs.createWriteStream(filePath);
 
 				//Set the callback for when the shapefile is done writing
@@ -806,11 +852,11 @@ exports.app = function(passport) {
 			var res = this.res;
 			//copy for closure.
 
-			common.executePgQuery(query, function(result) {
+			common.executePgQuery(query, function(err, result) {
 
-				if (result.status == "error") {
+				if (err) {
 					//Report error and exit.
-					args.errorMessage = result.message;
+					args.errorMessage = err.text;
 
 				} else {
 
@@ -835,163 +881,6 @@ exports.app = function(passport) {
 				common.respond(req, res, args);
 			});
 		}
-	}));
-
-	//list topojson files for a particular dataset, and let user create a new one.
-	app.all('/services/tables/:table/topojson', flow.define(
-	//If the querystring is empty, just show the regular HTML form.
-
-	function(req, res) {
-		this.req = req;
-		this.res = res;
-		this.rootRelativePath = ".";
-		//TODO - make this more dynamic.  It's how we'll know how to find the 'root' + public/foo to write the output files.
-
-		this.args = {};
-
-		//Grab POST or QueryString args depending on type
-		if (this.req.method.toLowerCase() == "post") {
-			//If a post, then arguments will be members of the this.req.body property
-			this.args = this.req.body;
-		} else if (this.req.method.toLowerCase() == "get") {
-			//If request is a get, then args will be members of the this.req.query property
-			this.args = this.req.query;
-		}
-
-		if (JSON.stringify(this.args) != '{}') {
-			this.args.view = "topojson_list";
-			this.args.table = this.req.params.table;
-			this.args.breadcrumbs = [{
-				link : "/services/tables",
-				name : "Table Listing"
-			}, {
-				link : "/services/tables/" + this.args.table,
-				name : this.args.table
-			}, {
-				link : "",
-				name : "TopoJSON"
-			}];
-			this.args.path = this.req.path;
-			this.args.host = this.req.headers.host;
-			this.args.files = [];
-
-			if (this.args.topofilename) {
-				//Make the File if flag was sent
-
-				//First - check to see if GeoJSON output folder exists for this table
-				console.log("checking for folder: " + this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table);
-				fs.exists(this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table, this);
-			} else {
-				//Expecting a topofilename
-				common.respond(req, res, args);
-			}
-		} else {
-			//Respond with list.
-			this.args.view = "topojson_list";
-			this.args.table = this.req.params.table;
-			this.args.breadcrumbs = [{
-				link : "/services/tables",
-				name : "Table Listing"
-			}, {
-				link : "/services/tables/" + this.args.table,
-				name : this.args.table
-			}, {
-				link : "",
-				name : "TopoJSON"
-			}];
-			this.args.path = this.req.path;
-			this.args.host = this.req.headers.host;
-
-			this.args.files = [];
-
-			var args = this.args;
-			//copy for closure
-
-			console.log(this.rootRelativePath);
-			console.log(settings.application.topoJsonOutputFolder);
-			console.log(this.args.table);
-			//Find all existing topojson files in the public/topojson/output folder
-
-			console.log("checking for folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-
-			fs.exists(this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table, function(exists) {
-				if (exists === true) {
-					fs.readdirSync(path.join(".", settings.application.topoJsonOutputFolder, args.table)).forEach(function(file) {
-						if (file.indexOf("topo_") == 0) {
-							args.files.push({
-								link : settings.application.topoJsonOutputFolder + file,
-								name : file
-							});
-						}
-					});
-					common.respond(req, res, args);
-
-				} else {
-					//Doesn't exist
-					common.respond(req, res, args);
-				}
-			});
-		}
-	}, function(exists) {
-		//Coming from flow - check if geojson output folder exists
-		if (exists === false) {
-			//make it
-			console.log("Didn't find it.  Tyring to make folder: " + this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table);
-			fs.mkdirSync(this.rootRelativePath + settings.application.geoJsonOutputFolder + this.args.table);
-			//Synch
-		}
-
-		console.log("checking for folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-		//Now, check to see if table has a topojson subfolder on disk
-		fs.exists("." + settings.application.topoJsonOutputFolder + this.args.table, this);
-
-	}, function(exists) {
-		//coming from check if topojson folder exists
-		if (exists === false) {
-			console.log("Didn't find it.  Tyring to make folder: " + this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-			fs.mkdirSync(this.rootRelativePath + settings.application.topoJsonOutputFolder + this.args.table);
-			//Synch
-		}
-
-		var args = this.args;
-		//copy for closure
-		var req = this.req;
-		var res = this.res;
-		var relativeRootPath = this.rootRelativePath;
-
-		//Make the Geo File
-		makeGeoJSONFile(this.args.table, this.args.topofilename, function(error, filename, filepath) {
-			if (error) {
-				args.infoMessage = error.message;
-				common.respond(req, res, args);
-				return;
-			} else {
-				//created geojson folder
-				args.infoMessage = "Created file - " + filename;
-
-				//Now turn file into TopoJSON - pass in original file, topo file, callback
-				geoJSONToTopoJSON(args.table, filename, "topo_" + filename, function(error, stdout) {
-					if (error) {
-						args.errorMessage = error.message;
-					} else {
-						console.log("Finished making Topo File.");
-						args.infoMessage = stdout;
-
-						//Find all existing topojson files in the public/topojson/output folder
-						fs.readdirSync(path.join(relativeRootPath, settings.application.topoJsonOutputFolder, args.table)).forEach(function(file) {
-							if (file.indexOf("topo_") == 0) {
-								args.files.push({
-									link : settings.application.topoJsonOutputFolder + args.table + "/" + file,
-									name : file
-								});
-							}
-						});
-					}
-
-					common.respond(req, res, args);
-				});
-			} //End  if error
-		});
 	}));
 
 	//If mapnik exists, then load the endpointDynamic
@@ -1029,7 +918,9 @@ exports.app = function(passport) {
 			//Get geometry names
 			getGeometryFieldNames(this.args.table, this);
 
-		}, function(geom_fields_array) {
+		}, function(err, geom_fields_array) {
+			
+			this.spatialTables = app.get('spatialTables');
 
 			//This should have a value
 			var srid = this.spatialTables[this.args.table].srid;
@@ -1058,9 +949,9 @@ exports.app = function(passport) {
 				common.respond(this.req, this.res, this.args);
 				return;
 			}
-		}, function(result) {
+		}, function(err, result) {
 
-			if (result.status == "error") {
+			if (err) {
 				this.args.errorMessage = "Problem getting the extent for this table.";
 			} else { 
 				var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(",");
@@ -1074,28 +965,114 @@ exports.app = function(passport) {
 				this.args.featureCollection = [];
 				this.args.featureCollection.push({
 					name : "Map Service Endpoint",
-					link : "http://" + this.args.host + "/services/tables/" + this.args.table + "/dynamicMap"
+					link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/dynamicMap"
 				});
 				this.args.extent = result.rows[0];
 
 				//load leaflet
-				this.args.scripts = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js?2'];
+				this.args.scripts = [settings.leaflet.js];
 				//Load external scripts for map preview
-				this.args.css = ['http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css'];
+				this.args.css = [settings.leaflet.css];
 			}
 
 			common.respond(this.req, this.res, this.args);
 		}));
+
+
+        //Show users about a table's vector tile service
+        app.all('/services/tables/:table/vector-tiles', flow.define(function(req, res) {
+            this.args = {};
+            this.req = req;
+            this.res = res;
+
+            //Grab POST or QueryString args depending on type
+            if (this.req.method.toLowerCase() == "post") {
+                //If a post, then arguments will be members of the this.req.body property
+                this.args = this.req.body;
+            } else if (this.req.method.toLowerCase() == "get") {
+                //If request is a get, then args will be members of the this.req.query property
+                this.args = this.req.query;
+            }
+
+            this.args.view = "table_vector_tiles";
+            this.args.table = this.req.params.table;
+            this.args.breadcrumbs = [{
+                link : "/services/tables/",
+                name : "Table Listing"
+            }, {
+                link : "/services/tables/" + this.args.table,
+                name : this.args.table
+            }, {
+                link : "",
+                name : "Dynamic Vector Tiles"
+            }];
+            this.args.path = this.req.path;
+            this.args.host = settings.application.publichost || this.req.headers.host;
+
+            //Get geometry names
+            getGeometryFieldNames(this.args.table, this);
+
+        }, function(err, geom_fields_array) {
+
+            this.spatialTables = app.get('spatialTables');
+
+            //This should have a value
+            var srid = this.spatialTables[this.args.table].srid;
+
+            //coming back from getGeometryFieldNames
+            //for now, assume just 1 geometry.  TODO
+            if (geom_fields_array.length > 0) {
+                //Check for layer extent
+                //Transform to 4326 if 3857
+                var query;
+                if (srid && (srid == 3857 || srid == 3587)) {
+                    query = {
+                        text : "SELECT ST_Extent(ST_Transform(" + geom_fields_array[0] + ", 4326)) as table_extent FROM " + this.args.table + ";",
+                        values : []
+                    };
+                } else {
+                    query = {
+                        text : "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";",
+                        values : []
+                    };
+                }
+                common.executePgQuery(query, this);
+            } else {
+                //No geom column or no extent or something.
+                this.args.errorMessage = "Problem getting the geom column for this table.";
+                common.respond(this.req, this.res, this.args);
+                return;
+            }
+        }, function(err, result) {
+
+            if (err) {
+                this.args.errorMessage = "Problem getting the extent for this table.";
+            } else {
+                var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(",");
+                //Should be BOX(XMIN YMIN, XMAX YMAX)
+                this.args.xmin = bboxArray[0].split(" ")[0];
+                this.args.ymin = bboxArray[0].split(" ")[1];
+                this.args.xmax = bboxArray[1].split(" ")[0];
+                this.args.ymax = bboxArray[1].split(" ")[1];
+
+                //Write out the details for this map service
+                this.args.featureCollection = [];
+                this.args.featureCollection.push({
+                    name : "Map Service Endpoint",
+                    link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/vector-tiles"
+                });
+                this.args.extent = result.rows[0];
+
+                //load leaflet
+                this.args.scripts = [settings.leaflet.js];
+                //Load external scripts for map preview
+                this.args.css = [settings.leaflet.css];
+            }
+
+            common.respond(this.req, this.res, this.args);
+        }));
 	}
 
-	//Test blaster route
-	app.all("/services/blaster", function(req, res) {
-		blaster.batchBlast(function(err, blastCount) {
-			//Finished blasting.
-			//say so.
-			res.end("Done blasting. Finished " + blastCount + " blast(s).");
-		});
-	});
 
 	//pass in a table, and a comma separated list of fields to NOT select
 	function createSelectAllStatementWithExcept(table, except_list, callback) {
@@ -1103,17 +1080,21 @@ exports.app = function(passport) {
 			text : "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN ($2)",
 			values : [table, except_list]
 		};
-		common.executePgQuery(query, function(result) {
+		common.executePgQuery(query, function(err, result) {
+            if(err){
+                callback(err);
+                return;
+            }
 			var rows = result.rows.map(function(item) {
 				return item.column_name;
 			});
-			//Get array of column names
 
+			//Get array of column names
 			//Wrap columns in double quotes
 			rows = common.escapePostGresColumns(rows);
 
 			//Callback
-			callback(rows.join(","));
+			callback(err, rows.join(","));
 		});
 	}
 
@@ -1121,7 +1102,7 @@ exports.app = function(passport) {
 		this.callback = callback;
 		this.outputsrid = outputsrid;
 		getGeometryFieldNames(table, this);
-	}, function(geom_fields_array) {
+	}, function(err, geom_fields_array) {
 		//Array of geometry columns
 		console.log(" in geom fields. " + geom_fields_array.length);
 		if (geom_fields_array.length == 0) {
@@ -1129,6 +1110,8 @@ exports.app = function(passport) {
 		} else {
 			var geom_query_array = [];
 			var geom_envelope_array = [];
+            var geom_envelope_names = [];
+
 			// in case they want envelopes
 			var outputsrid = this.outputsrid;
 
@@ -1137,15 +1120,17 @@ exports.app = function(passport) {
 				geom_fields_array.forEach(function(item) {
 					geom_query_array.push("ST_AsGeoJSON(ST_Transform(" + item + ", " + outputsrid + ")) As " + item);
 					geom_envelope_array.push("ST_AsGeoJSON(ST_Transform(ST_Envelope(" + item + "), " + outputsrid + ")) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
-				});
+                    geom_envelope_names.push(item.replace(/"/g, "") + "_envelope");
+                });
 			} else {
 				geom_fields_array.forEach(function(item) {
 					geom_query_array.push("ST_AsGeoJSON(" + item + ") As " + item);
 					geom_envelope_array.push("ST_AsGeoJSON(ST_Envelope(" + item + ")) As " + ('"' + item.replace(/"/g, "") + "_envelope" + '"'));
+                    geom_envelope_names.push(item.replace(/"/g, "") + "_envelope");
 				});
 			}
 
-			this.callback(geom_fields_array, geom_query_array, geom_envelope_array);
+			this.callback(geom_fields_array, geom_query_array, geom_envelope_array, geom_envelope_names);
 		}
 	});
 
@@ -1160,7 +1145,12 @@ exports.app = function(passport) {
 			text : "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1",
 			values : [table]
 		};
-		common.executePgQuery(query, function(result) {
+		common.executePgQuery(query, function(err, result) {
+            if(err){
+                callback(err);
+                return;
+            }
+
 			var rows = result.rows.map(function(item) {
 				return item.column_name;
 			});
@@ -1169,9 +1159,9 @@ exports.app = function(passport) {
 			rows = common.escapePostGresColumns(rows);
 
 			//Callback
-			callback(rows);
+			callback(err, rows);
 		});
-	}
+	};
 
 	//pass in a table, get an array of geometry columns
 	function getRasterColumnName(table, callback) {
@@ -1183,7 +1173,12 @@ exports.app = function(passport) {
 			text : "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'raster') AND table_name = $1",
 			values : [table]
 		};
-		common.executePgQuery(query, function(result) {
+		common.executePgQuery(query, function(err, result){
+            if(err){
+                callback(err);
+                return;
+            }
+
 			var rows = result.rows.map(function(item) {
 				return item.column_name;
 			});
@@ -1193,25 +1188,11 @@ exports.app = function(passport) {
 			rows = common.escapePostGresColumns(rows);
 
 			//Callback
-			callback(rows);
+			callback(err, rows);
 		});
-	}
+	};
 
-	///TopoJSON functions - TODO - move to a separate module.
 
-	//example
-	//topojson -o output.json input.json
-	function geoJSONToTopoJSON(table, geojsonfile, topojsonfile, callback) {
-		var filename = geojsonfile.split(".")[0];
-		var outputPath = path.join(__dirname, "../..", settings.application.topoJsonOutputFolder, table);
-		var geoJsonPath = path.join(__dirname, "../..", settings.application.geoJsonOutputFolder, table);
-		var sys = require('sys');
-		var exec = require('child_process').exec
-		console.log("About to execute: " + 'topojson -o ' + path.join(outputPath, topojsonfile) + " " + path.join(geoJsonPath, geojsonfile));
-		child = exec('topojson -o ' + path.join(outputPath, topojsonfile) + " " + path.join(geoJsonPath, geojsonfile), function(error, stdout, stderr) {
-			callback(error, stdout);
-		});
-	}
 
 	//Query table's rest endpoint, write out GeoJSON file.
 	function makeGeoJSONFile(table, filename, callback) {
@@ -1249,47 +1230,13 @@ exports.app = function(passport) {
 		}).end();
 	}
 
+    //Get the list of spatial tables.
+    common.findSpatialTables(app, function (error, tables) {
+        //set for this class
+        app.set('spatialTables', tables);
+    });
 	
 	
 	return app;
-}
+};
 
-//Find all PostGres tables with a geometry column.  Return the table names, geom column name(s) and SRID
-//TODO: This can be moved to common
-exports.findSpatialTables = function(app, callback) {
-		var spatialTables = {};
-		var error;
-
-		var query = {
-			text : "select * from geometry_columns",
-			values : []
-		};
-
-		//TODO - add options to specify schema and database.  Right now it will read all
-		common.executePgQuery(query, function(result) {
-			if (result.status == "error") {
-				//Report error and exit.
-				error = result.message;
-				console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + result.message);
-			} else {
-				//app.spatialTables = {};
-				//Add to list of tables.
-				result.rows.forEach(function(item) {
-					var spTable = {
-						table : item.f_table_name,
-						geometry_column : item.f_geometry_column,
-						srid : item.srid
-					};
-					//spatialTables.push(spTable);
-					spatialTables[item.f_table_name] = spTable;
-					//Keep a copy in tables for later.
-				});
-			}
-			
-			//Set spatialTables in express app
-			app.set('spatialTables', spatialTables);
-
-			//return to sender
-			callback(error, spatialTables);
-		});
-	}

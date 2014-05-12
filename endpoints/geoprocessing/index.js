@@ -160,12 +160,12 @@ exports.app = function(passport) {
 			common.respond(this.req, this.res, this.args);
 
 		}
-	}, function(result) {
+	}, function(err, result) {
 		//Flowing from gpOperation.execute
 		//check for error
-		if (result.status == "error") {
+		if (err) {
 			//Report error and exit.
-			this.args.errorMessage = result.message;
+			this.args.errorMessage = err;
 		} else {
 			//success
 			//Write out results to page

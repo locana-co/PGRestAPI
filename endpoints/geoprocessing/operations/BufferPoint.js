@@ -1,7 +1,8 @@
 //8.31.2013 - Ryan Whitley
 //Starting a Plug and Play GP Workflow
 var flow = require('flow');
-var pg = require('pg');
+var pg = require('pg'),
+    common = require("../../../common");
 
 //Takes in a POINT (X Y) and returns a WKT representation of the buffer.
 //Arguments are:
@@ -68,12 +69,12 @@ Buffer.execute = flow.define(
         else {
             //Invalid arguments
             //return message
-            callback({ status: "Missing arguments", rows: []});
+            callback({text: "Missing required arguments"}); //err is first argument
         }
     },
-    function (results) {
+    function (err, results) {
         //Step 2 - get the results and pass back to calling function
-        this.callback(results);
+        this.callback(err, results);
     }
 )
 
