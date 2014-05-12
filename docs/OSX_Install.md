@@ -67,15 +67,6 @@ If there are tables or views you don't want published, add them to the 'noFlyLis
 	settings.pg.noFlyList = ["att_0", "table_1"];
 
 
-Leave the GeoJSON output folders as they are.
-
-On my windows installation, I use IIS URL Rewrite module to forward requests from a static IP or domain to "localhost:3000" (my node server and port).
-These config sections help the API write out fully qualified URLs using the external IP or domain rather than localhost:3000 (for example, when displaying a hyperlink to a particular web service)
-
-	//Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
-	settings.application.publichost = "myhost.com"; //Keep this empty if you want to use the default host
-	settings.application.publicport = "80";
-
 ###Run
 Start the project (assuming installs have all succeeded and you've created the settings.js file)
 	

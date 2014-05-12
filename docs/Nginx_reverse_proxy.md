@@ -19,6 +19,8 @@ Create a file in /etc/nginx/sites-available/<your project name>
 
 	sudo pico /etc/nginx/sites-available/<your project name>
 
+###In the file created, enter this (with appropriate names for your project)
+
 	# the IP(s) on which your node server is running. I chose port 3000.
 	upstream app_<your project name> {
 		server 127.0.0.1:3000;
@@ -42,10 +44,12 @@ Create a file in /etc/nginx/sites-available/<your project name>
 		}
 	 }
 
-	--Then enable the site defined above
-	cd /etc/nginx/sites-enabled/ 
-	sudo ln -s /etc/nginx/sites-available/<your project name> <your project name>
+###Then enable the site defined above
+cd /etc/nginx/sites-enabled/
+
+    sudo ln -s /etc/nginx/sites-available/<your project name> <your project name>
 
 
-	--restart nginx
-	sudo /etc/init.d/nginx restart
+###restart nginx
+
+    sudo /etc/init.d/nginx restart

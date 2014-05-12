@@ -78,15 +78,6 @@ If there are tables or views you don't want published, add them to the 'noFlyLis
 	settings.pg.noFlyList = ["att_0", "table_1"];
 
 
-Leave the GeoJSON output folders as they are.
-
-
-###For development purposes, install nodemon
-Nodemon monitors your node project, and will automatically restart your node project if there are any file changes.
-	
-	npm install -g nodemon
-
-
 ###Run
 Start the project (assuming installs have all succeeded and you've created the settings.js file)
 	
