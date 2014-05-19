@@ -10,7 +10,6 @@ var zlib = require('zlib');
 var crypto = require('crypto');
 var tilelive = require('tilelive');
 if (tilelive) {
-	require('tilelive-bridge').registerProtocols(tilelive);
 	require("tilelive-tmsource")(tilelive);
 	require("mbtiles").registerProtocols(tilelive);
 }
@@ -63,32 +62,32 @@ exports.app = function(passport) {
 	});
 
 	//Create endpoint for mbtiles server, 1 for each source
-	mbTileFiles.forEach(function(item) {
-		app.get('/services/vector-tiles/' + item.split('.')[0], function(req, res) {
-			
-			tilelive.load('mbtiles://' + filename, function(err, source) {
-				if (err)
-					throw err;
-				app.get('/vector-tiles/:z/:x/:y.*', function(req, res) {
-					source.getTile(req.param('z'), req.param('x'), req.param('y'), function(err, tile, headers) {
-						// `err` is an error object when generation failed, otherwise null.
-						// `tile` contains the compressed image file as a Buffer
-						// `headers` is a hash with HTTP headers for the image.
-						if (!err) {
-							res.send(tile);
-						} else {
-							res.send('Tile rendering error: ' + err + '\n');
-						}
-					});
-				});
+	mbTileFiles.forEach(function(filename) {
 
-			});
-			
-		});
+			tilelive.load('mbtiles://' + path.join(mbtilesLocation,filename), function(err, source) {
+                if (err)
+                    throw err;
+                app.get('/services/vector-tiles/' + filename.split('.')[0] + '/:z/:x/:y.*', function (req, res) {
+                    source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+                        // `err` is an error object when generation failed, otherwise null.
+                        // `tile` contains the compressed image file as a Buffer
+                        // `headers` is a hash with HTTP headers for the image.
+                        if (!err) {
+                            res.setHeader('content-encoding', 'deflate');
+                            res.setHeader('content-type', 'application/octet-stream');
+                            res.send(tile);
+                        } else {
+                            res.send('Tile rendering error: ' + err + '\n');
+                        }
+                    });
+                });
+
+            });
+
 	});
 
 	//Show example of how to all this dataset
-	app.all('/services/vector-tiles/dataset', flow.define(function(req, res) { debugger;
+	app.all('/services/vector-tiles/dataset', flow.define(function(req, res) {
 		this.args = {};
 		this.req = req;
 		this.res = res;
@@ -122,8 +121,8 @@ exports.app = function(passport) {
 			if (this.args.name) {
 				//The name of the mbtiles dataset
 				this.args.description = "";
-				this.args.requestSample = (req.secure ? "https:" : "http") + "//" + this.args.host + this.args.path + "/{z}/{x}/{y}.pbf";
-
+				this.args.requestSample = ((req.secure ? "https:" : "http") + "//" + this.args.host + this.args.path + "/{z}/{x}/{y}.pbf").replace("/dataset/", "/" + this.args.name.split(".")[0] + "/");
+                common.respond(this.req, this.res, this.args);
 			} else {
 				this.args.view = "dataset";
 				this.args.breadcrumbs = [{

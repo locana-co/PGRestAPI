@@ -12,8 +12,10 @@ parseXYZ = require('../../utils/tile.js').parseXYZ,
 path = require('path'),
 fs = require("fs"),
 flow = require('flow'),
-carto = require('carto'),
-zlib = require("zlib");
+zlib = require("zlib"),
+MMLBuilder = require("./cartotomml/mml_builder"),
+crypto = require("crypto"),
+carto = require("carto");
 
 //Caching
 var CCacher = require("../../lib/ChubbsCache");
@@ -21,7 +23,8 @@ var cacher = new CCacher();
 
 
 var TMS_SCHEME = false;
-var _styleExtension = '.xml';
+var _styleExtension = '.mss';
+var _defaultMSS = "default" + _styleExtension;
 
 var PGTileStats = {
     SingleTiles: { times: [] },
@@ -205,7 +208,10 @@ exports.app = function (passport) {
                             'user': settings.pg.username,
                             'password': settings.pg.password,
                             'type': 'postgis',
-                            'estimate_extent': 'true'
+                            'estimate_extent': 'true',
+                            'geometry_field': item.geometry_column,
+                            'srid' : item.srid,
+                            'geometry_type' : item.type
                         };
                         tileSettings.routeProperties.name = item.table;
                         tileSettings.routeProperties.srid = item.srid;
@@ -268,6 +274,19 @@ exports.app = function (passport) {
 
 
         res.end(resultString);
+    });
+
+    //Testing to see if carto will work.
+    app.get('/css', function(req, res){
+        //CartoCSS Converter
+        var optional_args = optional_args || {};
+        if (!optional_args.cachedir ) optional_args.cachedir = '/tmp/millstone';
+        var MMLConverter = new MMLBuilder({ table:'my_table' }, optional_args, function(err, payload){});
+        //Do a conversion with an incoming file.
+        MMLConverter.render("#my_table{polygon-fill:#FF6600; polygon-opacity: 0.7; line-opacity:1; line-color: #FFFFFF;}", function(a, b){
+            //done.
+            res.end("<![CDATA[" + b + "]>");
+        });
     });
 
     return app;
@@ -335,289 +354,7 @@ exports.createCachedFolder = function (table) {
     });
 };
 
-//Create a static renderer that will always use the default styling
-//This only works for tables, not views (since Mapnik requires that VACUUM ANALYZE be run for stats on the table to be rendered)
-exports.createPGTileRenderer = flow.define(function (app, settings) {
 
-    this.app = app;
-    this.settings = settings;
-    this.epsg = epsgSRID;
-
-    var name;
-    var stylepath = __dirname + '/cartocss/';
-    var fullpath = "";
-
-    //Set the path to the style file
-    if (cartoFile) {
-        //Passed in
-        fullpath = stylepath + cartoFile;
-    } else {
-        //default
-        fullpath = stylepath + table + styleExtension;
-    }
-
-    var flo = this;
-
-    //See if there is a <tablename>.mss/xml file for this table.
-    //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
-    fs.stat(fullpath, function (err, stat) {
-        if (err) {
-            //No file.  Use defaults.
-            fullpath = stylepath + "style.xml";
-            //Default
-        }
-
-        flo(fullpath);
-        //flow to next function
-    });
-}, function (fullpath) {
-    //Flow from after getting full path to Style file
-
-    //Vacuum Analyze needs to be run on every table in the DB.
-    var postgis_settings = {
-        'host': settings.pg.server,
-        'port': settings.pg.port,
-        'dbname': settings.pg.database,
-        'table': this.table,
-        'user': settings.pg.username,
-        'password': settings.pg.password,
-        'type': 'postgis',
-        'estimate_extent': 'true'
-    };
-
-    var _self = this;
-
-    //Create Route for this table
-    this.app.all('/services/tables/' + _self.table + '/dynamicMap', function (req, res) {
-
-        //Start Timer to measure response speed for tile requests.
-        var startTime = Date.now();
-
-        parseXYZ(req, TMS_SCHEME, function (err, params) {
-            if (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            } else {
-                try {
-                    //create map and layer
-                    var map = new mapnik.Map(256, 256, mercator.proj4);
-                    var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-                    //check to see if 3857.  If not, assume WGS84
-                    var postgis = new mapnik.Datasource(postgis_settings);
-                    var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
-
-                    layer.datasource = postgis;
-                    layer.styles = [_self.table, 'style'];
-
-                    map.bufferSize = 64;
-                    map.load(path.join(fullpath), {
-                        strict: true
-                    }, function (err, map) {
-                        if (err)
-                            throw err;
-                        map.add_layer(layer);
-                        console.log(map.toXML());
-                        // Debug settings
-
-                        map.extent = bbox;
-                        var im = new mapnik.Image(map.width, map.height);
-                        map.render(im, function (err, im) {
-
-                            if (err) {
-                                throw err;
-                            } else {
-                                var duration = Date.now() - startTime;
-                                PGTileStats.times.push(duration);
-                                res.writeHead(200, {
-                                    'Content-Type': 'image/png'
-                                });
-                                res.end(im.encodeSync('png'));
-                            }
-                        });
-                    });
-
-                } catch (err) {
-                    res.writeHead(500, {
-                        'Content-Type': 'text/plain'
-                    });
-                    res.end(err.message);
-                }
-            }
-        });
-    });
-
-    console.log("Created dynamic service: " + '/services/tables/' + _self.table + '/dynamicMap');
-});
-
-//Create a renderer that will accept dynamic queries and styling and bring back a single image to fit the map's extent.
-exports.createPGTileQueryRenderer = flow.define(function (app, table, geom_field, epsgSRID, cartoFile) {
-
-    this.app = app;
-    this.table = table;
-    this.geom_field = geom_field;
-    this.epsg = epsgSRID;
-
-    var name;
-    var stylepath = __dirname + '/cartocss/';
-    var fullpath = "";
-
-    //Set the path to the style file
-    if (cartoFile) {
-        //Passed in
-        fullpath = stylepath + cartoFile;
-    } else {
-        //default
-        fullpath = stylepath + table + styleExtension;
-    }
-
-    var flo = this;
-
-    //See if there is a <tablename>.mml file for this table.
-    //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
-    fs.stat(fullpath, function (err, stat) {
-        if (err) {
-            //No file.  Use defaults.
-            fullpath = stylepath + "style" + styleExtension;
-            ; //Default
-        }
-
-        flo(fullpath);
-        //flow to next function
-    });
-}, function (fullpath) {
-    //Flow from after getting full path to Style file
-
-    var _self = this;
-
-    //Create Route for this table
-    this.app.all('/services/tables/' + _self.table + '/dynamicQueryMap', function (req, res) {
-        //Start Timer to measure response speed for tile requests.
-        var startTime = Date.now();
-
-        //Check for correct args
-        //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
-        var args = {};
-
-        //Grab POST or QueryString args depending on type
-        if (req.method.toLowerCase() == "post") {
-            //If a post, then arguments will be members of the this.req.body property
-            args = req.body;
-        } else if (req.method.toLowerCase() == "get") {
-            //If request is a get, then args will be members of the this.req.query property
-            args = req.query;
-        }
-
-        // check to see if args were provided
-        if (JSON.stringify(args) != '{}') {
-            //are all mandatory args provided?
-            var missing = "Please provide";
-            var missingArray = [];
-            if (!args.width) {
-                missingArray.push("width");
-            }
-
-            if (!args.height) {
-                missingArray.push("height");
-            }
-
-            if (!args.bbox) {
-                missingArray.push("bbox");
-            }
-
-            if (missingArray.length > 0) {
-                missing += missingArray.join(", ");
-                //respond with message.
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(missing);
-                return;
-            }
-
-            //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
-            if (args.where) {
-                //Validate where - TODO
-            }
-
-            //Vacuum Analyze needs to be run on every table in the DB.
-            //Also, data should be in 3857 SRID
-            var postgis_settings = {
-                'host': settings.pg.server,
-                'port': settings.pg.port,
-                'dbname': settings.pg.database,
-                'table': (args.where ? "(SELECT " + _self.geom_field + " from " + _self.table + " WHERE " + args.where + ") as " + _self.table : _self.table),
-                'user': settings.pg.username,
-                'password': settings.pg.password,
-                'type': 'postgis',
-                'estimate_extent': 'true'
-            };
-
-            //We're all good. Make the picture.
-            try {
-
-                //create map and layer
-                var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
-                //width, height
-                var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-                //check to see if 3857.  If not, assume WGS84
-                var postgis = new mapnik.Datasource(postgis_settings);
-
-                var floatbbox = args.bbox.split(",");
-
-                var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
-                //ll lat, ll lon, ur lat, ur lon
-
-                layer.datasource = postgis;
-                layer.styles = [_self.table, 'style'];
-
-                map.bufferSize = 64;
-
-                map.load(path.join(fullpath), {
-                    strict: true
-                }, function (err, map) {
-
-                    console.log(map.toXML());
-                    // Debug settings
-
-                    map.add_layer(layer);
-
-                    map.extent = bbox;
-                    var im = new mapnik.Image(map.width, map.height);
-                    map.render(im, function (err, im) {
-
-                        if (err) {
-                            throw err;
-                        } else {
-                            var duration = Date.now() - startTime;
-                            SingleTileStats.times.push(duration);
-                            res.writeHead(200, {
-                                'Content-Type': 'image/png'
-                            });
-                            res.end(im.encodeSync('png'));
-                        }
-                    });
-                });
-
-            } catch (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            }
-
-        } else {
-            //if no args, pass to regular tile renderer
-            res.writeHead(500, {
-                'Content-Type': 'text/plain'
-            });
-            res.end("Need to supply height, width and bbox arguments.");
-        }
-    });
-
-    console.log("Created dynamic query service: " + '/services/tables/' + _self.table + '/dynamicQueryMap');
-});
 
 //Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
 exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRID, cartoFile, id, callback) {
@@ -708,11 +445,11 @@ exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRI
                         //ll lat, ll lon, ur lat, ur lon
 
                         layer.datasource = geojson_ds;
-                        layer.styles = [id, 'style'];
+                        layer.styles = [id, 'default'];
 
                         map.bufferSize = 64;
 
-                        var stylepath = __dirname + '/cartocss/style.xml';
+                        var stylepath = __dirname + '/cartocss/' + _defaultMSS;
 
                         map.load(path.join(stylepath), {
                             strict: true
@@ -807,11 +544,11 @@ exports.createImageFromGeoJSON = flow.define(function (geoJSON, bbox, epsgSRID, 
                 var bboxArray = [bbox.xmin, bbox.ymax, bbox.xmax, bbox.ymin];
 
                 layer.datasource = geojson_ds;
-                layer.styles = ["geojson", 'style'];
+                layer.styles = ["geojson", 'default'];
 
                 map.bufferSize = 64;
 
-                var stylepath = __dirname + '/cartocss/style.xml';
+                var stylepath = __dirname + '/cartocss/' + _defaultMSS;
 
                 map.load(path.join(stylepath), {
                     strict: true
@@ -836,293 +573,7 @@ exports.createImageFromGeoJSON = flow.define(function (geoJSON, bbox, epsgSRID, 
     });
 });
 
-//This should take in a geoJSON object and create a new route on the fly - return the URL?
-exports.createDynamicGeoJSONEndpoint = function (geoJSON, name, epsgSRID, cartoCssFile) {
-    //var map = new nodetiles.Map();
 
-    //map.assetsPath = path.join(__dirname, "cartocss"); //This is the cartoCSS path
-
-    ////Adding a static GeoJSON file
-    //map.addData(new DynamicGeoJsonSource({
-    //	name: "world", //same name used in cartoCSS class (#world)
-    //	geoJSONObject: geoJSON,
-    //	projection: "EPSG:" + epsgSRID
-    //}));
-
-    //map.addStyle(fs.readFileSync(__dirname + '/cartocss/' + cartoCssFile, 'utf8'));
-
-    //app.use('/services/nodetiles/' + name + '/tiles', nodetiles.route.tilePng({ map: map })); // tile.png
-    //console.log("Created dynamic service: " + '/services/nodetiles/' + name + '/tiles');
-};
-
-//Create a static renderer that will always use the default styling
-var createShapefileTileRenderer = exports.createShapefileTileRenderer = flow.define(
-    function (app, table, path_to_shp, epsgSRID, cartoFile) {
-
-    this.app = app;
-    this.table = table;
-    this.epsg = epsgSRID;
-    this.path_to_shp = path_to_shp;
-
-    var name;
-    var stylepath = __dirname + '/cartocss/';
-    var fullpath = "";
-
-    //Set the path to the style file
-    if (cartoFile) {
-        //Passed in
-        fullpath = stylepath + cartoFile;
-    } else {
-        //default
-        fullpath = stylepath + table + styleExtension;
-    }
-
-    var flo = this;
-
-    //See if there is a <tablename>.mss/xml file for this table.
-    //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
-    fs.stat(fullpath, function (err, stat) {
-        if (err) {
-            //No file.  Use defaults.
-            fullpath = stylepath + "style.xml";
-            //Default
-        }
-
-        flo(fullpath);
-        //flow to next function
-    });
-}, function (fullpath) {
-    //Flow from after getting full path to Style file
-
-    var _self = this;
-
-    //Create Route for this table
-    this.app.all('/services/shapefiles/' + _self.table + '/dynamicMap', function (req, res) {
-        //Start Timer to measure response speed for tile requests.
-        var startTime = Date.now();
-
-        parseXYZ(req, TMS_SCHEME, function (err, params) {
-            if (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            } else {
-                try {
-
-                    var map = new mapnik.Map(256, 256, mercator.proj4);
-
-                    var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-                    //check to see if 3857.  If not, assume WGS84
-                    var shapefile = new mapnik.Datasource({
-                        type: 'shape',
-                        file: _self.path_to_shp
-                    });
-                    var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
-
-                    layer.datasource = shapefile;
-                    layer.styles = [_self.table, 'style'];
-
-                    map.bufferSize = 64;
-                    map.load(path.join(fullpath), {
-                        strict: true
-                    }, function (err, map) {
-                        if (err)
-                            throw err;
-
-                        map.add_layer(layer);
-
-                        console.log(map.toXML());
-                        // Debug settings
-
-                        map.extent = bbox;
-                        var im = new mapnik.Image(map.width, map.height);
-                        map.render(im, function (err, im) {
-                            if (err) {
-                                throw err;
-                            } else {
-                                var duration = Date.now() - startTime;
-                                ShapeStats.times.push(duration);
-                                res.writeHead(200, {
-                                    'Content-Type': 'image/png'
-                                });
-                                res.end(im.encodeSync('png'));
-                            }
-                        });
-
-                    });
-
-                } catch (err) {
-                    res.writeHead(500, {
-                        'Content-Type': 'text/plain'
-                    });
-                    res.end(err.message);
-                }
-            }
-        });
-    });
-
-    console.log("Created dynamic shapefile service: " + '/services/shapefiles/' + _self.table + '/dynamicMap');
-});
-
-//Create a renderer that will  bring back a single image to fit the map's extent.
-var createShapefileSingleTileRenderer = exports.createShapefileSingleTileRenderer = flow.define(
-    function (app, table, path_to_shp, epsgSRID, cartoFile) {
-
-    this.app = app;
-    this.table = table;
-    this.path_to_shp = path_to_shp;
-    this.epsg = epsgSRID;
-
-    var name;
-    var stylepath = __dirname + '/cartocss/';
-    var fullpath = "";
-
-    //Set the path to the style file
-    if (cartoFile) {
-        //Passed in
-        fullpath = stylepath + cartoFile;
-    } else {
-        //default
-        fullpath = stylepath + table + styleExtension;
-    }
-
-    var flo = this;
-
-    //See if there is a <tablename>.mml file for this table.
-    //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
-    fs.stat(fullpath, function (err, stat) {
-        if (err) {
-            //No file.  Use defaults.
-            fullpath = stylepath + "style" + styleExtension;
-            ; //Default
-        }
-
-        flo(fullpath);
-        //flow to next function
-    });
-}, function (fullpath) {
-    //Flow from after getting full path to Style file
-
-    var _self = this;
-
-    //Create Route for this table
-    this.app.all('/services/shapefiles/' + _self.table + '/dynamicQueryMap', cacher.cache('days', 1), function (req, res) {
-        //Start Timer to measure response speed for tile requests.
-        var startTime = Date.now();
-
-        //Check for correct args
-        //Needs: width (px), height (px), bbox (xmin, ymax, xmax, ymin), where, optional styling
-        var args = {};
-
-        //Grab POST or QueryString args depending on type
-        if (req.method.toLowerCase() == "post") {
-            //If a post, then arguments will be members of the this.req.body property
-            args = req.body;
-        } else if (req.method.toLowerCase() == "get") {
-            //If request is a get, then args will be members of the this.req.query property
-            args = req.query;
-        }
-
-        // check to see if args were provided
-        if (JSON.stringify(args) != '{}') {
-            //are all mandatory args provided?
-            var missing = "Please provide";
-            var missingArray = [];
-            if (!args.width) {
-                missingArray.push("width");
-            }
-
-            if (!args.height) {
-                missingArray.push("height");
-            }
-
-            if (!args.bbox) {
-                missingArray.push("bbox");
-            }
-
-            if (missingArray.length > 0) {
-                missing += missingArray.join(", ");
-                //respond with message.
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(missing);
-                return;
-            }
-
-            //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
-            if (args.where) {
-                //Validate where - TODO
-            }
-
-            //We're all good. Make the picture.
-            try {
-                //create map and layer
-                var map = new mapnik.Map(parseInt(args.width), parseInt(args.height), mercator.proj4);
-
-                //width, height
-                var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-                //check to see if 3857.  If not, assume WGS84
-                var shapefile = new mapnik.Datasource({
-                    type: 'shape',
-                    file: _self.path_to_shp
-                });
-
-                var floatbbox = args.bbox.split(",");
-
-                var bbox = [floatbbox[0], floatbbox[1], floatbbox[2], floatbbox[3]];
-                //ll lat, ll lon, ur lat, ur lon
-
-                layer.datasource = shapefile;
-                layer.styles = [_self.table, 'style'];
-                map.bufferSize = 64;
-
-                map.load(path.join(fullpath), {
-                    strict: true
-                }, function (err, map) {
-
-                    map.add_layer(layer);
-
-                    console.log(map.toXML());
-                    // Debug settings
-
-                    map.extent = bbox;
-                    var im = new mapnik.Image(map.width, map.height);
-                    map.render(im, function (err, im) {
-
-                        if (err) {
-                            throw err;
-                        } else {
-                            var duration = Date.now() - startTime;
-                            ShapeSingleTileStats.times.push(duration);
-                            res.writeHead(200, {
-                                'Content-Type': 'image/png'
-                            });
-                            res.end(im.encodeSync('png'));
-                        }
-                    });
-                });
-
-            } catch (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            }
-
-        } else {
-            //if no args, pass to regular tile renderer
-            res.writeHead(500, {
-                'Content-Type': 'text/plain'
-            });
-            res.end("Need to supply width, height and bbox arguments.");
-
-        }
-    });
-
-    console.log("Created dynamic query service: " + '/services/shapefiles/' + _self.table + '/dynamicQueryMap');
-});
 
 
 //Create a static renderer, using in-memory shapefile
@@ -1154,8 +605,7 @@ var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRendere
     fs.stat(fullpath, function (err, stat) {
         if (err) {
             //No file.  Use defaults.
-            fullpath = stylepath + "style.xml";
-            //Default
+            fullpath = stylepath + _defaultMSS;
         }
 
         flo(fullpath);
@@ -1187,7 +637,7 @@ var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRendere
                     var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
 
                     layer.datasource = _self.memoryDatasource;
-                    layer.styles = [_self.table, 'style'];
+                    layer.styles = [_self.table, 'default'];
 
                     map.bufferSize = 64;
                     map.load(path.join(fullpath), {
@@ -1260,8 +710,7 @@ var createMemoryShapefileSingleTileRenderer = exports.createMemoryShapefileSingl
     fs.stat(fullpath, function (err, stat) {
         if (err) {
             //No file.  Use defaults.
-            fullpath = stylepath + "style" + styleExtension;
-            ; //Default
+            fullpath = stylepath + _defaultMSS;
         }
 
         flo(fullpath);
@@ -1336,7 +785,7 @@ var createMemoryShapefileSingleTileRenderer = exports.createMemoryShapefileSingl
                 //ll lat, ll lon, ur lat, ur lon
 
                 layer.datasource = _self.memoryDatasource;
-                layer.styles = [_self.table, 'style'];
+                layer.styles = [_self.table, 'default'];
                 map.bufferSize = 64;
 
                 map.load(path.join(fullpath), {
@@ -1449,8 +898,7 @@ exports.createPGVectorTileRenderer = flow.define(function (app, table, geom_fiel
     fs.stat(fullpath, function (err, stat) {
         if (err) {
             //No file.  Use defaults.
-            fullpath = stylepath + "style.xml";
-            //Default
+            fullpath = stylepath + _defaultMSS;
         }
 
         flo(fullpath);
@@ -1494,7 +942,7 @@ exports.createPGVectorTileRenderer = flow.define(function (app, table, geom_fiel
                     var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
 
                     layer.datasource = postgis;
-                    layer.styles = [_self.table, 'style'];
+                    layer.styles = [_self.table, 'default'];
 
                     map.bufferSize = 64;
                     map.load(path.join(fullpath), {
@@ -1515,10 +963,10 @@ exports.createPGVectorTileRenderer = flow.define(function (app, table, geom_fiel
                         // 'radial-distance', 'visvalingam-whyatt', 'zhao-saalfeld' (default)
                         opts.simplify_algorithm = 'radial-distance';
 
-                        var headers = {};
-                        headers['Content-Type'] = 'application/x-protobuf';
-                        if (_self._deflate)
-                            headers['Content-Encoding'] = 'deflate';
+//                        var headers = {};
+//                        headers['Content-Type'] = 'application/x-protobuf';
+//                        if (_self._deflate)
+//                            headers['Content-Encoding'] = 'deflate';
 
                         map.add_layer(layer);
 
@@ -1629,7 +1077,7 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(fu
     fs.stat(fullpath, function (err, stat) {
         if (err) {
             //No file.  Use defaults.
-            fullpath = stylepath + "style.xml";
+            fullpath = stylepath + _defaultMSS;
             //Default
         }
 
@@ -1799,14 +1247,49 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
         fs.stat(this.fullpath, this);
     },
     function (err, stat) {
+        var _self = this;
+        //assume not default styling
+        _self.isDefault = false;
+
         if (err) {
             //No file.  Use defaults.
-            this.fullpath = path.join(this._stylepath, 'style.xml');
+            //it is default styling
+            _self.isDefault = true;
+
+            _self.mssGeomType = _self.settings.mapnik_datasource.geometry_type.toLowerCase().indexOf("point") > -1 ? "default_point" : "default";
+
+            _self.fullpath = path.join(_self._stylepath, _self.mssGeomType + _styleExtension);
         }
-        this(this.fullpath)
+
+        _self.mssClass = (_self.isDefault ? _self.mssGeomType : _self.settings.mapnik_datasource.table)
+
+
+        //Read the file and pass the contents to the next function
+        fs.readFile(_self.fullpath, 'utf8', _self);
     },
-    function (fullpath) {
-        //Flow in from getting full path to Style file
+    function (err, styleString){
+        if(err){
+            this(""); //return nothing
+        }
+        //CartoCSS Converter
+        var optional_args = {};
+        optional_args.cachedir = '/tmp/millstone';
+
+        //If no css style is present, then pick a default mss file. Points are treated separately with a different mss file
+
+        this.settings.mapnik_datasource.layerName = this.mssClass;
+        this.MMLConverter = new MMLBuilder(this.settings.mapnik_datasource, optional_args, function(err, payload){});
+        this.MMLConverter.render(styleString, this);
+    },
+    function (err, mmlStylesheet) {
+        //strip out the Layer & Datasource portions of the mml.
+        //this.MMLConverter.stripLayer(mmlStylesheet, this);
+        this(null, mmlStylesheet);
+    },
+    function (err, mmlStylesheet) {
+        if(err){
+            //keep going with defaults
+        }
 
         var _self = this;
 
@@ -1832,6 +1315,13 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
                 }
             }
 
+            //Optional CartoCSS classes and styles may be passed in
+//            if(args.style){
+//                //Transform the style to a style tag.
+//                //_self.MMLConverter.render(args.style, this);
+//                var tag = carto.Parser().parse(args.style);
+//            }
+
             parseXYZ(req, TMS_SCHEME, function (err, params) {
                 if (err) {
                     res.writeHead(500, {
@@ -1843,24 +1333,15 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
                         //create map
                         var map = new mapnik.Map(256, 256, mercator.proj4);
 
-                        //Create Layer. Check to see if 3857.  If not, assume WGS84
-                        var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
-
-                        var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
-
                         var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false, false);
 
-                        layer.datasource = datasource;
-                        layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
-
                         map.bufferSize = 64;
-                        map.load(path.join(fullpath), {
+
+                        map.fromString(mmlStylesheet, {
                             strict: true
                         }, function (err, map) {
                             if (err)
                                 throw err;
-
-                            map.add_layer(layer);
 
                             //Write out the map xml
                             console.log(map.toXML());
@@ -1917,7 +1398,7 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
         fs.stat(fullpath, function (err, stat) {
             if (err) {
                 //No file.  Use defaults.
-                fullpath = path.join(_stylepath, 'style.xml');
+                fullpath = path.join(_stylepath, _defaultMSS);
             }
             flo(fullpath);
         });
@@ -1991,7 +1472,7 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
                     var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
 
                     layer.datasource = datasource;
-                    layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
+                    layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'default'];
 
                     map.bufferSize = 64;
                     map.load(path.join(fullpath), {
@@ -2044,29 +1525,52 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
 
 
 //Generic implementation of vector tiles
-var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function (app, settings, performanceObject) {
+var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
+
+function (app, routeSettings, performanceObject) {
 
     this.app = app;
-    this.settings = settings;
+    this.settings = routeSettings;
     this.performanceObject = performanceObject;
 
-    var _stylepath = path.join(__dirname, 'cartocss');
+    this._stylepath = path.join(__dirname, 'cartocss');
 
     //Set the path to the style file
-    var fullpath = (this.settings.routeProperties.cartoFile ? path.join(_stylepath, this.settings.routeProperties.cartoFile) : _stylepath + this.settings.routeProperties.name + _styleExtension);
-
-    //Save the flow
-    var flo = this;
+    this.fullpath = (this.settings.routeProperties.cartoFile ? path.join(this._stylepath, this.settings.routeProperties.cartoFile) : path.join(this._stylepath, this.settings.routeProperties.name + _styleExtension));
 
     //See if there is a <name>.xml file for this table.
-    fs.stat(fullpath, function (err, stat) {
-        if (err) {
-            //No file.  Use defaults.
-            fullpath = path.join(_stylepath, 'style.xml');
-        }
-        flo(fullpath);
+    fs.stat(this.fullpath, this);
+},
+function (err, stat) {
+    var _self = this;
+
+    if (err) {
+        //No file.  Use defaults.
+        _self.fullpath = path.join(_self._stylepath, _defaultMSS);
+    }
+
+    //Read the file and pass the contents to the next function
+    fs.readFile(_self.fullpath, 'utf8', _self);
+},
+function (err, styleString) {
+    if (err) {
+        this(""); //return nothing
+    }
+    //CartoCSS Converter
+    var optional_args = {};
+    optional_args.cachedir = '/tmp/millstone';
+    this.MMLConverter = new MMLBuilder(this.settings.mapnik_datasource, optional_args, function (err, payload) {
     });
-}, function (fullpath) {
+    //Do a conversion with an incoming file."#my_table{polygon-fill:#FF6600; polygon-opacity: 0.7; line-opacity:1; line-color: #FFFFFF;}"
+    this.MMLConverter.render(styleString, this);
+},
+function (err, mmlStylesheet) {
+        //strip out the Layer & Datasource portions of the mml.
+        //this.MMLConverter.stripLayer(mmlStylesheet, this);
+        this(null, mmlStylesheet);
+
+},
+function (err, mmlStylesheet) {
     //Flow from after getting full path to Style file
 
     var _self = this;
@@ -2074,7 +1578,7 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function
     var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/vector-tiles/:z/:x/:y.*';
 
     //Create Route for this table
-    this.app.all(route, function (req, res) {
+    this.app.all(route, cacher.cache('day'), function (req, res) {
 
         //Start Timer to measure response speed for tile requests.
         var startTime = Date.now();
@@ -2104,19 +1608,28 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function
                     var map = new mapnik.Map(256, 256, mercator.proj4);
 
                     //Create Layer. Check to see if 3857.  If not, assume WGS84
-                    var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
+                    //var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
 
-                    var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
+                    //var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
 
                     var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
 
-                    layer.datasource = datasource;
-                    layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'style'];
+                    //layer.datasource = datasource;
+                    //layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'default'];
 
                     map.bufferSize = 64;
-                    map.load(path.join(fullpath), {
+                    map.fromString(path.join(mmlStylesheet), {
                         strict: true
                     }, function (err, map) {
+
+                        if(err){
+                            res.writeHead(500, {
+                                'Content-Type': 'text/plain'
+                            });
+
+                            res.end(err.message);
+                            return;
+                        }
 
                         //From Tilelive-Bridge - getTile
                         // set source _maxzoom cache to prevent repeat calls to map.parameters
@@ -2132,10 +1645,10 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(function
                         // 'radial-distance', 'visvalingam-whyatt', 'zhao-saalfeld' (default)
                         opts.simplify_algorithm = 'radial-distance';
 
-                        res.setHeader('Content-Type', 'application/x-protobuf');
+                        res.setHeader('Content-Type', 'application/octet-stream');
                         res.setHeader('Content-Encoding', 'deflate');
 
-                        map.add_layer(layer);
+                        //map.add_layer(layer);
 
                         //map.resize(256, 256);
                         map.extent = bbox;

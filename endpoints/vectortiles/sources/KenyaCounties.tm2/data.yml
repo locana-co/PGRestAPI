@@ -11,7 +11,7 @@ description: Kenya Counties
 Layer: 
   - id: kd
     Datasource: 
-      file: /home/apollolm/Documents/PGRestAPI/endpoints/mapnik/data/Ken_CountyWithWater.shp
+      file: /Users/ryanwhitley/Documents/GitHub/PGRestAPI/endpoints/mapnik/data/Ken_CountyWithWater.shp
       type: shape
     description: ew
     fields: 

@@ -4,11 +4,11 @@
   "private": true,
   "author": "Ryan Whitley <apollolm@gmail.com>",
   "description": "Spatial API on top of PostGreSQL/PostGIS.",
-  "contributors": [ 
+  "contributors": [
     {
       "name": "Ryan Whitley",
       "email": "apollolm@gmail.com"
-    } 
+    }
   ],
   "scripts": {
     "start": "node index.js",
@@ -26,28 +26,35 @@
     "request": "*",
     "generic-pool": "*",
     "lru-cache": "*",
-    "zlib": "*"
+    "semver": "*",
+    "millstone": "*",
+    "underscore": "*",
+    "jquery": "2.1.1",
+    "jsdom": "*",
+    "crypto": "0.0.3"
   },
-  "optionalDependencies":{
-  	"mapnik": "1.4.2",
-	"carto": "*",
-	"ogr2ogr": "*",
-	"mbtiles": "*",
-	"tilelive-tmsource": "mojodna/tilelive-tmsource"
+  "optionalDependencies": {
+    "mapnik": "1.4.2",
+    "carto": "*",
+    "ogr2ogr": "*",
+    "mbtiles": "*",
+    "tilelive": "*",
+    "tilelive-bridge": "*",
+    "tilelive-tmsource": "mojodna/tilelive-tmsource"
   },
   "devDependencies": {
     "mocha": "*",
-	"sinon": "*",
+    "sinon": "*",
     "chai": "~1.4.2",
-	"express-mock-request": "*",
-	"supertest": "*"
+    "express-mock-request": "*",
+    "supertest": "*"
   },
   "keywords": [
     "PostGIS",
     "Mapnik",
     "GIS",
-	"Maps",
-	"Spatial API"
+    "Maps",
+    "Spatial API"
   ],
   "repository": {
     "type": "git",

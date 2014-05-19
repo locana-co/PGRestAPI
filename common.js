@@ -191,7 +191,8 @@ common.findSpatialTables = function (app, callback) {
                 var spTable = {
                     table: item.f_table_name,
                     geometry_column: item.f_geometry_column,
-                    srid: item.srid
+                    srid: item.srid,
+                    type: item.type
                 };
                 //spatialTables.push(spTable);
                 spatialTables[item.f_table_name] = spTable;

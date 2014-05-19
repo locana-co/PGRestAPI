@@ -2,10 +2,10 @@
 @text: #FF1493;
 @OrangeRed: #FF4500;
 
-#world, #default {
-  line-color: lighten(yellow, 30%);
+#default {
+  line-color: #fff;
   line-width: 2;
-  polygon-fill: yellow;
+  polygon-fill: red;
 }
 
 

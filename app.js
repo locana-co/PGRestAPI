@@ -130,7 +130,7 @@ var express = require('express'),
     var mapnik, vectorTiles;
     try {
         mapnik = require('./endpoints/mapnik')
-        //vectorTiles = require('./endpoints/vectortiles'); //Not ready yet
+        vectorTiles = require('./endpoints/vectortiles'); //Not ready yet
 
     } catch (e) {
         mapnik = null;
@@ -139,7 +139,7 @@ var express = require('express'),
 
     if (mapnik) {
         app.use(mapnik.app(passport));
-        //app.use(vectorTiles.app(passport));
+        app.use(vectorTiles.app(passport));
     }
 
 
