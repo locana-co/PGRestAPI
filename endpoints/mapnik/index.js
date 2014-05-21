@@ -1322,55 +1322,48 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
 //                var tag = carto.Parser().parse(args.style);
 //            }
 
-            parseXYZ(req, TMS_SCHEME, function (err, params) {
-                if (err) {
-                    res.writeHead(500, {
-                        'Content-Type': 'text/plain'
-                    });
-                    res.end(err.message);
-                } else {
-                    try {
-                        //create map
-                        var map = new mapnik.Map(256, 256, mercator.proj4);
+            try {
+                //create map
+                var map = new mapnik.Map(256, 256, mercator.proj4);
 
-                        var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false, false);
+                var bbox = mercator.xyz_to_envelope(req.param('x'), req.param('y'), req.param('z'), false, false);
 
-                        map.bufferSize = 64;
+                map.bufferSize = 64;
 
-                        map.fromString(mmlStylesheet, {
-                            strict: true
-                        }, function (err, map) {
-                            if (err)
-                                throw err;
+                map.fromString(mmlStylesheet, {
+                    strict: true
+                }, function (err, map) {
+                    if (err)
+                        throw err;
 
-                            //Write out the map xml
-                            console.log(map.toXML());
+                    //Write out the map xml
+                    console.log(map.toXML());
 
-                            map.extent = bbox;
-                            var im = new mapnik.Image(map.width, map.height);
-                            map.render(im, function (err, im) {
+                    map.extent = bbox;
+                    var im = new mapnik.Image(map.width, map.height);
+                    map.render(im, function (err, im) {
 
-                                if (err) {
-                                    throw err;
-                                } else {
-                                    var duration = Date.now() - startTime;
-                                    _self.performanceObject.times.push(duration);
-                                    res.writeHead(200, {
-                                        'Content-Type': 'image/png'
-                                    });
-                                    res.end(im.encodeSync('png'));
-                                }
+                        if (err) {
+                            throw err;
+                        } else {
+                            var duration = Date.now() - startTime;
+                            _self.performanceObject.times.push(duration);
+                            res.writeHead(200, {
+                                'Content-Type': 'image/png'
                             });
-                        });
+                            res.end(im.encodeSync('png'));
+                        }
+                    });
+                });
 
-                    } catch (err) {
-                        res.writeHead(500, {
-                            'Content-Type': 'text/plain'
-                        });
-                        res.end(err.message);
-                    }
-                }
-            });
+            } catch (err) {
+                res.writeHead(500, {
+                    'Content-Type': 'text/plain'
+                });
+                res.end(err.message);
+            }
+
+
         });
 
         console.log("Created multi tile service (" + _self.settings.routeProperties.source + "): " + route);
@@ -1595,34 +1588,56 @@ function (err, mmlStylesheet) {
             }
         }
 
-        parseXYZ(req, TMS_SCHEME, function (err, params) {
 
-            if (err) {
-                res.writeHead(500, {
-                    'Content-Type': 'text/plain'
-                });
-                res.end(err.message);
-            } else {
-                try {
-                    //create map
-                    var map = new mapnik.Map(256, 256, mercator.proj4);
+        try {
+            //create map
+            var map = new mapnik.Map(256, 256, mercator.proj4);
 
-                    //Create Layer. Check to see if 3857.  If not, assume WGS84
-                    //var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
+            var bbox = mercator.xyz_to_envelope(req.param('x'), req.param('y'), req.param('z'), false);
 
-                    //var datasource = new mapnik.Datasource(_self.settings.mapnik_datasource);
+            map.bufferSize = 64;
+            map.fromString(mmlStylesheet, {
+                strict: true
+            }, function (err, map) {
 
-                    var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
+                if(err){
+                    res.writeHead(500, {
+                        'Content-Type': 'text/plain'
+                    });
 
-                    //layer.datasource = datasource;
-                    //layer.styles = [_self.settings.routeProperties.name, _self.settings.routeProperties.defaultStyle || 'default'];
+                    res.end(err.message);
+                    return;
+                }
 
-                    map.bufferSize = 64;
-                    map.fromString(path.join(mmlStylesheet), {
-                        strict: true
-                    }, function (err, map) {
+                //From Tilelive-Bridge - getTile
+                // set source _maxzoom cache to prevent repeat calls to map.parameters
+                if (_self._maxzoom === undefined) {
+                    _self._maxzoom = map.parameters.maxzoom ? parseInt(map.parameters.maxzoom, 10) : 14;
+                }
 
-                        if(err){
+                var opts = {};
+                // use tolerance of 32 for zoom levels below max
+                opts.tolerance = req.param('z') < _self._maxzoom ? 32 : 0;
+                // make larger than zero to enable
+                opts.simplify = 0;
+                // 'radial-distance', 'visvalingam-whyatt', 'zhao-saalfeld' (default)
+                opts.simplify_algorithm = 'radial-distance';
+
+                res.setHeader('Content-Type', 'application/octet-stream');
+                res.setHeader('Content-Encoding', 'deflate');
+
+                map.extent = bbox;
+                // also pass buffer_size in options to be forward compatible with recent node-mapnik
+                // https://github.com/mapnik/node-mapnik/issues/175
+                opts.buffer_size = map.bufferSize;
+
+                map.render(new mapnik.VectorTile(+req.param('z'), +req.param('x'), +req.param('y')), opts, function (err, image) {
+
+                    if (err)
+                        return callback(err);
+                    // Fake empty RGBA to the rest of the tilelive API for now.
+                    image.isSolid(function (err, solid, key) {
+                        if (err) {
                             res.writeHead(500, {
                                 'Content-Type': 'text/plain'
                             });
@@ -1630,101 +1645,57 @@ function (err, mmlStylesheet) {
                             res.end(err.message);
                             return;
                         }
+                        // Solid handling.
+                        var done = function (err, buffer) {
+                            if (err) {
+                                res.writeHead(500, {
+                                    'Content-Type': 'text/plain'
+                                });
 
-                        //From Tilelive-Bridge - getTile
-                        // set source _maxzoom cache to prevent repeat calls to map.parameters
-                        if (_self._maxzoom === undefined) {
-                            _self._maxzoom = map.parameters.maxzoom ? parseInt(map.parameters.maxzoom, 10) : 14;
-                        }
+                                res.end(err.message);
+                                return;
+                            }
 
-                        var opts = {};
-                        // use tolerance of 32 for zoom levels below max
-                        opts.tolerance = params.z < _self._maxzoom ? 32 : 0;
-                        // make larger than zero to enable
-                        opts.simplify = 0;
-                        // 'radial-distance', 'visvalingam-whyatt', 'zhao-saalfeld' (default)
-                        opts.simplify_algorithm = 'radial-distance';
+                            if (solid === false) {
+                                var duration = Date.now() - startTime;
+                                _self.performanceObject.times.push(duration);
 
-                        res.setHeader('Content-Type', 'application/octet-stream');
-                        res.setHeader('Content-Encoding', 'deflate');
+                                res.send(buffer); //return response
+                                return;
+                            }
 
-                        //map.add_layer(layer);
+                            // Empty tiles are equivalent to no tile.
+                            if (_self._blank || !key) {
+                                res.writeHead(500, {
+                                    'Content-Type': 'text/plain'
+                                });
 
-                        //map.resize(256, 256);
-                        map.extent = bbox;
-                        // also pass buffer_size in options to be forward compatible with recent node-mapnik
-                        // https://github.com/mapnik/node-mapnik/issues/175
-                        opts.buffer_size = map.bufferSize;
+                                res.end('Tile is blank ordoes not exist');
+                                return;
+                            }
 
-                        map.render(new mapnik.VectorTile(+params.z, +params.x, +params.y), opts, function (err, image) {
+                            // Fake a hex code by md5ing the key.
+                            var mockrgb = crypto.createHash('md5').update(buffer).digest('hex').substr(0, 6);
+                            buffer.solid = [parseInt(mockrgb.substr(0, 2), 16), parseInt(mockrgb.substr(2, 2), 16), parseInt(mockrgb.substr(4, 2), 16), 1].join(',');
+                            res.send(buffer);
 
-                            //immediate(function() {
-                            //	source._map.release(map);
-                            //});
-
-                            if (err)
-                                return callback(err);
-                            // Fake empty RGBA to the rest of the tilelive API for now.
-                            image.isSolid(function (err, solid, key) {
-                                if (err) {
-                                    res.writeHead(500, {
-                                        'Content-Type': 'text/plain'
-                                    });
-
-                                    res.end(err.message);
-                                    return;
-                                }
-                                // Solid handling.
-                                var done = function (err, buffer) {
-                                    if (err) {
-                                        res.writeHead(500, {
-                                            'Content-Type': 'text/plain'
-                                        });
-
-                                        res.end(err.message);
-                                        return;
-                                    }
-
-                                    if (solid === false) {
-                                        var duration = Date.now() - startTime;
-                                        _self.performanceObject.times.push(duration);
-
-                                        res.send(buffer); //return response
-                                        return;
-                                    }
-
-                                    // Empty tiles are equivalent to no tile.
-                                    if (_self._blank || !key) {
-                                        res.writeHead(500, {
-                                            'Content-Type': 'text/plain'
-                                        });
-
-                                        res.end('Tile does not exist');
-                                        return;
-                                    }
-
-                                    // Fake a hex code by md5ing the key.
-                                    var mockrgb = crypto.createHash('md5').update(buffer).digest('hex').substr(0, 6);
-                                    buffer.solid = [parseInt(mockrgb.substr(0, 2), 16), parseInt(mockrgb.substr(2, 2), 16), parseInt(mockrgb.substr(4, 2), 16), 1].join(',');
-                                    res.send(buffer);
-
-                                };
-                                // No deflate.
-                                //return !_self._deflate ? done(null, image.getData()) : zlib.deflate(image.getData(), done);
-                                //For now, assume we're deflating
-                                zlib.deflate(image.getData(), done);
-                            });
-                        });
+                        };
+                        // No deflate.
+                        //return !_self._deflate ? done(null, image.getData()) : zlib.deflate(image.getData(), done);
+                        //For now, assume we're deflating
+                        zlib.deflate(image.getData(), done);
                     });
-                } catch (err) {
-                    res.writeHead(500, {
-                        'Content-Type': 'text/plain'
-                    });
+                });
+            });
+        } catch (err) {
+            res.writeHead(500, {
+                'Content-Type': 'text/plain'
+            });
 
-                    res.end(err.message);
-                }
-            }
-        });
+            res.end(err.message);
+        }
+
+
     });
 
     console.log("Created vector tile service: " + route);
