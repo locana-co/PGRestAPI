@@ -1670,7 +1670,7 @@ function (err, mmlStylesheet) {
                                     'Content-Type': 'text/plain'
                                 });
 
-                                res.end('Tile is blank ordoes not exist');
+                                res.end('Tile is blank or does not exist');
                                 return;
                             }
 
@@ -1694,8 +1694,6 @@ function (err, mmlStylesheet) {
 
             res.end(err.message);
         }
-
-
     });
 
     console.log("Created vector tile service: " + route);
