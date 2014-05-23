@@ -1595,7 +1595,7 @@ function (err, mmlStylesheet) {
 
             var bbox = mercator.xyz_to_envelope(req.param('x'), req.param('y'), req.param('z'), false);
 
-            map.bufferSize = 64;
+            map.bufferSize = 10;
             map.fromString(mmlStylesheet, {
                 strict: true
             }, function (err, map) {
