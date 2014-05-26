@@ -222,7 +222,9 @@ exports.app = function (passport) {
                             'host': settings.pg.server,
                             'port': settings.pg.port,
                             'dbname': settings.pg.database,
-                            'table': item.table,
+                            //'table': item.table,
+                            'table': ("(SELECT " + item.geometry_column + " from " + item.table + ") as " + item.table),
+
                             'user': settings.pg.username,
                             'password': settings.pg.password,
                             'type': 'postgis',
