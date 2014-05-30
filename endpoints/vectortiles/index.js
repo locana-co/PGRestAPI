@@ -121,7 +121,7 @@ exports.app = function(passport) {
 			if (this.args.name) {
 				//The name of the mbtiles dataset
 				this.args.description = "";
-				this.args.requestSample = ((req.secure ? "https:" : "http") + "//" + this.args.host + this.args.path + "/{z}/{x}/{y}.pbf").replace("/dataset/", "/" + this.args.name.split(".")[0] + "/");
+				this.args.requestSample = ((req.secure ? "https:" : "http:") + "//" + this.args.host + this.args.path + "/{z}/{x}/{y}.pbf").replace("/dataset/", "/" + this.args.name.split(".")[0] + "/");
                 common.respond(this.req, this.res, this.args);
 			} else {
 				this.args.view = "dataset";
