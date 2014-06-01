@@ -1155,7 +1155,7 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
                 //create map
                 var map = new mapnik.Map(256, 256, mercator.proj4);
 
-                var bbox = mercator.xyz_to_envelope(req.param('x'), req.param('y'), req.param('z'), false, false);
+                var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), false);
 
                 map.bufferSize = 64;
 
@@ -1165,10 +1165,12 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
                     if (err)
                         throw err;
 
+                    map.extent = bbox;
                     //Write out the map xml
                     console.log(map.toXML());
 
-                    map.extent = bbox;
+
+
                     var im = new mapnik.Image(map.width, map.height);
                     map.render(im, function (err, im) {
 
