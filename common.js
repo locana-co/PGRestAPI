@@ -21,124 +21,121 @@ common.respond = function (req, res, args, callback) {
     var indent = args.pretty ? 2 : null;
 
     //Show or hide different NAV elements based on whether the endpoint is installed or not
+
     //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
     if (!args.format || args.format.toLowerCase() == "html") {
         //calculate response time
         args.responseTime = new Date - req._startTime; //ms since start of request
-        //Write out a response as JSON or HTML with the appropriate arguments.  Add more formats here if desired
-        if (!args.format || args.format.toLowerCase() == "html") {
-            //calculate response time
-            args.responseTime = new Date - req._startTime; //ms since start of request
 
+        //Determine sample request based on args
+        res.render(args.view, args);
+    }
+    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
+        //Respond with JSON
+        if (args.errorMessage) {
+            res.writeHead(500, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+        }
+        else {
+            //Send back json file
+            res.setHeader('Content-disposition', 'attachment; filename=' + downloadFileName + '.json');
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+
+            res.end(JSON.stringify(args.featureCollection, null, indent));
             //Determine sample request based on args
             res.render(args.view, args);
         }
-        else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
-            //Respond with JSON
-            if (args.errorMessage) {
-                res.writeHead(500, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
-            }
-            else {
-                //Send back json file
-                res.setHeader('Content-disposition', 'attachment; filename=' + downloadFileName + '.json');
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
-
-                res.end(JSON.stringify(args.featureCollection, null, indent));
-                //Determine sample request based on args
-                res.render(args.view, args);
-            }
-        }
-        else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
-            //Respond with JSON
-            if (args.errorMessage) {
-                res.jsonp({ error: args.errorMessage });
-            }
-            else {
-                //Send back json file
-                //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
-                //res.writeHead(200, {
-                //    'Content-Type': 'application/json'
-                //});
-                //res.end(JSON.stringify(args.featureCollection));
-                res.jsonp(args.featureCollection);
-
-            }
-        }
-        else if (args.format.toLowerCase() == "geojson") {
-            //Set initial header
-            res.setHeader('Content-disposition', 'attachment; filename=' + downloadFileName + '.geojson');
-
-            //Responsd with GeoJSON
-            if (args.errorMessage) {
-                res.writeHead(500, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
-            }
-            else {
-                //Send back json file
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify(args.featureCollection, null, indent));
-            }
-        }
-        else if (args.format && (args.format.toLowerCase() == "shapefile")) {
-            //Requesting Shapefile Format.
-            //If there's an error, return a json
-            if (args.errorMessage) {
-                res.writeHead(500, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
-            }
-            else {
-                //Send back a shapefile
-                res.download(args.file, function () {
-                    callback(args.file)
-                });
-            }
-        }
-        else if (args.format && (args.format.toLowerCase() == "csv")) {
-            //Responsd with CSV
-            //If there's an error, return a json
-            if (args.errorMessage) {
-                res.writeHead(500, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
-            }
-            else {
-                var filename = downloadFileName + ".csv";
-                //Send back a csv
-                res.setHeader('Content-disposition', 'attachment; filename=' + filename);
-                res.writeHead(200, {
-                    'Content-Type': 'text/csv'
-                });
-                res.end(args.featureCollection);
-            }
+    }
+    else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
+        //Respond with JSON
+        if (args.errorMessage) {
+            res.jsonp({ error: args.errorMessage });
         }
         else {
-            //If unrecognized format is specified
-            if (args.errorMessage) {
-                res.writeHead(500, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
-            }
-            else {
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
-                res.end(JSON.stringify(args.featureCollection, null, indent));
-            }
+            //Send back json file
+            //res.setHeader('Content-disposition', 'attachment; filename=' + args.table + '.json');
+            //res.writeHead(200, {
+            //    'Content-Type': 'application/json'
+            //});
+            //res.end(JSON.stringify(args.featureCollection));
+            res.jsonp(args.featureCollection);
+
         }
     }
+    else if (args.format.toLowerCase() == "geojson") {
+        //Set initial header
+        res.setHeader('Content-disposition', 'attachment; filename=' + downloadFileName + '.geojson');
+
+        //Responsd with GeoJSON
+        if (args.errorMessage) {
+            res.writeHead(500, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+        }
+        else {
+            //Send back json file
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify(args.featureCollection, null, indent));
+        }
+    }
+    else if (args.format && (args.format.toLowerCase() == "shapefile")) {
+        //Requesting Shapefile Format.
+        //If there's an error, return a json
+        if (args.errorMessage) {
+            res.writeHead(500, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+        }
+        else {
+            //Send back a shapefile
+            res.download(args.file, function () {
+                callback(args.file)
+            });
+        }
+    }
+    else if (args.format && (args.format.toLowerCase() == "csv")) {
+        //Responsd with CSV
+        //If there's an error, return a json
+        if (args.errorMessage) {
+            res.writeHead(500, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+        }
+        else {
+            var filename = downloadFileName + ".csv";
+            //Send back a csv
+            res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+            res.writeHead(200, {
+                'Content-Type': 'text/csv'
+            });
+            res.end(args.featureCollection);
+        }
+    }
+    else {
+        //If unrecognized format is specified
+        if (args.errorMessage) {
+            res.writeHead(500, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+        }
+        else {
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify(args.featureCollection, null, indent));
+        }
+    }
+
 }
 
 
