@@ -1,0 +1,419 @@
+{
+    "datasources": {
+        "csv": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            },
+            "row_limit": {
+                "type": "unsigned",
+                "doc": "Max amount of features to read from the datasource",
+                "default-value": 0,
+                "default-meaning": "All features will be read from the datasource (unless row_limit is > 1)"
+            },
+            "strict": {
+                "type": "boolean",
+                "doc": "Control if the datasource should throw on invalid rows",
+                "default-value": false,
+                "default-meaning": "Unless this option is set to true the datasource will skip invalid rows and attempt to parse as much data as possible"
+            },
+            "inline": {
+                "type": "string",
+                "doc": "Raw tabular data to be read instead of reading data from a file",
+                "default-value": "",
+                "default-meaning": "Unless this option is provided data will be read from the `file` option"
+            },
+            "escape": {
+                "type": "string",
+                "doc": "The escape character to use for parsing data",
+                "default-value": "A single backslash (aka. reverse solidus): \\",
+                "default-meaning": "A backslash will be used as the assumed character that the data uses for escaping other characters"
+            },
+            "quote": {
+                "type": "string",
+                "doc": "The quote character to use for parsing data",
+                "default-value": "A quotation mark (aka. double quote): \"",
+                "default-meaning": "A backslash will be used as the assumed character that the data uses for escaping other characters"
+            },
+            "separator": {
+                "type": "string",
+                "doc": "The separator character to use for parsing data",
+                "default-value": "Basic autodetection is used to determine the best default value if the user does not manually supply a separator.",
+                "default-meaning": "A comma will be used unless more tabs (\t), pipes (|), or semicolons (;) are detected than commas in the header row (in that order of preference)"
+            },
+            "headers": {
+                "type": "string",
+                "doc": "A comma separated list of header names that can be set to add headers to data that lacks them",
+                "default-value": "",
+                "default-meaning": "Headers will be parsed from the first line of the data unless this option is set"
+            },
+            "filesize_max": {
+                "type": "float",
+                "doc": "The maximum filesize in MB that will be accepted",
+                "default-value": 20,
+                "default-meaning": "A file that is larger that 20 MB will not be accepted and an error will be throw unless the user manually passes this option with a larger value (useful only in cases where your machine has a lot of memory)"
+            }
+        },
+        "gdal": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "geojson": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "occi": {
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "ogr": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "osm": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "postgis": {
+            "table": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "key_field": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": ""
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            },
+            "dbname": {
+                "type": "string",
+                "doc": "Database name",
+                "default-value": "username",
+                "default-meaning": "Will default to a database named after the user (as per libpq defaults)",
+                "required": false
+            },
+            "host": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "password": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "port": {
+                "type": "unsigned",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "user": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "connect_timeout": {
+                "type": "unsigned",
+                "doc": "",
+                "default-value": 4,
+                "default-meaning": "",
+                "required": false
+            },
+            "schema": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "extent": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "estimate_extent": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "geometry_table": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "geometry_field": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "cursor_size": {
+                "type": "unsigned",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": false
+            },
+            "row_limit": {
+                "type": "unsigned",
+                "doc": "Max amount of features to read from the datasource",
+                "default-value": 0,
+                "default-meaning": "All features will be read from the datasource (unless row_limit is > 1)",
+                "required": false
+            },
+            "srid": {
+                "type": "unsigned",
+                "doc": "",
+                "default-value": 0,
+                "default-meaning": "",
+                "required": false
+            },
+            "initial_size": {
+                "type": "unsigned",
+                "doc": "",
+                "default-value": 1,
+                "default-meaning": "",
+                "required": false
+            },
+            "max_size": {
+                "type": "unsigned",
+                "doc": "",
+                "default-value": 10,
+                "default-meaning": "",
+                "required": false
+            },
+            "simplify_geometries": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": false,
+                "default-meaning": "",
+                "required": false
+            },
+            "autodetect_key_field": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": false,
+                "default-meaning": "",
+                "required": false
+            },
+            "persist_connection": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": true,
+                "default-meaning": "Connections, successfully created, will be kept open until Mapnik shuts down",
+                "required": false
+            },
+            "extent_from_subquery": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": false,
+                "default-meaning": "",
+                "required": false
+            }
+        },
+        "python": {
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "raster": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            }
+        },
+        "rasterlite": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            }
+        },
+        "shape": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            }
+        },
+        "sqlite": {
+            "file": {
+                "type": "string",
+                "doc": "Path to the file for the datasource",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "base": {
+                "type": "string",
+                "doc": "A base path used to complete a full path to a file.",
+                "default-value": "",
+                "default-meaning": "Only the `file` option will be used to attempt to load data from the filesystem"
+            },
+            "encoding": {
+                "type": "string",
+                "doc": "The encoding value for the datasource attributes",
+                "default-value": "utf-8",
+                "default-meaning": "UTF8 will be the assumed encoding for string attribute values"
+            },
+            "table": {
+                "type": "string",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": "",
+                "required": true
+            },
+            "key_field": {
+                "type": "boolean",
+                "doc": "",
+                "default-value": "",
+                "default-meaning": ""
+            }
+        }
+    }
+}
