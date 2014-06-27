@@ -9,10 +9,13 @@ lib-cov
 *.pid
 *.gz
 
+
 pids
 logs
 results
 node_modules/
+
+!node_modules/tilelive-tmsource
 
 npm-debug.log
 
@@ -26,3 +29,5 @@ lib/datablaster/blast_config.js
 Thumbs.db
 
 .idea/
+
+.DS_Store
