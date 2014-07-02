@@ -206,50 +206,50 @@ exports.app = function (passport) {
     //Load PG Tables
     //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one
     //common.vacuumAnalyzeAll();
+
     common.findSpatialTables(app, function (error, tables) {
-        if (error) {
-            console.log(error);
-        } else {
-            if (tables) {
-                Object.keys(tables).forEach(function (key) {
-                    var item = tables[key];
+      if (error) {
+        console.log(error);
+      } else {
+        if (tables) {
+          Object.keys(tables).forEach(function (key) {
+            var item = tables[key];
 
-                    (function (item) {
+            (function (item) {
 
-                        var tileSettings = { routeProperties: {} };
+              var tileSettings = { routeProperties: {} };
 
-                        tileSettings.mapnik_datasource = {
-                            'host': settings.pg.server,
-                            'port': settings.pg.port,
-                            'dbname': settings.pg.database,
-                            //'table': item.table,
-                            'table': ("(SELECT " + item.geometry_column + " from " + item.table + ") as " + item.table),
+              tileSettings.mapnik_datasource = {
+                'host': settings.pg.server,
+                'port': settings.pg.port,
+                'dbname': settings.pg.database,
+                //'table': item.table,
+                'table': ("(SELECT " + item.geometry_column + " from " + item.table + ") as " + item.table),
 
-                            'user': settings.pg.username,
-                            'password': settings.pg.password,
-                            'type': 'postgis',
-                            'estimate_extent': 'true',
-                            'geometry_field': item.geometry_column,
-                            'srid' : item.srid,
-                            'geometry_type' : item.type
-                        };
-                        tileSettings.routeProperties.name = item.table;
-                        tileSettings.routeProperties.srid = item.srid;
-                        tileSettings.routeProperties.cartoFile = "";
-                        tileSettings.routeProperties.source = "postgis";
-                        tileSettings.routeProperties.geom_field = item.geometry_column;
-                        tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
+                'user': settings.pg.username,
+                'password': settings.pg.password,
+                'type': 'postgis',
+                'estimate_extent': 'true',
+                'geometry_field': item.geometry_column,
+                'srid' : item.srid,
+                'geometry_type' : item.type
+              };
+              tileSettings.routeProperties.name = item.table;
+              tileSettings.routeProperties.srid = item.srid;
+              tileSettings.routeProperties.cartoFile = "";
+              tileSettings.routeProperties.source = "postgis";
+              tileSettings.routeProperties.geom_field = item.geometry_column;
+              tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
 
-                        createMultiTileRoute(app, tileSettings, PGTileStats.MultiTiles);
-                        createSingleTileRoute(app, tileSettings, PGTileStats.SingleTiles);
-                        createVectorTileRoute(app, tileSettings, PGTileStats.VectorTiles);
+              createMultiTileRoute(app, tileSettings, PGTileStats.MultiTiles);
+              createSingleTileRoute(app, tileSettings, PGTileStats.SingleTiles);
+              createVectorTileRoute(app, tileSettings, PGTileStats.VectorTiles);
 
-                    })(item);
-                });
-            }
+            })(item);
+          });
         }
+      }
     });
-
 
     var sessionStart = new Date().toLocaleString();
 

@@ -97,8 +97,8 @@ var express = require('express'),
     }
 
 //This must be after app.use(passport.initialize())
-    app.use(cors());
-    app.use(app.router);
+app.use(cors());
+app.use(app.router);
 
 
 
@@ -116,7 +116,6 @@ var express = require('express'),
 //TODO - Loop thru endpoints folder and require everything in there
     var tables = require('./endpoints/tables');
     app.use(tables.app(passport));
-    //add passport reference
 
     var tiles = require('./endpoints/tiles');
     app.use(tiles.app(passport));
