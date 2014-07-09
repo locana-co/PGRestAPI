@@ -9,7 +9,7 @@ var GP = { operations: {}, names: [] };
 
 //Dynamically load Query or Geoprocessing Options from the plugin folder.
 require("fs").readdirSync(__dirname).forEach(function (file) {
-    if (file != "index.js" && file != "GeoOperation.js.example") {
+    if (file != "index.js" && file != "GeoOperation.js.example" && file != ".DS_Store") {
         try {
             var operation = require(__dirname + "/" + file);
             var name = operation.name.toLowerCase(); //Lower name

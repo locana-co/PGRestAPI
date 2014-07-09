@@ -1105,7 +1105,6 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
         optional_args.cachedir = '/tmp/millstone';
 
         //If no css style is present, then pick a default mss file. Points are treated separately with a different mss file
-
         this.settings.mapnik_datasource.layerName = this.mssClass;
         this.MMLConverter = new MMLBuilder(this.settings.mapnik_datasource, optional_args, function(err, payload){});
         this.MMLConverter.render(styleString, this);
