@@ -167,7 +167,7 @@ function loadPNGMBTilesRoutes(app){
       if (err)
         throw err;
 
-      PNGroute = '/services/vector-tiles/' + filename.split('.')[0] + '/:z/:x/:y.png';
+      PNGroute = '/services/image-tiles/' + filename.split('.')[0] + '/:z/:x/:y.png';
 
       app.get(PNGroute, function (req, res) {
         source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {

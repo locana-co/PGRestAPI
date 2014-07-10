@@ -1,6 +1,4 @@
-﻿//////////Nodetiles
-
-//Common and settings should be used by all sub-modules
+﻿//Common and settings should be used by all sub-modules
 var express = require('express'), common = require("../../common"), settings = require('../../settings');
 
 //Module-specific requires:
@@ -70,9 +68,9 @@ var tileSettings = { mapnik_datasource: {}, tileSize: { height: 256, width: 256}
 exports.app = function (passport) {
     var app = express();
 
-    var shpLocation = path.join(__dirname, "/data/shapefiles");
-    var memoryShpLocation = path.join(__dirname, "/data/inmemory-shapefiles");
-    var rasterLocation = path.join(__dirname, "/data/rasters");
+    var shpLocation = path.join(__dirname, "../../data/shapefiles");
+    var memoryShpLocation = path.join(__dirname, "../../data/inmemory-shapefiles");
+    var rasterLocation = path.join(__dirname, "../../data/rasters");
 
     //Find Shapefiles
     shapefiles = getShapeFilePaths(shpLocation);
@@ -156,8 +154,6 @@ exports.app = function (passport) {
     //Loop thru shapes and spin up new routes
     shapefiles.forEach(function (item) {
         shpName = item.split('.')[0];
-        //createShapefileTileRenderer(app, shpName, shpLocation + "/" + item, 4326, null);
-        //createShapefileSingleTileRenderer(app, shpName, shpLocation + "/" + item, 4326, null);
 
         tileSettings.mapnik_datasource = {
             type: 'shape',
@@ -169,6 +165,9 @@ exports.app = function (passport) {
         tileSettings.routeProperties.source = "shapefile";
         tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
         tileSettings.routeProperties.performanceObject = ShapeTileStats;
+
+        //createMultiTileRoute(app, tileSettings, MemoryShapeTileStats.MultiTiles);
+        createVectorTileRoute(app, tileSettings, ShapeTileStats.VectorTiles);
     });
 
     var memoryShpName = "";
@@ -176,8 +175,6 @@ exports.app = function (passport) {
         //Also (for performance testing puproses, create in-memory versions of the .shp datasources and spin up a new route for those)
         memoryShpName = item.split('.')[0];
         memoryShapefiles[memoryShpName] = createInMemoryDatasource(memoryShpName, memoryShpLocation + "/" + item);
-        //createMemoryShapefileSingleTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
-        //createMemoryShapefileTileRenderer(app, memoryShpName, memoryShapefiles[memoryShpName], 4326, null);
 
         var tileSettings = { routeProperties: {} };
 
@@ -1013,7 +1010,7 @@ var aquire = function (id, options, callback) {
     });
 };
 
-//Find all shapefiles in the ./endpoints/Mapnik/data/Shapefiles folder.
+//Find all shapefiles in the ./data/Shapefiles folder.
 //Spin up a new endpoint for each one of those.
 function getShapeFilePaths(shpLocation) {
     var items = [];
