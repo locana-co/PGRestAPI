@@ -16,6 +16,8 @@ and you'll get a REST API that supports:
 * Route Caching for .pngs
 * Admin panel (/admin) to show tile generation statistics and cache size
 * Shapefile List (/shapefiles) to display shapefiles being served as map services
+* Vector Tiles endpoint for serving .mbtiles sources
+* Image Tiles endpoint for serving .mbtiles sources
 
 Utilities:
 * WKT Previewer
@@ -28,7 +30,7 @@ Under development:
 * Shapefile map services ((Drop shapefiles into data/shapefiles)
 * Datablaster - Sort of an ETL to pregenerate .json/.geojson files for use in your applications (similar to how Jeckyll produces HTML/CSS/Javascirpt)
 * Authentication with passport/MongoDB/Mongoose (Disabled for now)
-* Vector Tiles endpoint for serving .tm2 or .mbtiles sources (not working yet)
+
 
 More To-Dos:
 * CartoCSS to Mapnik XML parser (Carto module)
