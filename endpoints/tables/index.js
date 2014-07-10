@@ -7,11 +7,11 @@ var express = require('express'), common = require("../../common"), settings = r
 var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), shortid = require("shortid");
 var GeoFragger = require('../../lib/GeoFragger');
 
-var mapnik;
+var tiles;
 try {
-	mapnik = require('../../endpoints/mapnik');
+  tiles = require('../../endpoints/tiles');
 } catch (e) {
-	mapnik = null;
+  tiles = null;
 }
 
 var ogr2ogr;
@@ -204,7 +204,7 @@ exports.app = function(passport) {
 				rasterOrGeometry.present = true;
 				rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
 			} else if (item.data_type == "geometry") {
-			    if (mapnik)
+			    if (tiles)
 			        args.featureCollection.supportedOperations.push({
 			            link: args.fullURL + "/dynamicMapLanding",
 			            name: "Dynamic Map Service"
@@ -883,8 +883,8 @@ exports.app = function(passport) {
 		}
 	}));
 
-	//If mapnik exists, then load the endpointDynamic
-	if (mapnik) {
+	//If the tiles endpoint exists, then load the endpointDynamic
+	if (tiles) {
 		//Show users about a table's dynamic map service, along with a preview
 		app.all('/services/tables/:table/dynamicMapLanding', flow.define(function(req, res) {
 			this.args = {};

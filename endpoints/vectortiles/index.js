@@ -1,13 +1,11 @@
-﻿//////////Vector Tiles////////////
-
-//Express, Common and settings should be used by all sub-modules
+﻿//Express, Common and settings should be used by all sub-modules
 var express = require('express'), common = require("../../common"), settings = require('../../settings');
 
 //These next requires are specific to this module only
 var path = require('path'), flow = require('flow');
 
 var tilelive = require('tilelive');
-var MMLBuilder = require("../mapnik/cartotomml/mml_builder");
+var MMLBuilder = require("../tiles/cartotomml/mml_builder");
 var fs = require("fs");
 if (tilelive) {
   tilelive.protocols['mbtiles:'] = require('mbtiles');
@@ -167,7 +165,7 @@ function loadPNGMBTilesRoutes(app){
       if (err)
         throw err;
 
-      PNGroute = '/services/image-tiles/' + filename.split('.')[0] + '/:z/:x/:y.png';
+      PNGroute = '/services/tiles/' + filename.split('.')[0] + '/:z/:x/:y.png';
 
       app.get(PNGroute, function (req, res) {
         source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {

@@ -3,11 +3,11 @@
 //Common and settings should be used by all sub-modules
 var express = require('express'), common = require("../../common"), settings = require('../../settings');
 
-var mapnik;
+var tiles;
 try {
-    mapnik = require('../../endpoints/mapnik');
+  tiles = require('../../endpoints/tiles');
 } catch (e) {
-    mapnik = null;
+  tiles = null;
 }
 
 
@@ -205,8 +205,8 @@ exports.app = function (passport) {
                     var ymax = extentArr[1].split(" ")[1];
 
                     //if GP operation specifies output image service, then spin one up
-                    if (mapnik && features) {
-                        mapnik.createImageFromGeoJSON(JSON.parse(JSON.stringify(features)), { xmin: xmin, ymin: ymin, xmax: xmax, ymax: ymax }, "4326", "style.xml", function (err, im) {
+                    if (tiles && features) {
+                      tiles.createImageFromGeoJSON(JSON.parse(JSON.stringify(features)), { xmin: xmin, ymin: ymin, xmax: xmax, ymax: ymax }, "4326", "style.xml", function (err, im) {
 
                             if (err) {
                                 res.writeHead(500, {

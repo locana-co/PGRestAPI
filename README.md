@@ -24,8 +24,8 @@ Under development:
 * GeoJSON to .png endpoint
 * Better caching for different endpoints
 * In-memory map services (Loads a Shapefile into memory for faster response times. Drop shapefiles into endpoints/mapnik/data/inmemory-shapefiles)
-* Raster map services (Drop a .tif into endpoints/mapnik/data/rasters)
-* Shapefile map services ((Drop shapefiles into endpoints/mapnik/data/shapefiles)
+* Raster map services (Drop a .tif into data/rasters)
+* Shapefile map services ((Drop shapefiles into data/shapefiles)
 * Datablaster - Sort of an ETL to pregenerate .json/.geojson files for use in your applications (similar to how Jeckyll produces HTML/CSS/Javascirpt)
 * Authentication with passport/MongoDB/Mongoose (Disabled for now)
 * Vector Tiles endpoint for serving .tm2 or .mbtiles sources (not working yet)

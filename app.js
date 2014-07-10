@@ -73,8 +73,8 @@ var express = require('express'),
     var tables = require('./endpoints/tables');
     app.use(tables.app(passport));
 
-    var tiles = require('./endpoints/tiles');
-    app.use(tiles.app(passport));
+    var tilestream = require('./endpoints/tilestream');
+    app.use(tilestream.app(passport));
 
     var geoprocessing = require('./endpoints/geoprocessing');
     app.use(geoprocessing.app(passport));
@@ -82,18 +82,18 @@ var express = require('express'),
     var utilities = require('./endpoints/utilities');
     app.use(utilities.app(passport));
 
-    var mapnik, vectorTiles;
+    var tiles, vectorTiles;
     try {
-        mapnik = require('./endpoints/mapnik')
-        vectorTiles = require('./endpoints/vectortiles'); //Not ready yet
+        tiles = require('./endpoints/tiles')
+        vectorTiles = require('./endpoints/vectortiles');
 
     } catch (e) {
-        mapnik = null;
-        console.log("Mapnik not properly installed. Skipping. Reason: " + e);
+        tiles = null;
+        console.log("Mapnik module has an error. Skipping this module. Reason: " + e);
     }
 
-    if (mapnik) {
-        app.use(mapnik.app(passport));
+    if (tiles) {
+        app.use(tiles.app(passport));
         app.use(vectorTiles.app(passport));
     }
 
