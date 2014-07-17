@@ -389,7 +389,7 @@ exports.app = function(passport) {
 
 				common.respond(req, res, args);
 			} else {
-                //TODO: I don't know if this will work.  Settings is not shared between all modules. It's static.  Use express variables instead.
+        //TODO: I don't know if this will work.  Settings is not shared between all modules. It's static.  Use express variables instead.
 				//Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
 				common.executeSelfRESTRequest(args.table, "/services/tables/" + this.args.table, {
 					where : "1=1",
@@ -423,7 +423,7 @@ exports.app = function(passport) {
 		this.args.groupby = this.args.groupby || "";
 		//group by fields
 		this.args.statsdef = this.args.statsdef || "";
-        //statistics definition clause
+    //statistics definition clause
 
 	    //Limit is mainly for the HTML response page.  Don't want too many records coming back there.
 		if (this.args.format && this.args.format.toLowerCase() == "html") {
@@ -443,17 +443,17 @@ exports.app = function(passport) {
 			//If we got some geom queries, store them here.
 			this.args.geometryStatement = geom_select_array.join(",");
 		} else {
-			//No geometry desired.  That means you can't have a 'shapefile' as output. Check
-		    if (this.args.format && this.args.format.toLowerCase() == 'shapefile') {
-				this.args.errorMessage = "Format 'shapefile' requires returnGeometry to be 'yes'.";
-				common.respond(this.req, this.res, this.args);
-				return;
-			}
+      //No geometry desired.  That means you can't have a 'shapefile' as output. Check
+      if (this.args.format && this.args.format.toLowerCase() == 'shapefile') {
+        this.args.errorMessage = "Format 'shapefile' requires returnGeometry to be 'yes'.";
+        common.respond(this.req, this.res, this.args);
+        return;
+      }
 
-			this.args.geometryStatement = "";
-			this.args.geom_fields_array = [];
-			//empty it
-		}
+      this.args.geometryStatement = "";
+      this.args.geom_fields_array = [];
+      //empty it
+    }
 
 		//return geom envelopes?
 		if (this.args.returnGeometryEnvelopes == "yes") {
@@ -556,7 +556,7 @@ exports.app = function(passport) {
 		    this.wkt = wkt_array;
 		}
 
-		//Add in WHERE clause, if specified.  Don't alter the original incoming paramter.  Create this.where to hold modifications
+		//Add in WHERE clause, if specified.  Don't alter the original incoming parameter.  Create this.where to hold modifications
 		if (this.args.where)
 			this.where = " " + this.where;
 
@@ -672,7 +672,23 @@ exports.app = function(passport) {
 					flo.args.file = filePath;
 					flo();
 					//Go to next block
-				})
+				});
+
+        //Set the callback for any errors
+        fileWriteStream.on("error", function (err) {
+          common.log("Error writing shapefile..." + err);
+          flo.args.file = "";
+          flo(); //Go to next block
+        });
+
+        shapefile.on("error", function (err) {
+          common.log("Error piping shapefile..." + err);
+          flo.args.file = "";
+          flo(); //Go to next block
+        });
+
+        shapefile.on('ogrinfo', console.error)
+
 				//Write
 				shapefile.pipe(fileWriteStream);
 			} else if (this.args.format && this.args.format.toLowerCase() == "csv") {
