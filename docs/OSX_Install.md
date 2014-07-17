@@ -11,6 +11,14 @@ PGRestAPI - OSX Installation
 	
 	Installed from .pkg:
 	http://nodejs.org/dist/v0.10.26/node-v0.10.26.pkg
+	
+###Install GDAL (for .shp outputs from queries)
+Download package from http://www.kyngchaos.com/software/frameworks
+
+Then:
+
+    echo 'export PATH=/Library/Frameworks/GDAL.framework/Programs:$PATH' >> ~/.bash_profile
+    source ~/.bash_profile
 
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/MacInstallation_Homebrew))
 
