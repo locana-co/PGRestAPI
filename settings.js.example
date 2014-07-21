@@ -13,7 +13,7 @@ settings.application.port = 3000;
 //Settings for postgres DB
 settings.pg.username = 'username';
 settings.pg.password = 'password';
-settings.pg.server = '127.0.0.1';
+settings.pg.server = '';
 settings.pg.port = '5432';
 settings.pg.database = 'test';
 settings.pg.featureLimit = 1000; //how many features to return by default
