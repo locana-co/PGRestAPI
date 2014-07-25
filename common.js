@@ -4,6 +4,7 @@ var pg = require('pg'),
     http = require("http"),
     settings = require("./settings"),
     fs = require("fs"),
+    zlib = require("zlib"),
     shortid = require("shortid"),
     mercator = require('./utils/sphericalmercator.js'), // 3857
     geographic = require('./utils/geographic.js'), //4326
@@ -58,7 +59,6 @@ common.respond = function (req, res, args, callback) {
 
     //Responsd with GeoJSON
     if (args.errorMessage) {
-      //res.jsonp(500, { error: args.errorMessage });
       res.writeHead(500, {
         'Content-Type': 'application/json'
       });
@@ -69,8 +69,11 @@ common.respond = function (req, res, args, callback) {
       res.writeHead(200, {
         'Content-Type': 'application/json'
       });
+
+      //res.setHeader('Content-Type', 'application/json');
+      //this.compress(req, res, JSON.stringify(args.featureCollection, null, indent));
+
       res.end(JSON.stringify(args.featureCollection, null, indent));
-      //res.jsonp(args.featureCollection);
     }
   }
   else if (args.format && (args.format.toLowerCase() == "shapefile")) {
@@ -124,6 +127,30 @@ common.respond = function (req, res, args, callback) {
     }
   }
 };
+
+common.compress = function(req, res, result) {
+    var acceptEncoding = req.headers['accept-encoding'];
+    if (!acceptEncoding) { acceptEncoding = ''; }
+    if (acceptEncoding.match(/\bdeflate\b/)) {
+        zlib.deflate(result, function(err, result) {
+            if (!err) {
+                res.writeHead(200, { 'content-encoding': 'deflate' });
+                res.end(result);
+            }
+        });
+    } else
+    if (acceptEncoding.match(/\bgzip\b/)) {
+        zlib.gzip(result, function(err, result){
+            if (!err) {
+                res.writeHead(200, { 'content-encoding': 'gzip' });
+                res.end(result);
+            }
+        });
+    } else {
+        res.writeHead(200, {});
+        res.end(result);
+    }
+}
 
 common.executePgQuery = function (query, callback) {
     //Just run the query
@@ -232,8 +259,6 @@ common.convertTileBoundsToBBoxWKT = function(bbox){
 
     //Get the upper left tile, upper right tile, lower left tile, lower right tile and convert to WGS84, then use the maxes and mins to create the bbox.
     var bboxTopLeft = mercator.xyz_to_envelope(parseInt(TopLeftTile.x), parseInt(TopLeftTile.y), parseInt(TopLeftTile.z), false, true);
-    //var bboxTopRight = mercator.xyz_to_envelope(parseInt(TopRightTile.x), parseInt(TopRightTile.y), parseInt(TopRightTile.z), false, true);
-    //var bboxBottomLeft = mercator.xyz_to_envelope(parseInt(BottomLeftTile.x), parseInt(BottomLeftTile.y), parseInt(BottomLeftTile.z), false, true);
     var bboxBottomRight = mercator.xyz_to_envelope(parseInt(BottomRightTile.x), parseInt(BottomRightTile.y), parseInt(BottomRightTile.z), false, true);
 
     //Had to reverse the indices here, they were backwards from what I thought they should be.

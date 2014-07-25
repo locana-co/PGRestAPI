@@ -13,6 +13,10 @@ fs = require("fs"),
 flow = require('flow'),
 carto = require('carto');
 
+//Caching
+var CCacher = require("../../lib/ChubbsCache");
+var cacher = new CCacher();
+
 var TMS_SCHEME = false;
 var styleExtension = '.xml';
 

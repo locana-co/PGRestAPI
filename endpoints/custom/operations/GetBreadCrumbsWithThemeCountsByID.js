@@ -31,7 +31,7 @@ operation.execute = flow.define(
         if (operation.isInputValid(args) === true) {
             operation.inputs["ids"] = args.ids;
             operation.inputs["theme"] = args.theme.toLowerCase();
-					  operation.inputs["gadm_level"] = args.gadm_level.toLowerCase();
+			operation.inputs["gadm_level"] = args.gadm_level.toLowerCase();
 
             //need to wrap ids in single quotes
             //Execute the query
@@ -82,7 +82,7 @@ operation.BuildSQLQuery = function(deepestLevel) {
 		}
 	}
 
-	sql += whereArray.join(", ") + " FROM gadmrollup WHERE guid" + deepestLevel + " IN ({{ids}}) GROUP BY " + whereArray.join(", ");
+	sql += whereArray.join(", ") + " FROM gadmrollup WHERE guid" + (deepestLevel == -1 ? "arc" : deepestLevel) + " IN ({{ids}}) GROUP BY " + whereArray.join(", ");
 	return sql;
 }
 

@@ -87,7 +87,7 @@ SphericalMercator.prototype.xyz_to_envelope = function(x, y, zoom, TMS_SCHEME, g
     if(geographic == true){
         return this.px_to_ll(ll, zoom).concat(this.px_to_ll(ur, zoom))
     }else{
-        mercator.forward(this.px_to_ll(ll, zoom).concat(this.px_to_ll(ur, zoom)));
+        return mercator.forward(this.px_to_ll(ll, zoom).concat(this.px_to_ll(ur, zoom)));
     }
 };
 

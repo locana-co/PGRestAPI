@@ -9,6 +9,9 @@ lib-cov
 *.pid
 *.gz
 
+*.cer
+*.pfx
+
 pids
 logs
 results

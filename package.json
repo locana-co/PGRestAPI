@@ -4,47 +4,50 @@
   "private": true,
   "author": "Ryan Whitley <apollolm@gmail.com>",
   "description": "Spatial API on top of PostGreSQL/PostGIS.",
-  "contributors": [ 
+  "contributors": [
     {
       "name": "Ryan Whitley",
       "email": "apollolm@gmail.com"
-    } 
+    }
   ],
   "scripts": {
     "start": "node app.js",
     "test": "node_modules\\.bin\\mocha -u tdd"
   },
   "dependencies": {
-	"geojson-validation": "*",
+    "cors": "2.4.1",
     "express": "3.3.4",
+    "flow": "0.2.3",
+    "geojson-validation": "0.1.5",
     "jade": "0.35.0",
-    "pg": "*",
-    "flow": "*",
     "less-middleware": "0.1.14",
-    "topojson": "*",
-    "shortid": "*",
-    "cors": "*",
-    "request": "*",
-    "lru-cache": "*"
+    "lru-cache": "2.5.0",
+    "passport": "0.2.0",
+    "passport-forcedotcom": "0.1.1",
+    "pg": "3.4.0",
+    "request": "2.37.0",
+    "shortid": "2.0.1",
+    "topojson": "1.6.15",
+    "underscore": "1.6.0"
   },
-  "optionalDependencies":{
-  	"mapnik": "*",
-	"carto": "*",
-	"ogr2ogr": "*"
+  "optionalDependencies": {
+    "mapnik": "1.4.10",
+    "carto": "0.11.0",
+    "ogr2ogr": "0.3.1"
   },
   "devDependencies": {
-    "mocha": "*",
-	"sinon": "*",
-    "chai": "*",
-	"express-mock-request": "*",
-	"supertest": "*"
+    "mocha": "1.20.1",
+    "sinon": "1.10.3",
+    "chai": "1.9.1",
+    "express-mock-request": "0.0.2",
+    "supertest": "0.13.0"
   },
   "keywords": [
     "PostGIS",
     "Mapnik",
     "GIS",
-	"Maps",
-	"Spatial API"
+    "Maps",
+    "Spatial API"
   ],
   "repository": {
     "type": "git",

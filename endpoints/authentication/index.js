@@ -11,34 +11,38 @@ var path = require('path'),
     fs = require("fs"),
     flow = require('flow'),
     passport = require("passport"),
-	LocalStrategy = require('passport-local').Strategy,
-	FacebookStrategy = require('passport-facebook').Strategy,
-	BearerStrategy = require('passport-http-bearer').Strategy,
-	mongoose = require('mongoose');
+	//BearerStrategy = require('passport-http-bearer').Strategy,
+    ForceDotComStrategy = require('passport-forcedotcom').Strategy;
     
-var app = exports.app = express();
 
-//Start mongoose
-mongoose.connect('mongodb://localhost/test');
+exports.passport = function () {
 
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function callback () {
-  
-	var LocalUserSchema = new mongoose.Schema({
-		username: String,
-		salt: String,
-		hash: String,
-		accessToken: String
-	});	
-	var Users = mongoose.model('userauths', localUserSchema);
-	
-	var FacebookUserSchema = new mongoose.Schema({
-	    fbId: String,
-	    email: { type : String , lowercase : true},
-	    name : String,
-	    accessToken: String
-	});
-	var FbUsers = mongoose.model('fbs',FacebookUserSchema);
+    // Passport session setup.
+//   To support persistent login sessions, Passport needs to be able to
+//   serialize users into and deserialize users out of the session.  Typically,
+//   this will be as simple as storing the user ID when serializing, and finding
+//   the user by ID when deserializing.  However, since this example does not
+//   have a database of user records, the complete Salesforce profile is
+//   serialized and deserialized.
+    passport.serializeUser(function(user, done) {
+        done(null, user);
+    });
 
-});
+    passport.deserializeUser(function(obj, done) {
+        done(null, obj);
+    });
+
+    passport.use(new ForceDotComStrategy({
+        clientID: settings.salesforce.ConsumerKey,
+        clientSecret: settings.salesforce.ClientSecret,
+        scope: settings.salesforce.Scope,
+        callbackURL: settings.salesforce.CallbackURL,
+        authorizationURL: settings.salesforce.authorizationURL,
+        tokenURL: settings.salesforce.tokenURL
+    }, function verify(token, refreshToken, profile, done) {
+        console.log(profile);
+        return done(null, profile);
+    }));
+
+    return passport;
+}

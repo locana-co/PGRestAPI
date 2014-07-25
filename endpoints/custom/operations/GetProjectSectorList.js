@@ -1,4 +1,12 @@
 //5.6.2014 - Ryan Whitley
+
+/**
+ * NH Note: We are not using this anymore, because we get all of the project sectors
+ * via the Succubus, thus one less hit on the db... This is here for future reference.
+ *
+ * @type {exports}
+ */
+
 var flow = require('flow');
 var common = require("../../../common"),
     settings = require('../../../settings'),

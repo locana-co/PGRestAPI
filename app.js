@@ -9,7 +9,9 @@ var express = require('express'),
     settings = require('./settings'),
     common = require("./common"),
     cors = require('cors'),
-    nodecache = require( "node-cache" );
+    fs = require("fs"),
+    _ = require("underscore"),
+    https = require('https');
 
 
 var app = express();
@@ -24,75 +26,83 @@ app.set('ipaddr', settings.application.ip);
 app.set('port', process.env.PORT || settings.application.port);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
+app.set('trust proxy', true);
 app.enable("jsonp callback"); //TODO: Remove this if not needed because of CORS
 app.use(express.favicon(path.join(__dirname, 'public/img/favicon_rc.jpg')));
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
+app.use(express.cookieParser());
 app.use(express.methodOverride());
-app.use(express.cookieParser('your secret here'));
-app.use(express.session());
 
-//Set up a public folder.  
-app.use(require('less-middleware')({
-	src : __dirname + '/public'
-}));
 
-//Items in these folder will be served statically.
-app.use(express.static(path.join(__dirname, 'public')));
-app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
-app.use('/geo-angular/', express.static('../GeoAngular/app/'));
-
-//Mongoose support for storing authentication credentials
-var mongoose, passport;
-//try {
-//	mongoose = require("mongoose"), passport = require("passport");
-//} catch(e) {
-//	mongoose = null;
-//	passport = null;
-//	console.log("Mongoose/MongoDB not properly installed. Skipping. Also not using Passport. Reason: " + e);
-//}
+var passport = require('./endpoints/authentication').passport();
 
 //express app.get can be passed an array of intermediate functions before rendering.
 //If passport isn't installed or user hasn't enabled security, then leave the following array empty, otherwise load one or more middleware functions in there.
 var authenticationFunctions = []; 
 
 //Load up passport for security, if it's around, and if the settings ask for it
-if (mongoose && passport && settings.enableSecurity && settings.enableSecurity === true) {
-	
-	require('./endpoints/authentication/app/models/user.js');
+if (passport && settings.enableSecurity && settings.enableSecurity === true) {
 
-	var env = process.env.NODE_ENV || 'development', mongo_config = require('./endpoints/authentication/config/config')[env];
-
-	mongoose.connect(settings.mongodb.db);
-
-	require('./endpoints/authentication/config/passport')(passport, mongo_config);
+  if (process.env.NODE_ENV.toLowerCase() == "production") {
+    //Configure HTTPS
+    var SSLoptions = {
+      pfx: fs.readFileSync(settings.ssl.pfx),
+      passphrase: settings.ssl.password
+    };
+  }
 
 	app.use(express.session({
-		secret : mongo_config.epxressSessionSecret
+	    secret : settings.expressSessionSecret
 	}));
 	
 	app.use(passport.initialize());
 	app.use(passport.session()); //TODO:  I keep reading that express sessions aren't needed if using passport with authentication followed by token bearer strategy
-	
-	//add the bearer authentication method into an object holding various types of authenticaion methods
-	//use this in a route as middleware when a token is the preferred method of authorization
-	authenticationFunctions.push(passport.authenticate('bearer', { session: false, failureRedirect: '/login'}));
+
+    authenticationFunctions.push(passport.authenticate('forcedotcom'));
 	
 	//For now, just cram this object into the passport object as a stowaway so it can be passed into all of the external route definitions
-	passport.authenticationFunctions = authenticationFunctions;
-	
-	require('./endpoints/authentication/config/routes')(app, passport); //Adding the login routes
+	//passport.authenticationFunctions = authenticationFunctions;
+
+    passport.authenticationFunctions = [];
+
+    //Add a route to test OAUTH2
+    app.get('/mapfolio/salesforcelogin', passport.authenticate('forcedotcom'));
+
+    // this should match the callbackURL parameter defined in config:
+    app.get('/oauth2/callback',
+        passport.authenticate('forcedotcom',
+        { failureRedirect: '/error' }),
+        function(req, res){
+            res.redirect('/mapfolio/index.html')
+        }
+    );
+
+    app.get('/mapfolio/logout', function(req,res){
+        req.session.destroy(function (err) {
+            res.redirect('/');
+        });
+    });
 }
 else{
 	//keep an empty authentication functions property here
 	passport = { authenticationFunctions: []}; 
 }
 
+//Set up a public folder.
+app.use(require('less-middleware')({
+    src : __dirname + '/public'
+}));
+
+//Items in these folder will be served statically.
+app.use(express.static(path.join(__dirname, 'public')));
+app.use("/public/topojson", express.static(path.join(__dirname, 'public/topojson')));
+app.use(ensureAuthenticated);
+app.use('/mapfolio/', express.static('../GeoAngular/app/'));
+
 //This must be after app.use(passport.initialize())
 app.use(cors());
 app.use(app.router);
-
-
 
 //Load in all endpoint routes
 //TODO - Loop thru endpoints folder and require everything in there
@@ -137,35 +147,85 @@ try {
 if (datablaster)
 	app.use(datablaster.app(passport));
 
-//Create web server
-http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
-	var startMessage = "Express server listening";
 
-	if (app.get('ipaddr')) {
-		startMessage += ' on IP:' + app.get('ipaddr') + ', ';
-	}
+if(process.env.NODE_ENV.toLowerCase() == "production"){
+    //Create web server (https)
+    https.createServer(SSLoptions, app).listen(app.get('port'), app.get('ipaddr'), function() {
+        var startMessage = "Express server listening (HTTPS)";
 
-	startMessage += ' on port ' + app.get('port');
+        if (app.get('ipaddr')) {
+            startMessage += ' on IP:' + app.get('ipaddr') + ', ';
+        }
 
-	console.log(startMessage);
+        startMessage += ' on port ' + app.get('port');
+
+        console.log(startMessage);
+    });
+}
+else{
+    //Create web server (http)
+    http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function() {
+        var startMessage = "Express server listening";
+
+        if (app.get('ipaddr')) {
+            startMessage += ' on IP:' + app.get('ipaddr') + ', ';
+        }
+
+        startMessage += ' on port ' + app.get('port');
+
+        console.log(startMessage);
+    });
+}
+
+
+//Root Request - show application
+app.get('/', function(req, res) {
+    res.redirect('/mapfolio/index.html');
 });
 
-//Root Request - show table list
-app.get('/', passport.authenticationFunctions, function(req, res) {
-	res.redirect('/geo-angular/')
-});
+//Mapfolio Root Request - show application
+//app.use('/mapfolio/', function(req, res) {
+//    res.redirect('/mapfolio/index.html');
+//});
 
 //Redirect /services to table list
 app.get('/services', function(req, res) {
 	res.redirect('/services/tables')
 });
 
+// Simple route middleware to ensure user is authenticated.
+//   Use this route middleware on any resource that needs to be protected.  If
+//   the request is authenticated (typically via a persistent login session),
+//   the request will proceed.  Otherwise, the user will be redirected to the
+//   login page.
+
+function ensureAuthenticated(req, res, next) {
+
+    //If the request is for index.html, then lock it down.
+    if (settings.enableSecurity && ( req.path.indexOf("index.html") > -1 || req.path == "/mapfolio/" )) {
+        //All other requests to the mapfolio folder should be allowed.
+
+        //check for authentication
+        //req.isAuthenticated() - always returns false.
+        if(req.session && req.session.passport && req.session.passport.user) {
+            return next();
+        }
+        else{
+            res.redirect('/mapfolio/login.html');
+            return;
+        }
+    }
+
+    return next();
+}
+
+
 //Look for any errors (this signature is for error handling), this is generally defined after all other app.uses.
 app.use(function(err, req, res, next) {
-	console.error(err.stack);
-	common.log(err.message);
-	res.send(500, 'There was an error with the web service. Please try your operation again.');
-	common.log('There was an error with the web service. Please try your operation again.');
+    console.error(err.stack);
+    common.log(err.message);
+    res.send(500, 'There was an error with the web service. Please try your operation again.');
+    common.log('There was an error with the web service. Please try your operation again.');
 });
 
 //look thru all tables in PostGres with a geometry column, spin up dynamic map tile services for each one

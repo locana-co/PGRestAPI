@@ -61,6 +61,7 @@ exports.app = function(passport) {
 				common.respond(req, res, args);
 			} else {
 				//Fetch from DB
+                //TODO: if user sets displayTables = false, it should skip tables and show views (if views is also true).
 				var query = {
 					text : "SELECT * FROM information_schema.tables WHERE table_schema = 'public' and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
 					values : []
@@ -1076,6 +1077,8 @@ exports.app = function(passport) {
 			getGeometryFieldNames(this.args.table, this);
 
 		}, function(err, geom_fields_array) {
+
+            this.spatialTables = app.get('spatialTables');
 
 			//This should have a value
 			var srid = this.spatialTables[this.args.table].srid;

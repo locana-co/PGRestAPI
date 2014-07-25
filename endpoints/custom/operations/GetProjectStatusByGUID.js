@@ -1,12 +1,12 @@
-//4.9.2014 - Ryan Whitley
+//6.19.2014 - Ryan Whitley
 var flow = require('flow');
 var common = require("../../../common"), settings = require('../../../settings'), shortid = require('shortid');
 
 var operation = {};
 
 /* METADATA */
-operation.name = "GetProjectByGUID";
-operation.description = "Gets ECOS Projects for a given GADM boundary based on a GUID.";
+operation.name = "GetProjectHealthByGUID";
+operation.description = "Gets ECOS Projects/Status for a given GADM boundary based on a GUID.";
 operation.inputs = {};
 
 operation.outputImage = false;
@@ -20,25 +20,9 @@ operation.ProjectQuery = "SELECT sf_project.* " +
   "WHERE sf_aggregated_gadm_project_counts.sf_id = sf_project.sf_id " +
   "AND guid{{gadm_level}} = {{guids}} {{filters}}; ";
 
-//operation.IndicatorQuery = "SELECT * FROM sf_indicator, sf_indicator_value " +
-//  "WHERE sf_indicator.project__c = {{guid}} AND sf_indicator_value.indicator__c = sf_indicator.sf_id; ";
-
-operation.IndicatorQuery = "SELECT sf_indicator.*, " +
-  "val.actual__c, val.collection_period__c, val.effective_date__c, val.overlap__c, val.period__c, val.subjective__c, " +
-  "val.target_percent__c, val.target__c, val.variance__c, val.period_actual_sum__c, val.period_actuals_max__c, " +
-  "val.period_target_max__c, val.period_target_sum__c, val.unique_indicator_value__c, val.isdeleted " +
-  "FROM sf_indicator, sf_indicator_value AS val " +
-  "WHERE sf_indicator.project__c = {{guid}} AND val.indicator__c = sf_indicator.sf_id LIMIT 10;";
-
-
-//operation.IndicatorValueQuery = "SELECT * " +
-//  "FROM sf_indicator_value " +
-//  "WHERE indicator__c = {{guid}}; ";
-
-//operation.LogframeElementQuery = "SELECT * " +
-//  "FROM sf_logframe_element " +
-//  "WHERE sf_id = {{guid}}";
-
+operation.StatusQuery = "SELECT * " +
+  "FROM sf_project_status " +
+  "WHERE project__c = {{guid}}; " ;
 
 operation.execute = flow.define(
   function (args, callback) {
@@ -96,8 +80,8 @@ operation.execute = flow.define(
     for (var i = 0, len = projects.length; i < len; i++) {
       var proj = projects[i];
       var projId = proj.sf_id;
-      var indicatorQuery = { text: operation.IndicatorQuery.replace("{{guid}}", operation.wrapIdsInQuotes(projId)) };
-      common.executePgQuery(indicatorQuery, this.MULTI(projId));
+      var statusQuery = { text: operation.StatusQuery.replace("{{guid}}", operation.wrapIdsInQuotes(projId)) };
+      common.executePgQuery(statusQuery, this.MULTI(projId));
     }
   },
   function (args) {
@@ -107,14 +91,14 @@ operation.execute = flow.define(
       for (var key in args) {
         if (key === projId) {
           var indicRes = args[key];
-          // if there is an error for the indicator query
+          // if there is an error for the status query
           if (indicRes[0] !== null) {
             this.callback(indicRes[0]);
           } else {
-            // apply indicator data to project
-            proj.indicators = indicRes[1].rows;
-            if (proj.indicators.length === 0) {
-              proj.indicators = 'none';
+            // apply risks data to project
+            proj.statuses = indicRes[1].rows;
+            if (proj.statuses.length === 0) {
+              proj.statuses = 'none';
             }
           }
           break;
@@ -148,16 +132,5 @@ operation.wrapIdsInQuotes = function (ids) {
     return "'" + item + "'";
   });
 };
-
-operation.fullyQualifyFilter = function(filterString){
-   var Ors = filterString.split(' OR ');
-
-
-  Ors.forEach(function(item){
-
-  });
-
-
-}
 
 module.exports = operation;

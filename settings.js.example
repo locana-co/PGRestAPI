@@ -1,80 +1,55 @@
 //Settings.js is not part of the repository.  However, it should be deployed with the application and contain deployment-specific settings.
-//there is a settings.js.example file that should match the structure and properties of this file that IS checked in to the repo.
-var settings = {}
+//There is a settings.js.example file that should match the structure and properties of this file that IS checked in to the repo.
+var settings = {};
+var settingsNonsensitive = require("./settingsNonsensitive.js");
 
-settings.pg = {};
-settings.application = {};
-settings.tilestream = {};
+//Bring in the non sensitive stuff.
+settings = settingsNonsensitive;
+
+//Change to 'production' or 'test' depending on deployment.
+process.env.NODE_ENV = 'development';
 
 //application port settings
-settings.application.port = 3000;
+settings.application.port = 3001;
 settings.application.ip = "localhost";
 
+//Enable Security?
+settings.enableSecurity = false;
+
+//SSL Settings
+settings.ssl = {};
+settings.ssl.pfx = 'geo.pfx';
+settings.ssl.password = '<password>';
+
+//Express Session Secret
+settings.expressSessionSecret = "specialsecret";
+
 //Settings for postgres DB
-settings.pg.username = 'username';
-settings.pg.password = 'password';
-settings.pg.server = '127.0.0.1';
+settings.pg.username = 'postgres';
+settings.pg.password = '<password>';
+settings.pg.server = '<database-url>';
 settings.pg.port = '5432';
-settings.pg.database = 'test';
-settings.pg.featureLimit = 1000; //how many features to return by default
+settings.pg.database = 'redcross_prod';
 
-settings.tilestream.host = "54.212.254.185";
-settings.tilestream.path = "/api/Tileset";
-settings.tilestream.port = "8888";
+//how many features to return by default - dont worry about this for RedCross
+settings.pg.featureLimit = 1000;
 
-//Should the API display postgres views?
-settings.displayViews = true;
+//PROD SalesForce OAUTH settings
+settings.salesforce = {};
+settings.salesforce.ConsumerKey = "<long-garbled-string>"; //clientID
+settings.salesforce.ClientSecret = "<just-positive-integers>";
+settings.salesforce.Scope = ["id", "profile"];
+settings.salesforce.CallbackURL = "https://geo.redcross.org/oauth2/callback";
+settings.salesforce.authorizationURL = 'https://na14.salesforce.com/services/oauth2/authorize';
+settings.salesforce.tokenURL = 'https://na14.salesforce.com/services/oauth2/token';
 
-//Should the API display postgres tables?
-settings.displayTables = true;
-
-//Should the API hide any postgres tables or views?
-settings.pg.noFlyList = ["att_0"];
-
-//The list of formats to be returned by the Table Query REST endpoint.  If ogr2ogr is installed, .shp will be added automatically.
-settings.application.formatList =[ 'html', 'GeoJSON', 'esriJSON'];
-
-//Where to write out TopoJSON files?
-settings.application.topoJsonOutputFolder = "/public/topojson/output/";
-
-//Where to write out GeoJSON files?
-settings.application.geoJsonOutputFolder = "/public/geojson/output/";
-
-//Optional.  If you're using port forwarding or URL rewriting, but need to display full URLs to your assets, this will stand in for the host.
-settings.application.publichost = ""; //myhost.com //Keep this empty if you want to use the default host
-settings.application.publicport = "80";
-
-//Epxress Session Secret
-settings.epxressSessionSecret = "secret";
-
-//MongoDB Authentication
-settings.mongodb = {};
-settings.mongodb.db = "mongodb://localhost/authentication";
-
-//Facebook App ID
-settings.facebook = {};
-settings.facebook.appid = "12345";
-settings.facebook.secret = "secret";
-
-//The lowest administrative level for each datasource
-settings.dsLevels = {};
-settings.dsLevels["gadm"] = 5;
-settings.dsLevels["gaul"] = 2;
-settings.dsLevels["naturalearth"] = 1;
-settings.dsLevels["local"] = 2;
-
-//Columns by level and datasource
-settings.dsColumns = {};
-
-//Used to define how to query DB for admin stack
-//Columns aliased to be consistent between data sources.
-//GADM
-settings.dsColumns["gadm0"] = { geometry: "ST_AsGeoJSON(geom_simplify_high) as geom,", columns: "guid as stack_guid, id_0 as adm0_code, name_0 as adm0_name, ST_AsText(ST_Centroid(geom)) as centroid, 0 as level" };
-settings.dsColumns["gadm1"] = { geometry: "ST_AsGeoJSON(geom_simplify_high) as geom,", columns: "guid as stack_guid, id_0 as adm0_code, name_0 as adm0_name, id_1 as adm1_code, name_1 as adm1_name, ST_AsText(ST_Centroid(geom)) as centroid, 1 as level" };
-settings.dsColumns["gadm2"] = { geometry: "ST_AsGeoJSON(geom_simplify_high) as geom,", columns: "guid as stack_guid, id_0 as adm0_code, name_0 as adm0_name, id_1 as adm1_code, name_1 as adm1_name, id_2 as adm2_code, name_2 as adm2_name, ST_AsText(ST_Centroid(geom)) as centroid, 2 as level" };
-settings.dsColumns["gadm3"] = { geometry: "ST_AsGeoJSON(geom_simplify_high) as geom,", columns: "guid as stack_guid, id_0 as adm0_code, name_0 as adm0_name, id_1 as adm1_code, name_1 as adm1_name, id_2 as adm2_code, name_2 as adm2_name, id_3 as adm3_code, name_3 as adm3_name, ST_AsText(ST_Centroid(geom)) as centroid, 3 as level" };
-settings.dsColumns["gadm4"] = { geometry: "ST_AsGeoJSON(geom_simplify_high) as geom,", columns: "guid as stack_guid, id_0 as adm0_code, name_0 as adm0_name, id_1 as adm1_code, name_1 as adm1_name, id_2 as adm2_code, name_2 as adm2_name, id_3 as adm3_code, name_3 as adm3_name, id_4 as adm4_code, name_4 as adm4_name, ST_AsText(ST_Centroid(geom)) as centroid, 4 as level" };
-settings.dsColumns["gadm5"] = { geometry: "ST_AsGeoJSON(geom_simplify_high) as geom,", columns: "guid as stack_guid, id_0 as adm0_code, name_0 as adm0_name, id_1 as adm1_code, name_1 as adm1_name, id_2 as adm2_code, name_2 as adm2_name, id_3 as adm3_code, name_3 as adm3_name, id_4 as adm4_code, name_4 as adm4_name, id_5 as adm5_code, name_5 as adm5_name, ST_AsText(ST_Centroid(geom)) as centroid, 5 as level" };
-
+//Dev SalesForce OAUTH
+//settings.salesforce = {};
+//settings.salesforce.ConsumerKey = "<long-garbled-string>"; //clientID
+//settings.salesforce.ClientSecret = "<just-positive-integers>;
+//settings.salesforce.Scope = ["id", "profile"];
+//settings.salesforce.CallbackURL = "https://geo.redcross.org/oauth2/callback";
+//settings.salesforce.authorizationURL = 'https://cs19.salesforce.com/services/oauth2/authorize';
+//settings.salesforce.tokenURL = 'https://cs19.salesforce.com/services/oauth2/token';
 
 module.exports = settings;

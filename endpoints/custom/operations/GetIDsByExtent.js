@@ -42,7 +42,7 @@ operation.execute = flow.define(
         else {
             //Invalid arguments
             //return message
-            callback({text: "Missing or invalid required arguments: bbox"}, null); //err is first argument
+            callback({text: "Missing or invalid required arguments: bbox must be a comma separated list of 5 integers. first integer must be between 0 and 17."}, null); //err is first argument
         }
     },
     function (err, results) {
@@ -58,7 +58,18 @@ operation.isInputValid = function (input) {
 
     if (input) {
         //make sure we have a bbox.  Other args are optional
-        if (input["bbox"] && input["bbox"].split(",").length == 5) {
+        if (input["bbox"]) {
+            var bbox = input["bbox"].split(",");
+            if(bbox.length == 5){
+                if(bbox[0] > 17 || bbox[0] < 0){
+                    //must be between 0 and 17
+                    return false;
+                }
+            }
+            else{
+                //Must have 5 args.
+                return false;
+            }
             //It's got everything we need.
             return true;
         }
