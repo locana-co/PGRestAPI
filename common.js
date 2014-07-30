@@ -142,24 +142,31 @@ common.respond = function (req, res, args, callback) {
 common.executePgQuery = function (query, callback) {
     //Just run the query
     //Setup Connection to PG
+  if(settings.pg && settings.pg.database && settings.pg.server) {
     pg.connect(global.conString, function (err, client, done) {
-        if (err) {
-            //return an error
-            callback(err);
-            return;
-        }
+      if (err) {
+        //return an error
+        callback(err);
+        return;
+      }
 
-        //Log the query to the console, for debugging
-        common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ? ", " + query.values : ""));
+      //Log the query to the console, for debugging
+      common.log("Executing query: " + query.text + (query.values && query.values.length > 0 ? ", " + query.values : ""));
 
-        //execute query
-        client.query(query, function (err, result) {
-            done();
+      //execute query
+      client.query(query, function (err, result) {
+        done();
 
-            //go to callback
-            callback(err, result);
-        });
+        //go to callback
+        callback(err, result);
+      });
     });
+  }
+  else{
+     //no postgres.
+    //return empty
+    callback(null, { rows: []});
+  }
 };
 
 

@@ -6,11 +6,11 @@ var express = require('express'), common = require("../../common"), flow = requi
 //The next requires are specific to this module only
 var gp = require('./operations');
 
-var mapnik;
+var tiles;
 try {
-	mapnik = require('../../endpoints/mapnik');
+  tiles = require('../../endpoints/tiles');
 } catch (e) {
-	mapnik = null;
+  tiles = null;
 }
 
 //End module specific requires
@@ -188,8 +188,8 @@ exports.app = function(passport) {
 			//clone and assign output features to args variable
 
 			//if GP operation specifies output image service, then spin one up
-			if (mapnik && this.gpOperation.outputImage && this.gpOperation.outputImage == true && features) {
-				mapnik.createGeoJSONQueryRenderer(app, JSON.parse(JSON.stringify(features)), "4326", "style.xml", this.gpOperation.id, this);
+			if (tiles && this.gpOperation.outputImage && this.gpOperation.outputImage == true && features) {
+        tiles.createGeoJSONQueryRenderer(app, JSON.parse(JSON.stringify(features)), "4326", "style.xml", this.gpOperation.id, this);
 				//Use a dyanmic GP ID here to append to the name.
 			} else {
 				this();

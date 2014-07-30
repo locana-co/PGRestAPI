@@ -15,32 +15,30 @@
     "test": "node_modules\\.bin\\mocha -u tdd --reporter spec"
   },
   "dependencies": {
-    "geojson-validation": "*",
-    "express": "3.3.4",
-    "jade": "0.35.0",
-    "pg": "*",
-    "flow": "*",
-    "less-middleware": "0.1.14",
-    "shortid": "*",
     "cors": "*",
-    "request": "*",
+    "crypto": "0.0.3",
+    "express": "3.3.4",
+    "flow": "*",
     "generic-pool": "*",
-    "lru-cache": "*",
-    "semver": "*",
-    "millstone": "*",
-    "underscore": "*",
+    "geojson-validation": "*",
+    "jade": "0.35.0",
     "jquery": "2.1.1",
     "jsdom": "*",
-    "crypto": "0.0.3"
+    "less-middleware": "0.1.14",
+    "lru-cache": "*",
+    "millstone": "*",
+    "pg": "*",
+    "request": "*",
+    "semver": "*",
+    "shortid": "*",
+    "underscore": "*"
   },
   "optionalDependencies": {
     "mapnik": "1.4.2",
     "carto": "*",
     "ogr2ogr": "*",
     "mbtiles": "*",
-    "tilelive": "*",
-    "tilelive-bridge": "*",
-    "tilelive-tmsource": "mojodna/tilelive-tmsource"
+    "tilelive": "*"
   },
   "devDependencies": {
     "mocha": "*",

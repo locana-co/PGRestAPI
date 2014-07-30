@@ -8,11 +8,11 @@ var custom = require('./operations');
 var CCacher = require("../../lib/ChubbsCache");
 var cacher = new CCacher();
 
-var mapnik;
+var tiles;
 try {
-	mapnik = require('../../endpoints/mapnik');
+	tiles = require('../../endpoints/tiles');
 } catch (e) {
-	mapnik = null;
+  tiles = null;
 }
 
 //End module specific requires
@@ -221,8 +221,8 @@ exports.app = function(passport) {
 			//clone and assign output features to args variable
 
 			//if GP operation specifies output image service, then spin one up
-			if (mapnik && this.customOperation.outputImage && this.customOperation.outputImage == true && features) {
-				mapnik.createGeoJSONQueryRenderer(app, JSON.parse(JSON.stringify(features)), "4326", "style.xml", this.customOperation.id, this);
+			if (tiles && this.customOperation.outputImage && this.customOperation.outputImage == true && features) {
+        tiles.createGeoJSONQueryRenderer(app, JSON.parse(JSON.stringify(features)), "4326", "style.xml", this.customOperation.id, this);
 				//Use a dyanmic GP ID here to append to the name.
 			} else {
 				this();

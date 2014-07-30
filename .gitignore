@@ -15,8 +15,6 @@ logs
 results
 node_modules/
 
-!node_modules/tilelive-tmsource
-
 npm-debug.log
 
 public/topojson/output/

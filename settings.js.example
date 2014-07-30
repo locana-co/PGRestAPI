@@ -8,7 +8,7 @@ settings.tilestream = {};
 
 //application port settings
 settings.application.port = 3000;
-//settings.application.ip = "localhost"; //Typically localhost.  On EC2 instances, you should just keep this commented out.
+//settings.application.ip = "localhost"; //Typically localhost.  If deploying on Amazon EC2 Ubuntu, comment out this line.
 
 //Settings for postgres DB
 settings.pg.username = 'username';
