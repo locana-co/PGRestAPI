@@ -343,23 +343,6 @@ function clearStatsObject(performanceObject) {
     performanceObject.VectorTiles.times = [];
 }
 
-exports.createCachedFolder = function (table) {
-    var folder = './public/cached_nodetiles/' + table;
-    //create a folder for this table in public/cached_nodetiles if it doesn't exist
-    fs.exists(folder, function (exists) {
-        if (exists === false) {
-            //make it
-            console.log("Didn't find cache folder.  Tyring to make folder: " + folder);
-            fs.mkdir(folder, function () {
-                console.log("Made " + folder);
-            });
-            //Synch
-        }
-    });
-};
-
-
-
 //Create a renderer that will accept dynamic GeoJSON Objects and styling and bring back a single image to fit the map's extent.
 exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRID, cartoFile, id, callback) {
 
