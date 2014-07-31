@@ -21,8 +21,12 @@ public/topojson/output/
 public/geojson/output/
 public/blast_output/
 
-lib/datablaster/blast_config.js
+data/pbf_mbtiles/*.mbtiles
+data/png_mbtiles/*.mbtiles
+!data/pbf_mbtiles/KenyaDistricts.mbtiles
+!data/png_mbtiles/yield_wheat.mbtiles
 
+lib/datablaster/blast_config.js
 
 Thumbs.db
 
