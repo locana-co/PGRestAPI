@@ -1421,12 +1421,13 @@ function () {
 
             map.render(new mapnik.VectorTile(+req.param('z'), +req.param('x'), +req.param('y')), opts, function (err, image) {
 
-                if (err){
+                if (err || !image){
                     res.removeHeader('Content-Encoding');
                     res.writeHead(500, {
                         'Content-Type': 'application/octet-stream'
                     });
                     res.end();
+                    return;
                 }
 
                 // Fake empty RGBA to the rest of the tilelive API for now.
