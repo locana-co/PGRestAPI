@@ -96,15 +96,14 @@ describe('Tables', function () {
         //assert.isDefined(tables.get);
     })
 
-    test('Checks existence of test application', function(done) {
-        request.get('http://localhost:3000/services/tables', function(err, response, body) {
-            response.statusCode.should.equal(200);
-            body.should.include("I'm Feeling Lucky");
-            done();
-        })
-    });
+//    test('Checks existence of test application', function(done) {
+//        request.get('http://localhost:3000/services/tables', function(err, response, body) {
+//            response.statusCode.should.equal(200);
+//            body.should.include("I'm Feeling Lucky");
+//            done();
+//        })
+//    });
 })
-
 
 
 //This is for the API level testing

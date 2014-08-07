@@ -23,8 +23,23 @@ public/blast_output/
 
 data/pbf_mbtiles/*.mbtiles
 data/png_mbtiles/*.mbtiles
+
 !data/pbf_mbtiles/KenyaDistricts.mbtiles
 !data/png_mbtiles/yield_wheat.mbtiles
+
+data/inmemory-shapefiles/*.dbf
+data/inmemory-shapefiles/*.prj
+data/inmemory-shapefiles/*.qpj
+data/inmemory-shapefiles/*.shp
+data/inmemory-shapefiles/*.shx
+
+data/shapefiles/*.dbf
+data/shapefiles/*.prj
+data/shapefiles/*.qpj
+data/shapefiles/*.shp
+data/shapefiles/*.shx
+
+
 
 lib/datablaster/blast_config.js
 

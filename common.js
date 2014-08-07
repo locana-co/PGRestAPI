@@ -47,7 +47,7 @@ common.respond = function (req, res, args, callback) {
 
             res.end(JSON.stringify(args.featureCollection, null, indent));
             //Determine sample request based on args
-            res.render(args.view, args);
+            //res.render(args.view, args);
         }
     }
     else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
@@ -189,7 +189,7 @@ common.findSpatialTables = function (app, callback) {
             //Report error and exit.
             console.log("Error in reading spatial tables from DB.  Can't load dynamic tile endopints. Message is: " + err.text);
         } else {
-            //app.spatialTables = {};
+
             //Add to list of tables.
             result.rows.forEach(function (item) {
                 var spTable = {
@@ -198,8 +198,8 @@ common.findSpatialTables = function (app, callback) {
                     srid: item.srid,
                     type: item.type
                 };
-                //spatialTables.push(spTable);
-                spatialTables[item.f_table_name] = spTable;
+
+                spatialTables[item.f_table_name + "_" + item.f_geometry_column] = spTable;
                 //Keep a copy in tables for later.
             });
         }
@@ -289,6 +289,10 @@ common.getArguments = function (req) {
         args = req.query;
     }
     return args;
+}
+
+common.getProtocol = function(req){
+  return ((req.secure ? "https:" : "http:") + "//");
 }
 
 common.roughSizeOfObject = function(object) {

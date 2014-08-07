@@ -1,0 +1,59 @@
+extends layout
+
+block content
+    script.
+        //Trigger Active Nav Link
+        $("#services").addClass("active");
+
+    div.heading Services Listing
+
+
+    - if(services){
+        span A list of services available
+            - each item in services
+                div.bigSpace
+                    a(href=item.link) #{item.name}
+
+    -} else {
+        span No services available
+    -}
+
+block apidoc
+    div.section.code
+
+        div.codeSamplesHeader Code Sample
+
+        div.codeBody
+
+            span Here's how to hit this endpoint programatically to get a list of these services.
+
+            div.requestHeader POST
+
+            div.requestContent
+
+                pre.prettyprint.linenums
+                    | //define arguments
+                    | var args = {
+                    | format: 'geojson'
+                    | };
+                    | &nbsp;
+                    | //jQuery POST
+                    | $.post('#{link}', args).done(function (data) {
+                    | //Callback on success
+                    | console.log(data);
+                    | })
+
+
+            - var requestSample = ["format=geojson"]
+            -if(search)
+                - requestSample.push("search=" + encodeURIComponent(search))
+
+            div.requestHeader GET
+
+            div.requestContent
+
+                pre.prettyprint.linenums
+                    span.nocode.str #{"http://" + host + path + "?" + requestSample.join("&")}
+
+
+            - var optionalSample = ["format=geojson","search=a"]
