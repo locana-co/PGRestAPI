@@ -170,6 +170,7 @@ exports.app = function (passport) {
       file: path.join(shpLocation, item)
     };
     tileSettings.routeProperties.name = shpName;
+    tileSettings.routeProperties.table = shpName;
     tileSettings.routeProperties.srid = 4326;
     tileSettings.routeProperties.cartoFile = "";
     tileSettings.routeProperties.source = "shapefile";
@@ -190,7 +191,10 @@ exports.app = function (passport) {
 
     tileSettings.mapnik_datasource = memoryShapefiles[memoryShpName];
     tileSettings.mapnik_datasource.geometry_type = "point"; //TODO.  Figure this out.
+    tileSettings.mapnik_datasource.type = "point"; //Adding type to maintain consistency with other types.
+
     tileSettings.routeProperties.name = memoryShpName;
+    tileSettings.routeProperties.table = memoryShpName;
     tileSettings.routeProperties.srid = 4326;
     tileSettings.routeProperties.cartoFile = "";
     tileSettings.routeProperties.source = "shapefile";
@@ -1254,7 +1258,7 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
 
     var _self = this;
 
-    var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.name + '/dynamicSingleMap/*';
+    var route = '/services/' + _self.settings.routeProperties.source + '/' + _self.settings.routeProperties.table + (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis' ? '/' + _self.settings.mapnik_datasource.geometry_field : '') + '/dynamicSingleMap/*';
 
     //Create Route for this table
     this.app.all(route, cacher.cache('days', 1), function (req, res) {
