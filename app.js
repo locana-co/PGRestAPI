@@ -81,7 +81,7 @@ services.push({ name: "Utilities", link: "/services/utilities" })
 var tiles;
 try {
   tiles = require('./endpoints/tiles');
-  services.push({ name: "Map Tile Services", link: "services/tiles" })
+  services.push({ name: "Static Vector Tile Services", link: "services/vector-tiles" })
 } catch (e) {
   tiles = null;
   console.log("Mapnik module has an error. Skipping this module. Reason: " + e);

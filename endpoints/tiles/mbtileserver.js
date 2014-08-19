@@ -17,6 +17,9 @@ if (tilelive) {
 var _vectorTileRoutes = []; //Keep a list of vector tile routes
 var _imageTileRoutes = []; //Keep a list of image tile routes
 
+var mbTileFiles = []; //list of mbtileFiles
+var PNGmbTileFiles = [];
+
 
 exports.app = function (passport) {
   var app = express();
@@ -45,8 +48,10 @@ exports.app = function (passport) {
     if (mbTileFiles && mbTileFiles.length > 0) {
       mbTileFiles.forEach(function (item) {
         args.opslist.push({
-          name: item,
-          link: "dataset?name=" + item
+          name: item.id,
+          link: "dataset?name=" + item.id,
+          center: item.center,
+          fullURL: path.join(req.url, "dataset?name=" + item.id)
         });
       });
     }
@@ -72,7 +77,7 @@ exports.app = function (passport) {
 
     if (JSON.stringify(this.args) != '{}') {
       //User passed in some args.
-      this.args.view = "dataset";
+      this.args.view = "tile_vector_dynamic_map";
       this.args.breadcrumbs = [
         {
           link: "/services/tables",
@@ -95,23 +100,33 @@ exports.app = function (passport) {
         //The name of the mbtiles dataset
         this.args.description = "";
         this.args.requestSample = ((req.secure ? "https:" : "http:") + "//" + this.args.host + this.args.path + "/{z}/{x}/{y}.pbf").replace("/dataset/", "/" + this.args.name.split(".")[0] + "/");
+
+        //Write out the details for this map service
+        this.args.featureCollection = [];
+        this.args.featureCollection.push({
+          name : "Map Service Endpoint",
+          link: ((req.secure ? "https:" : "http:") + "//" + this.args.host + this.args.path).replace("/dataset", "/" + this.args.name.split(".")[0])
+        });
+
+        var self = this;
+
+        //look up tileJSON info
+        if (mbTileFiles && mbTileFiles.length > 0) {
+          mbTileFiles.forEach(function (item) {
+            if(item.id == self.args.name){
+              self.args.featureCollection[0].center = { lat: item.center[1], lng: item.center[0], zoom: item.center[2]};
+            }
+          });
+        }
+
+        //load leaflet
+        this.args.scripts = [settings.leaflet.js];
+        //Load external scripts for map preview
+        this.args.css = [settings.leaflet.css];
+
         common.respond(this.req, this.res, this.args);
       } else {
-        this.args.view = "dataset";
-        this.args.breadcrumbs = [
-          {
-            link: "/services/tables",
-            name: "Home"
-          },
-          {
-            link: "/services/vector-tiles",
-            name: "Vector Tiles List"
-          },
-          {
-            link: "",
-            name: "Vector Tile dataset"
-          }
-        ];
+
         this.args.errorMessage = "Must include parameter name";
         this.args.url = req.url;
         common.respond(this.req, this.res, this.args);
@@ -119,7 +134,7 @@ exports.app = function (passport) {
 
     } else {
       //Page initial load.  No results
-      this.args.view = "dataset";
+      this.args.view = "tile_vector_dynamic_map";
       this.args.breadcrumbs = [
         {
           link: "/services/tables",
@@ -157,97 +172,89 @@ exports.getImageTileRoutes = function () {
 
 function loadPNGMBTilesRoutes(app){
   var PNGmbtilesLocation = path.join(__dirname, "../../data/png_mbtiles");
-  var PNGmbTileFiles = [];
 
-  //Load mbtiles from mbtiles folder.
-  require("fs").readdirSync(PNGmbtilesLocation).forEach(function (file) {
-    var ext = path.extname(file);
-    if (ext == ".mbtiles") {
-      PNGmbTileFiles.push(file);
-    }
-  });
+  tilelive.all(PNGmbtilesLocation, function(err, list){
+    PNGmbTileFiles = list;
 
-  //Create endpoint for mbtiles server, 1 for each source
-  PNGmbTileFiles.forEach(function (filename) {
+    //Create endpoint for mbtiles server, 1 for each source
+    PNGmbTileFiles.forEach(function (file) {
 
-    var PNGroute = ""; //store the route name
+      var PNGroute = ""; //store the route name
 
-    var mbtilespath = 'mbtiles://' + path.join(PNGmbtilesLocation, filename);
+      var mbtilespath = 'mbtiles://' + path.join(PNGmbtilesLocation, file.basename);
 
-    tilelive.load(mbtilespath, function (err, source) {
-      if (err)
-        throw err;
+      tilelive.load(mbtilespath, function (err, source) {
+        if (err)
+          throw err;
 
-      var name = filename.split('.')[0];
-      PNGroute = '/services/tiles/' + name  + '/:z/:x/:y.png';
+        var name = file.basename.split('.')[0];
+        PNGroute = '/services/tiles/' + name  + '/:z/:x/:y.png';
 
-      app.get(PNGroute, function (req, res) {
-        source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
-          // `err` is an error object when generation failed, otherwise null.
-          // `tile` contains the compressed image file as a Buffer
-          // `headers` is a hash with HTTP headers for the image.
-          res.setHeader('content-type', 'image/png');
-          if (!err) {
-            res.send(tile);
-          } else {
-            res.send("problem.");
-          }
+        app.get(PNGroute, function (req, res) {
+          source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+            // `err` is an error object when generation failed, otherwise null.
+            // `tile` contains the compressed image file as a Buffer
+            // `headers` is a hash with HTTP headers for the image.
+            res.setHeader('content-type', 'image/png');
+            if (!err) {
+              res.send(tile);
+            } else {
+              res.send("problem.");
+            }
+          });
         });
-      });
 
-      console.log("Created PNG .mbtiles service: " + PNGroute);
-      _imageTileRoutes.push({ name: name, route: PNGroute, type: ".png .mbtiles" });
+        console.log("Created PNG .mbtiles service: " + PNGroute);
+        _imageTileRoutes.push({ name: name, route: PNGroute, type: ".png .mbtiles" });
+      });
     });
+
   });
 }
 
-function loadPBFMBTilesRoutes(app){
+function loadPBFMBTilesRoutes(app) {
   var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
-  var mbTileFiles = [];
+
 
   //Load mbtiles from mbtiles folder.
-  require("fs").readdirSync(mbtilesLocation).forEach(function (file) {
-    var ext = path.extname(file);
-    if (ext == ".mbtiles") {
-      mbTileFiles.push(file);
-    }
-  });
+  tilelive.all(mbtilesLocation, function (err, list) {
+    mbTileFiles = list;
 
-  //Create endpoint for mbtiles server, 1 for each source
-  mbTileFiles.forEach(function (filename) {
+    //Create endpoint for mbtiles server, 1 for each source
+    mbTileFiles.forEach(function (file) {
 
-    var PBFroute = ""; //store the route name
+      var PBFroute = ""; //store the route name
 
-    var mbtilespath = 'mbtiles://' + path.join(mbtilesLocation, filename);
+      var mbtilespath = 'mbtiles://' + path.join(mbtilesLocation, file.basename);
 
-    tilelive.load(mbtilespath, function (err, source) {
-      if (err)
-        throw err;
+      tilelive.load(mbtilespath, function (err, source) {
+        if (err)
+          throw err;
 
-      var name = filename.split('.')[0];
+        var name = file.basename.split('.')[0];
 
-      PBFroute = '/services/vector-tiles/' + name + '/:z/:x/:y.pbf';
+        PBFroute = '/services/vector-tiles/' + name + '/:z/:x/:y.pbf';
 
-      app.get(PBFroute, function (req, res) {
-        source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
-          // `err` is an error object when generation failed, otherwise null.
-          // `tile` contains the compressed image file as a Buffer
-          // `headers` is a hash with HTTP headers for the image.
-          res.setHeader('content-type', 'application/x-protobuf');
-          if (!err) {
-            res.setHeader('content-encoding', 'deflate');
-            res.send(tile);
-          } else {
-            res.send(new Buffer(''));
-          }
+        app.get(PBFroute, function (req, res) {
+          source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+            // `err` is an error object when generation failed, otherwise null.
+            // `tile` contains the compressed image file as a Buffer
+            // `headers` is a hash with HTTP headers for the image.
+            res.setHeader('content-type', 'application/x-protobuf');
+            if (!err) {
+              res.setHeader('content-encoding', 'deflate');
+              res.send(tile);
+            } else {
+              res.send(new Buffer(''));
+            }
+          });
         });
-      });
 
-      console.log("Created PBF .mbtiles service: " + PBFroute);
-      _vectorTileRoutes.push({ name: name, route: PBFroute, type: ".pbf .mbtiles" });
+        console.log("Created PBF .mbtiles service: " + PBFroute);
+        _vectorTileRoutes.push({ name: name, route: PBFroute, type: ".pbf .mbtiles" });
+      });
     });
   });
-
 }
 
 //Experiments.

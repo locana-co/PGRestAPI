@@ -1,56 +1,115 @@
 extends ../../../shared_views/layout
 
 block content
-	h4 Dynamic Map Service
-	.results
-		- if (featureCollection && featureCollection.length > 0){
-			script.
-				var mapUrl = "#{featureCollection[0].link}";
-				var XMIN = #{xmin};
-				var YMIN = #{ymin};
-				var XMAX = #{xmax};
-				var YMAX = #{ymax};
+    h4 Vector Tile Service
+    .results
+        - if (featureCollection && featureCollection.length > 0){
+            script(type='text/javascript', src='/scripts/pbf/vectortile/vectortilelayer.js')
+            script(type='text/javascript', src='/scripts/pbf/vectortile/vectortilefeature.js')
+            script(type='text/javascript', src='/scripts/pbf/vectortile/vectortile.js')
+            script(type='text/javascript', src='/scripts/pbf/vectortile/pbf/ieee/ieee.js')
+            script(type='text/javascript', src='/scripts/pbf/vectortile/pbf/pbf.js')
+            script(type='text/javascript', src='/scripts/pbf/vectortile/point.js')
 
-			//Map Div
-			div#map(style='height:400px;width:400px;')
+            script(type='text/javascript', src='/scripts/pbf/TileLayer.PBF/TileLayer.PBFSource.js')
+            script(type='text/javascript', src='/scripts/pbf/TileLayer.PBF/TileLayer.PBFLayer.js')
+            script(type='text/javascript', src='/scripts/pbf/TileLayer.PBF/PBFFeature.js')
 
-			//Load Leaflet
-			script.
-				var map = L.map('map');
-				var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
-					
-				L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-qfyrx5r8/{z}/{x}/{y}.png').addTo(map);
 
-				//Add preview
-				L.tileLayer(mapUrl + '/{z}/{x}/{y}.png').addTo(map);
 
-				// zoom the map to the rectangle bounds
-				map.fitBounds(bounds);
-					
-		-}
+            script.
+                var mapUrl = "#{featureCollection[0].link}";
+                var zoom = "#{featureCollection[0].center.zoom}";
+                var lat = "#{featureCollection[0].center.lat}";
+                var lng = "#{featureCollection[0].center.lng}";
 
-		div.section
-			h3 Code Sample
-			span Here's how to use these dynamically craeted maps in your application
 
-			h4 Leaflet Example - add this
-			pre.codePreview
-				|//Create a leaflet map
-				|var map = L.map('map');
-				|&nbsp;
-				|//Add the tiled layer
-				|L.tileLayer('#{featureCollection[0].link}/{z}/{x}/{y}.png').addTo(map);
 
-			div.helpLink 
-				|Get more help with 
-				a(href='http://leafletjs.com/',target='_blank') Leaflet 
+            //Map Div
+            div#map(style='height:400px;width:400px;')
 
-	-if(infoMessage){
-		div.infoMessage
-			|#{infoMessage}
-	-}
-	-if(errorMessage){
-		div.errorMessage
-			|#{errorMessage}
-	-}
-						
+
+            script.
+                var map = L.map('map');
+                //var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
+
+                L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-qfyrx5r8/{z}/{x}/{y}.png').addTo(map);
+
+                //Highly experimental Mapnik Vector Tiles PBFLayer
+                var pbfSource = new L.TileLayer.PBFSource({
+                    url: mapUrl + '/{z}/{x}/{y}.pbf',
+                    debug: false,
+                    clickableLayers: [],
+                    getIDForLayerFeature: function(feature) {
+                        return "";
+                    },
+                     /**
+                     * The filter function gets called when iterating though each vector tile feature (vtf). You have access
+                     * to every property associated with a given feature (the feature, and the layer). You can also filter
+                     * based of the context (each tile that the feature is drawn onto).
+                     *
+                     * Returning false skips over the feature and it is not drawn.
+                     *
+                     * @param feature
+                     * @returns {boolean}
+                     */
+                    filter: function(feature, context) {
+                        return true;
+                    }
+                });
+
+                //Globals that we can change later.
+                var fillColor = 'rgba(149,139,255,0.4)';
+                var strokeColor = 'rgb(20,20,20)';
+
+                pbfSource.styleFor = pbfStyle;
+                function pbfStyle(feature) {
+                    var style = {};
+                    var type = feature.type;
+                    switch (type) {
+                        case 1: //'Point'
+                            style.color = 'rgba(252,146,114,0.6)';
+                            style.radius = 5;
+                                    case 2: //'LineString'
+                            style.color = 'rgba(161,217,155,0.8)';
+                            style.size = 3;
+                                    case 3: //'Polygon'
+                            style.color = fillColor;
+                            style.outline = {
+                                color: strokeColor,
+                                size: 2
+                            };
+                    }
+                    return style;
+                }
+
+                //Add layer
+                map.addLayer(pbfSource);
+
+                //L.tileLayer().addTo(map);
+
+                // zoom the map to the rectangle bounds
+                map.setView(new L.LatLng(lat, lng), zoom);
+
+        -}
+
+        div.section
+            h3 Code Sample
+            span Here's the vector tile endpoint:
+
+            pre.codePreview
+                | #{featureCollection[0].link}/{z}/{x}/{y}.pbf;
+
+            div.helpLink
+                | Get more help with
+                a(href='http://leafletjs.com/',target='_blank') Leaflet
+
+
+    -if(infoMessage){
+        div.infoMessage
+            | #{infoMessage}
+    -}
+    -if(errorMessage){
+        div.errorMessage
+            | #{errorMessage}
+    -}
