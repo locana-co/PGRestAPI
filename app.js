@@ -26,6 +26,9 @@ global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.pass
 // all environments
 app.set('ipaddr', settings.application.ip);
 app.set('port', process.env.PORT || settings.application.port);
+if (process.env.PORT) {
+  settings.application.port = process.env.PORT;
+}
 app.set('views', 'shared_views');
 app.set('view engine', 'jade');
 //app.set('trust proxy', true);
@@ -57,7 +60,7 @@ app.use(app.router);
 //Load in all endpoint routes
 //Root Request - show table list
 app.get('/', passport.authenticationFunctions, function (req, res) {
-  res.redirect('/services/tables');
+  res.redirect('/services');
 });
 
 //Keep a list of services that are active
@@ -66,7 +69,7 @@ var services = [];
 //TODO - Loop thru endpoints folder and require everything in there
 var tables = require('./endpoints/tables');
 app.use(tables.app(passport));
-services.push({ name: "PostGres Table Endpoints", link: "services/tables" })
+services.push({ name: "PostGres Table Endpoints", link: "/services/tables" })
 
 
 var geoprocessing = require('./endpoints/geoprocessing');
@@ -81,7 +84,7 @@ services.push({ name: "Utilities", link: "/services/utilities" })
 var tiles;
 try {
   tiles = require('./endpoints/tiles');
-  services.push({ name: "Static Vector Tile Services", link: "services/vector-tiles" })
+  services.push({ name: "Static Vector Tile Services", link: "/services/vector-tiles" })
 } catch (e) {
   tiles = null;
   console.log("Mapnik module has an error. Skipping this module. Reason: " + e);
@@ -129,7 +132,7 @@ app.all('/services', function (req, res) {
 
 //Create web server
 http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
-  var startMessage = "Chubbs server listening";
+  var startMessage = "SpatialServer listening";
 
   if (app.get('ipaddr')) {
     startMessage += ' on IP:' + app.get('ipaddr') + ', ';

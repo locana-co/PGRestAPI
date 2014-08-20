@@ -1013,6 +1013,7 @@ exports.app = function(passport) {
             this.args.view = "table_vector_tiles";
             this.args.table = this.req.params.table;
             this.args.geomcolumn = this.req.params.geomcolumn;
+            this.protocol = common.getProtocol(req);
             this.args.breadcrumbs = [{
                 link : "/services/tables/",
                 name : "Table Listing"
@@ -1075,7 +1076,7 @@ exports.app = function(passport) {
                 this.args.featureCollection = [];
                 this.args.featureCollection.push({
                     name : "Map Service Endpoint",
-                    link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/" + this.args.geomcolumn + "/vector-tiles"
+                    link : this.protocol + this.args.host + "/services/postgis/" + this.args.table + "/" + this.args.geomcolumn + "/vector-tiles"
                 });
                 this.args.extent = result.rows[0];
 
