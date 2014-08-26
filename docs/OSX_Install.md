@@ -23,7 +23,7 @@ Then:
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/MacInstallation_Homebrew))
 
 	(assuming you have home-brew installed)
-	brew install mapnik —-with gdal —-with-postgresql
+	brew install mapnik --with-gdal --with-postgresql
 
 ###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub)
     git clone https://github.com/spatialdev/PGRestAPI.git
