@@ -436,6 +436,7 @@ exports.app = function(passport) {
 
 		//requested select fields
 		this.returnfields = this.args.returnfields || "";
+		this.returnfields = common.escapePostGresColumns(this.returnfields.split(',')).join(',');
 		//return fields - copy to local variable so we don't mess with the original
 
 		//return geom?
