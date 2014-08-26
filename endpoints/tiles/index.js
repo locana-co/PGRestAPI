@@ -1400,13 +1400,13 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
 
       var args = common.getArguments(req);
 
-      //If user passes in where clause, then build the query here and set it with the table property of postgis_settings
-      if (args.where) {
+      //If user passes in where clause or fields, then build the query here and set it with the table property of postgis_setting
+      if (args.fields || args.where) {
         //Validate where - TODO
 
         //If a where clause was passed in, and we're using a postgis datasource, allow it
         if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
-          _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.table + " WHERE " + args.where + ") as " + _self.settings.routeProperties.table : _self.settings.routeProperties.table);
+          _self.settings.mapnik_datasource.table = (args.fields ? "(SELECT " + _self.settings.routeProperties.geom_field + (args.fields ? "," + args.fields : "") + " from " + _self.settings.routeProperties.table + (args.where ? " WHERE " + args.where : "") + ") as " + _self.settings.routeProperties.table : _self.settings.routeProperties.table);
         }
       }
 
