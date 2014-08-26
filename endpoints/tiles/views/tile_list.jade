@@ -1,0 +1,76 @@
+extends ../../../shared_views/layout
+
+block content
+    script.
+        //Trigger Active Nav Link
+        $("#tileListing").addClass("active");
+
+    div.heading Tile Endpoint Listing
+
+    span A list of your tile endpoints
+
+    - if(featureCollection){
+        - each val in featureCollection
+            div.bigSpace.capitalize #{val.source} - #{val.type}
+                a(target="_blank" href="/services/tiles/" + val.name + "/preview") #{val.route}
+    -} else {
+        div |No tile endpoints.
+    -}
+
+block apidoc
+    div.section.code
+
+        div.codeSamplesHeader Code Sample
+
+        div.codeBody
+
+            span Here's how to hit this endpoint programatically to get an array of these column names
+
+            div.requestHeader POST
+
+            div.requestContent
+
+                pre.prettyprint.linenums
+                    | //define arguments
+                    | var args = {
+                    | format: 'geojson'
+                    | };
+                    | &nbsp;
+                    | //jQuery POST
+                    | $.post('#{link}', args).done(function (data) {
+                    | //Callback on success
+                    | console.log(data);
+                    | })
+
+
+            - var requestSample = ["format=geojson"]
+            -if(search)
+                - requestSample.push("search=" + encodeURIComponent(search))
+
+            div.requestHeader GET
+
+            div.requestContent
+
+                pre.prettyprint.linenums
+                    span.nocode.str #{"http://" + host + path + "?" + requestSample.join("&")}
+
+
+            - var optionalSample = ["format=geojson","search=a"]
+
+            div.requestHeader Optional Search
+
+            div.requestContent
+
+                span To filter the tables, use a partial search term. For example, to only show tables starting with the letter 'a' using a GET method, append search=a
+
+                pre.prettyprint.linenums
+                    span.nocode.str #{"http://" + host + path + "?" + optionalSample.join("&")}
+
+                -if(infoMessage){
+                    div.infoMessage
+                        | #{infoMessage}
+                -}
+                -if(errorMessage){
+                    div.errorMessage
+                        | #{errorMessage}
+                -}

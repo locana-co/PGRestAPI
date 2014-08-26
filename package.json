@@ -15,37 +15,37 @@
     "test": "node_modules\\.bin\\mocha -u tdd --reporter spec"
   },
   "dependencies": {
-    "cors": "*",
+    "cors": "2.4.1",
     "crypto": "0.0.3",
     "express": "3.3.4",
-    "flow": "*",
-    "generic-pool": "*",
-    "geojson-validation": "*",
+    "flow": "0.2.3",
+    "generic-pool": "2.0.4",
+    "geojson-validation": "0.1.5",
     "jade": "0.35.0",
     "jquery": "2.1.1",
-    "jsdom": "*",
+    "jsdom": "0.10.5",
     "less-middleware": "0.1.14",
-    "lru-cache": "*",
-    "millstone": "*",
-    "pg": "*",
-    "request": "*",
-    "semver": "*",
-    "shortid": "*",
-    "underscore": "*"
+    "lru-cache": "2.5.0",
+    "millstone": "0.6.12",
+    "pg": "3.4.0",
+    "request": "2.37.0",
+    "semver": "2.3.0",
+    "shortid": "2.0.1",
+    "underscore": "1.6.0"
   },
   "optionalDependencies": {
-    "mapnik": "1.4.2",
-    "carto": "*",
-    "ogr2ogr": "*",
-    "mbtiles": "*",
-    "tilelive": "*"
+    "mapnik": "1.4.10",
+    "carto": "0.11.0",
+    "ogr2ogr": "0.3.1",
+    "mbtiles": "0.2.9",
+    "tilelive": "4.5.3"
   },
   "devDependencies": {
-    "mocha": "*",
-    "sinon": "*",
+    "mocha": "1.20.1",
+    "sinon": "1.10.3",
     "chai": "~1.4.2",
-    "express-mock-request": "*",
-    "supertest": "*"
+    "express-mock-request": "0.0.2",
+    "supertest": "0.13.0"
   },
   "keywords": [
     "PostGIS",

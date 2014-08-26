@@ -418,3 +418,6 @@ div.navLinks a:hover {
   margin-top: 40px;
   margin-bottom: 20px;
 }
+.capitalize {
+  text-transform: capitalize;
+}

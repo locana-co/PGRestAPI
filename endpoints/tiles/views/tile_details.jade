@@ -1,0 +1,112 @@
+extends ../../../shared_views/layout
+
+block content
+	script.
+		//Trigger Active Nav Link
+		$("#tableListing").addClass("active");
+
+	div.floatingColumns.blocks
+		div.heading #{table}
+
+		-if(SRID){
+			h2 SRID
+			p(style="color:green")
+				| SRID is #{SRID}
+		-}
+
+		h2 Columns
+		div.description Below is a list of columns and data types for this table.
+		div.columnList
+			-if(featureCollection && featureCollection.columns){
+				- each item in featureCollection.columns
+					div.littleSpace= item.column_name + " (" + item.data_type + ")"
+			-}else{
+				div.littlespace No information found for this table.
+			-}	
+
+	div.left#rightHand.blocks
+		div.innerRightHand
+			h2 Operations
+			div.description The following operations are available for this table.
+			div.links
+				- if(featureCollection && featureCollection.supportedOperations){
+					- each operation in featureCollection.supportedOperations
+						a(href=operation.link) #{operation.name}
+				-}
+
+
+block apidoc
+
+	div.section.code
+
+		div.codeSamplesHeader Code Sample
+		
+		div.codeBody
+
+			span Here's how to hit this endpoint programatically to get an array of these column names
+
+			div.requestHeader POST
+
+			div.requestContent
+				pre.prettyprint.linenums
+					|//define arguments
+					|var args = {
+					|    format: 'geojson'
+					|};
+					|&nbsp;
+					|//jQuery POST
+					|$.post('#{link}', args).done(function (data) {
+					|    //Callback on success
+					|    console.log(data);
+					|})
+
+			- var requestSample = ["format=geojson"]
+			-if(search)
+				- requestSample.push("search=" + encodeURIComponent(search))
+
+			div.requestHeader GET
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					span.nocode.str #{link + "?" + requestSample.join("&")}
+
+			div.requestHeader Sample GeoJSON Response
+
+			div.requestContent
+
+				pre.prettyprint.linenums
+					|{
+					|   "columns": [
+					|     {
+					|          "column_name": "gid",
+					|          "data_type": "integer"
+					|     },
+					|     {
+					|          "column_name": "longitude",
+					|          "data_type": "numeric"
+					|     }
+					|  ]
+					|  "supportedOperations": [
+					|     {
+					|          "link": "#{link}/query",
+					|          "name": "Query"
+					|     },
+					|     {
+					|          "link": "#{link}/dynamicMapLanding",
+					|          "name": "Dynamic Map Service"
+					|     }
+					|   ]
+					|}
+
+				-if(infoMessage){
+					div.infoMessage
+						|!{infoMessage}
+				-}
+				-if(errorMessage){
+					div.errorMessage
+						|#{errorMessage}
+				-}
+
+
+				

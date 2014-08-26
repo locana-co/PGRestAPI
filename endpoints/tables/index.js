@@ -122,9 +122,9 @@ exports.app = function(passport) {
 		this.args.host = settings.application.publichost || req.headers.host;
 		this.args.url = this.req.url;
 		this.args.table_details = [];
-		this.args.fullURL = "http://" + (settings.application.publichost || this.req.headers.host) + this.req.path;
-		//TODO - make the protocol dynamic
-		this.args.link = "http://" + this.args.host + "/services/tables/" + this.args.table;
+    this.protocol = common.getProtocol(req);
+		this.args.fullURL = this.protocol + (settings.application.publichost || this.req.headers.host) + this.req.path;
+		this.args.link = this.protocol + this.args.host + "/services/tables/" + this.args.table;
 
 		//Find Column Names
 	    //Grab from stash if we have it already
@@ -206,12 +206,12 @@ exports.app = function(passport) {
 			} else if (item.data_type == "geometry") {
 			    if (tiles)
 			        args.featureCollection.supportedOperations.push({
-			            link: args.fullURL + "/dynamicMapLanding",
-			            name: "Dynamic Map Service"
+			            link: args.fullURL + "/" + item.column_name + "/dynamicMapLanding",
+			            name: "Dynamic Map Service - " + item.column_name + " column"
 			        });
 			    args.featureCollection.supportedOperations.push({
-			        link: args.fullURL + "/vector-tiles",
-			        name: "Dynamic Vector Tile Service"
+			        link: args.fullURL + "/" + item.column_name + "/vector-tiles",
+			        name: "Dynamic Vector Tile Service - " + item.column_name + " column"
 			    });
 			    rasterOrGeometry.present = true;
 			    rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
@@ -903,7 +903,7 @@ exports.app = function(passport) {
 	//If the tiles endpoint exists, then load the endpointDynamic
 	if (tiles) {
 		//Show users about a table's dynamic map service, along with a preview
-		app.all('/services/tables/:table/dynamicMapLanding', flow.define(function(req, res) {
+		app.all('/services/tables/:table/:geomcolumn/dynamicMapLanding', flow.define(function(req, res) {
 			this.args = {};
 			this.req = req;
 			this.res = res;
@@ -919,6 +919,7 @@ exports.app = function(passport) {
 
 			this.args.view = "table_dynamic_map";
 			this.args.table = this.req.params.table;
+      this.args.geomcolumn = this.req.params.geomcolumn;
 			this.args.breadcrumbs = [{
 				link : "/services/tables/",
 				name : "Table Listing"
@@ -940,22 +941,21 @@ exports.app = function(passport) {
 			this.spatialTables = app.get('spatialTables');
 
 			//This should have a value
-			var srid = this.spatialTables[this.args.table].srid;
+			var srid = this.spatialTables[this.args.table + "_" + this.args.geomcolumn].srid;
 
 			//coming back from getGeometryFieldNames
-			//for now, assume just 1 geometry.  TODO
 			if (geom_fields_array.length > 0) {
 				//Check for layer extent
 				//Transform to 4326 if 3857
 				var query;
 				if (srid && (srid == 3857 || srid == 3587)) {
 					query = {
-						text : "SELECT ST_Extent(ST_Transform(" + geom_fields_array[0] + ", 4326)) as table_extent FROM " + this.args.table + ";",
+						text : "SELECT ST_Extent(ST_Transform(" + this.args.geomcolumn + ", 4326)) as table_extent FROM " + this.args.table + ";",
 						values : []
 					};
 				} else {
 					query = {
-						text : "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";",
+						text : "SELECT ST_Extent(" + this.args.geomcolumn + ") as table_extent FROM " + this.args.table + ";",
 						values : []
 					};
 				}
@@ -982,7 +982,7 @@ exports.app = function(passport) {
 				this.args.featureCollection = [];
 				this.args.featureCollection.push({
 					name : "Map Service Endpoint",
-					link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/dynamicMap"
+					link : common.getProtocol(this.req) + this.args.host + "/services/postgis/" + this.args.table + "/" + this.args.geomcolumn + "/dynamicMap"
 				});
 				this.args.extent = result.rows[0];
 
@@ -997,7 +997,7 @@ exports.app = function(passport) {
 
 
         //Show users about a table's vector tile service
-        app.all('/services/tables/:table/vector-tiles', flow.define(function(req, res) {
+        app.all('/services/tables/:table/:geomcolumn/vector-tiles', flow.define(function(req, res) {
             this.args = {};
             this.req = req;
             this.res = res;
@@ -1013,6 +1013,8 @@ exports.app = function(passport) {
 
             this.args.view = "table_vector_tiles";
             this.args.table = this.req.params.table;
+            this.args.geomcolumn = this.req.params.geomcolumn;
+            this.protocol = common.getProtocol(req);
             this.args.breadcrumbs = [{
                 link : "/services/tables/",
                 name : "Table Listing"
@@ -1031,35 +1033,34 @@ exports.app = function(passport) {
 
         }, function(err, geom_fields_array) {
 
-            this.spatialTables = app.get('spatialTables');
+          this.spatialTables = app.get('spatialTables');
 
-            //This should have a value
-            var srid = this.spatialTables[this.args.table].srid;
+          //This should have a value
+          var srid = this.spatialTables[this.args.table + "_" + this.args.geomcolumn].srid;
 
-            //coming back from getGeometryFieldNames
-            //for now, assume just 1 geometry.  TODO
-            if (geom_fields_array.length > 0) {
-                //Check for layer extent
-                //Transform to 4326 if 3857
-                var query;
-                if (srid && (srid == 3857 || srid == 3587)) {
-                    query = {
-                        text : "SELECT ST_Extent(ST_Transform(" + geom_fields_array[0] + ", 4326)) as table_extent FROM " + this.args.table + ";",
-                        values : []
-                    };
-                } else {
-                    query = {
-                        text : "SELECT ST_Extent(" + geom_fields_array[0] + ") as table_extent FROM " + this.args.table + ";",
-                        values : []
-                    };
-                }
-                common.executePgQuery(query, this);
+          //coming back from getGeometryFieldNames
+          if (geom_fields_array.length > 0) {
+            //Check for layer extent
+            //Transform to 4326 if 3857
+            var query;
+            if (srid && (srid == 3857 || srid == 3587)) {
+              query = {
+                text: "SELECT ST_Extent(ST_Transform(" + this.args.geomcolumn + ", 4326)) as table_extent FROM " + this.args.table + ";",
+                values: []
+              };
             } else {
-                //No geom column or no extent or something.
-                this.args.errorMessage = "Problem getting the geom column for this table.";
-                common.respond(this.req, this.res, this.args);
-                return;
+              query = {
+                text: "SELECT ST_Extent(" + this.args.geomcolumn + ") as table_extent FROM " + this.args.table + ";",
+                values: []
+              };
             }
+            common.executePgQuery(query, this);
+          } else {
+            //No geom column or no extent or something.
+            this.args.errorMessage = "Problem getting the geom column for this table.";
+            common.respond(this.req, this.res, this.args);
+            return;
+          }
         }, function(err, result) {
 
             if (err) {
@@ -1076,7 +1077,7 @@ exports.app = function(passport) {
                 this.args.featureCollection = [];
                 this.args.featureCollection.push({
                     name : "Map Service Endpoint",
-                    link : "http://" + this.args.host + "/services/postgis/" + this.args.table + "/vector-tiles"
+                    link : this.protocol + this.args.host + "/services/postgis/" + this.args.table + "/" + this.args.geomcolumn + "/vector-tiles"
                 });
                 this.args.extent = result.rows[0];
 

@@ -19,18 +19,19 @@ block content
 
             script.
                 var mapUrl = "#{featureCollection[0].link}";
-                var XMIN = #{xmin};
-                var YMIN = #{ymin};
-                var XMAX = #{xmax};
-                var YMAX = #{ymax};
+                var zoom = "#{featureCollection[0].center.zoom}";
+                var lat = "#{featureCollection[0].center.lat}";
+                var lng = "#{featureCollection[0].center.lng}";
+
+
 
             //Map Div
             div#map(style='height:400px;width:400px;')
 
-            //Load Leaflet
+
             script.
                 var map = L.map('map');
-                var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
+                //var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
 
                 L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-qfyrx5r8/{z}/{x}/{y}.png').addTo(map);
 
@@ -81,12 +82,14 @@ block content
                     }
                     return style;
                 }
-                
+
                 //Add layer
                 map.addLayer(pbfSource);
 
+                //L.tileLayer().addTo(map);
+
                 // zoom the map to the rectangle bounds
-                map.fitBounds(bounds);
+                map.setView(new L.LatLng(lat, lng), zoom);
 
         -}
 

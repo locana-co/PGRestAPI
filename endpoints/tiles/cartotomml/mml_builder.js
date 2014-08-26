@@ -245,9 +245,8 @@ var MMLBuilder = function (opts, optional_args, init_callback) {
             // See https://github.com/mapbox/carto/pull/187
             try {
                 var r = new carto.Renderer(carto_env, carto_options);
-                r.render(mml, function (err, output) {
-                    callback(err, output);
-                });
+                var output = r.render(mml);
+                callback(null, output);
             } catch (err) {
                 callback(err, null);
             }
