@@ -125,13 +125,13 @@ exports.app = function(passport) {
     this.protocol = common.getProtocol(req);
 		this.args.fullURL = this.protocol + (settings.application.publichost || this.req.headers.host) + this.req.path;
 		this.args.link = this.protocol + this.args.host + "/services/tables/" + this.args.table;
+    this.args.featureCollection = {};
 
 		//Find Column Names
 	    //Grab from stash if we have it already
 	    //TODO: don't use settings object to store column names.  use Express' app object
 	
 		if (settings.columnNames && settings.columnNames[this.args.table]) {
-			this.args.featureCollection = {};
 			this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
 
 			this(settings.columnNames[this.args.table]);
@@ -156,7 +156,6 @@ exports.app = function(passport) {
 					//go to next flow
 				} else if (result && result.rows && result.rows.length > 0) {
 
-					args.featureCollection = {};
 					args.featureCollection.columns = result.rows;
 
 					//Stash
