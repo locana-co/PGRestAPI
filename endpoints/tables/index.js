@@ -234,7 +234,7 @@ exports.app = function(passport) {
 		    } else {
 		        //check SRID
 		        var query = {
-		            text: "select ST_SRID(" + rasterOrGeometry.name + ") as SRID FROM " + this.args.table + " LIMIT 1;",
+		            text: 'select ST_SRID(' + rasterOrGeometry.name + ') as SRID FROM "' + this.args.table + '" LIMIT 1;',
 		            values: []
 		        };
 		        common.executePgQuery(query, this);
@@ -856,7 +856,7 @@ exports.app = function(passport) {
 				//If a point, buffer.  Otherwise, don't.
 				(this.args.wkt.toLowerCase().indexOf("point") == 0 ? "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326);" : "buffer:=input; ") + "drop table if exists _zstemp; " + //TODO: Add session ID (or something) to make sure this is dynamic.
 				"create temporary table _zstemp as " + "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + ", ST_ASGeoJSON(buffer) as geom, ST_AsText(buffer) as wkt " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
-				" FROM " + this.args.table + " WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+				" FROM \"" + this.args.table + "\" WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
 
 				"END$$; " + "select * from _zstemp;",
 				values : []
@@ -950,12 +950,12 @@ exports.app = function(passport) {
 				var query;
 				if (srid && (srid == 3857 || srid == 3587)) {
 					query = {
-						text : "SELECT ST_Extent(ST_Transform(" + this.args.geomcolumn + ", 4326)) as table_extent FROM " + this.args.table + ";",
+						text : "SELECT ST_Extent(ST_Transform(" + this.args.geomcolumn + ", 4326)) as table_extent FROM \"" + this.args.table + "\";",
 						values : []
 					};
 				} else {
 					query = {
-						text : "SELECT ST_Extent(" + this.args.geomcolumn + ") as table_extent FROM " + this.args.table + ";",
+						text : "SELECT ST_Extent(" + this.args.geomcolumn + ") as table_extent FROM \"" + this.args.table + "\";",
 						values : []
 					};
 				}
@@ -1027,7 +1027,7 @@ exports.app = function(passport) {
             }];
             this.args.path = this.req.path;
             this.args.host = settings.application.publichost || this.req.headers.host;
-
+	        
             //Get geometry names
             getGeometryFieldNames(this.args.table, this);
 
@@ -1045,12 +1045,12 @@ exports.app = function(passport) {
             var query;
             if (srid && (srid == 3857 || srid == 3587)) {
               query = {
-                text: "SELECT ST_Extent(ST_Transform(" + this.args.geomcolumn + ", 4326)) as table_extent FROM " + this.args.table + ";",
+                text: "SELECT ST_Extent(ST_Transform(" + this.args.geomcolumn + ", 4326)) as table_extent FROM \"" + this.args.table + "\";",
                 values: []
               };
             } else {
               query = {
-                text: "SELECT ST_Extent(" + this.args.geomcolumn + ") as table_extent FROM " + this.args.table + ";",
+                text: "SELECT ST_Extent(" + this.args.geomcolumn + ") as table_extent FROM \"" + this.args.table + "\";",
                 values: []
               };
             }
@@ -1163,6 +1163,7 @@ exports.app = function(passport) {
 			text : "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1",
 			values : [table]
 		};
+
 		common.executePgQuery(query, function(err, result) {
             if(err){
                 callback(err);
