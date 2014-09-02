@@ -128,8 +128,8 @@ exports.app = function(passport) {
     this.args.featureCollection = {};
 
 		//Find Column Names
-	    //Grab from stash if we have it already
-	    //TODO: don't use settings object to store column names.  use Express' app object
+	  //Grab from stash if we have it already
+	  //TODO: don't use settings object to store column names.  use Express' app object
 	
 		if (settings.columnNames && settings.columnNames[this.args.table]) {
 			this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
@@ -823,7 +823,7 @@ exports.app = function(passport) {
 
 			common.respond(this.req, this.res, this.args);
 		}
-	}, function(raster_column_name) {
+	}, function(err, raster_column_name) {
 		//Coming back from getRasterColumnName.  Should return a string. Assuming just 1 raster column per table.
 
 		//var query = {
