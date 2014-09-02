@@ -2,7 +2,7 @@
 <!DOCTYPE Map>
 
 <Map minimum-version="2.0.0">
-    <Style name="style">
+    <Style name="default">
         <Rule>
             <PolygonSymbolizer fill="white" />
             <LineSymbolizer stroke="black" stroke-width=".2" />
