@@ -5,7 +5,8 @@ var express = require('express'),
 
 //These next requires are specific to this module only
 var path = require('path'),
-  flow = require('flow');
+  flow = require('flow'),
+  zlib = require('zlib')
 
 var tilelive = require('tilelive');
 var MMLBuilder = require("../tiles/cartotomml/mml_builder");
@@ -215,7 +216,6 @@ function loadPNGMBTilesRoutes(app){
 function loadPBFMBTilesRoutes(app) {
   var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
 
-
   //Load mbtiles from mbtiles folder.
   tilelive.all(mbtilesLocation, function (err, list) {
     mbTileFiles = list;
@@ -236,14 +236,26 @@ function loadPBFMBTilesRoutes(app) {
         PBFroute = '/services/vector-tiles/' + name + '/:z/:x/:y.pbf';
 
         app.get(PBFroute, function (req, res) {
+
           source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
             // `err` is an error object when generation failed, otherwise null.
             // `tile` contains the compressed image file as a Buffer
             // `headers` is a hash with HTTP headers for the image.
             res.setHeader('content-type', 'application/x-protobuf');
             if (!err) {
-              res.setHeader('content-encoding', 'deflate');
-              res.send(tile);
+              if(res.req.headers["accept-encoding"] && res.req.headers["accept-encoding"].indexOf("deflate") > -1){
+                res.setHeader('content-encoding', 'deflate');
+                res.send(tile);
+                return;
+              }
+              else{
+                //no deflate.  Actually inflate the thing and send it (for phantomjs that doesn't request deflate in request headers.
+                zlib.inflate(tile, function(err, buffer){
+                  res.send(buffer);
+                  return;
+                });
+              }
+
             } else {
               res.send(new Buffer(''));
             }

@@ -486,7 +486,7 @@ exports.createGeoJSONQueryRenderer = flow.define(function (app, geoJSON, epsgSRI
 
             map.bufferSize = 64;
 
-            var stylepath = __dirname + '/cartocss/' + _defaultMSS;
+            var stylepath = __dirname + '/cartocss/default.xml';
 
             map.load(path.join(stylepath), {
               strict: true
