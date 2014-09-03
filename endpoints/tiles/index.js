@@ -235,7 +235,7 @@ exports.app = function (passport) {
               'port': settings.pg.port,
               'dbname': settings.pg.database,
               //'table': item.table,
-              'table': ("(SELECT " + item.geometry_column + " from " + item.table + ") as " + item.table),
+              'table': ('(SELECT ' + item.geometry_column + ' from "' + item.table + '"' + ') as "' + item.table + '"'),
 
               'user': settings.pg.username,
               'password': settings.pg.password,
@@ -1167,7 +1167,7 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
 
         //If a where clause was passed in, and we're using a postgis datasource, allow it
         if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
-          _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
+          _self.settings.mapnik_datasource.table = (args.where ? '(SELECT ' + _self.settings.routeProperties.geom_field + ' from "' + _self.settings.routeProperties.name + '" WHERE ' + args.where + ') as "' + _self.settings.routeProperties.name + '"' : '"' + _self.settings.routeProperties.name + '"');
         }
       }
 
@@ -1303,7 +1303,7 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
 
           //If a where clause was passed in, and we're using a postgis datasource, allow it
           if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
-            _self.settings.mapnik_datasource.table = (args.where ? "(SELECT " + _self.settings.routeProperties.geom_field + " from " + _self.settings.routeProperties.name + " WHERE " + args.where + ") as " + _self.settings.routeProperties.name : _self.settings.routeProperties.name);
+            _self.settings.mapnik_datasource.table = (args.where ? '(SELECT ' + _self.settings.routeProperties.geom_field + ' from "' + _self.settings.routeProperties.name + '" WHERE ' + args.where + ') as "' + _self.settings.routeProperties.name + '"' : '"' + _self.settings.routeProperties.name + '"');
           }
         }
 
@@ -1406,7 +1406,7 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
 
         //If a where clause was passed in, and we're using a postgis datasource, allow it
         if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
-          _self.settings.mapnik_datasource.table = (args.fields ? "(SELECT " + _self.settings.routeProperties.geom_field + (args.fields ? "," + args.fields : "") + " from " + _self.settings.routeProperties.table + (args.where ? " WHERE " + args.where : "") + ") as " + _self.settings.routeProperties.table : _self.settings.routeProperties.table);
+          _self.settings.mapnik_datasource.table = (args.fields ? '(SELECT ' + _self.settings.routeProperties.geom_field + (args.fields ? ',' + args.fields : '') + ' from "' + _self.settings.routeProperties.table + '"' + (args.where ? ' WHERE ' + args.where : '') + ') as "' + _self.settings.routeProperties.table + '"' : '"' + _self.settings.routeProperties.table + '"');
         }
       }
 
