@@ -35,7 +35,7 @@ exports.app = function (passport) {
     args.view = "vector_tile_list";
     args.breadcrumbs = [
       {
-        link: "/services/tables",
+        link: "/services",
         name: "Home"
       },
       {
@@ -81,7 +81,7 @@ exports.app = function (passport) {
       this.args.view = "tile_vector_dynamic_map";
       this.args.breadcrumbs = [
         {
-          link: "/services/tables",
+          link: "/services",
           name: "Home"
         },
         {
@@ -138,7 +138,7 @@ exports.app = function (passport) {
       this.args.view = "tile_vector_dynamic_map";
       this.args.breadcrumbs = [
         {
-          link: "/services/tables",
+          link: "/services",
           name: "Home"
         },
         {

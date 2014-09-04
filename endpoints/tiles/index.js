@@ -314,44 +314,44 @@ exports.app = function (passport) {
   });
 
   //Tile endpoint, display all tile routes
-  app.all('/services/imagetiles', function (req, res) {
-
-    var args = common.getArguments(req);
-
-    args.view = "tile_list";
-    args.breadcrumbs = [{
-      link : "/services",
-      name : "Services"
-    },{
-      link : "",
-      name : "Image Tile Services"
-    }];
-    args.path = req.path;
-    args.host = settings.application.publichost || req.headers.host;
-    args.featureCollection = tileRoutes.concat(mbtileserver.getImageTileRoutes());;
-
-    common.respond(req, res, args);
-  });
-
-  //Tile endpoint, display all tile routes
-  app.all('/services/vectortiles', function (req, res) {
-
-    var args = common.getArguments(req);
-
-    args.view = "tile_list";
-    args.breadcrumbs = [{
-      link : "/services",
-      name : "Services"
-    },{
-      link : "",
-      name : "Vector Tile Services"
-    }];
-    args.path = req.path;
-    args.host = settings.application.publichost || req.headers.host;
-    args.featureCollection = VectorTileRoutes.concat(mbtileserver.getVectorTileRoutes());
-
-    common.respond(req, res, args);
-  });
+//  app.all('/services/imagetiles', function (req, res) {
+//
+//    var args = common.getArguments(req);
+//
+//    args.view = "tile_list";
+//    args.breadcrumbs = [{
+//      link : "/services",
+//      name : "Services"
+//    },{
+//      link : "",
+//      name : "Image Tile Services"
+//    }];
+//    args.path = req.path;
+//    args.host = settings.application.publichost || req.headers.host;
+//    args.featureCollection = tileRoutes.concat(mbtileserver.getImageTileRoutes());;
+//
+//    common.respond(req, res, args);
+//  });
+//
+//  //Tile endpoint, display all tile routes
+//  app.all('/services/vectortiles', function (req, res) {
+//
+//    var args = common.getArguments(req);
+//
+//    args.view = "tile_list";
+//    args.breadcrumbs = [{
+//      link : "/services",
+//      name : "Services"
+//    },{
+//      link : "",
+//      name : "Vector Tile Services"
+//    }];
+//    args.path = req.path;
+//    args.host = settings.application.publichost || req.headers.host;
+//    args.featureCollection = VectorTileRoutes.concat(mbtileserver.getVectorTileRoutes());
+//
+//    common.respond(req, res, args);
+//  });
 
   return app;
 };
@@ -1189,8 +1189,15 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
         map.fromString(mmlStylesheet, {
           strict: true
         }, function (err, map) {
-          if (err)
-            throw err;
+          if (err){
+            //Bad connection to PG possibly
+            res.writeHead(500, {
+              'Content-Type': 'text/plain'
+            });
+            res.end(err.message);
+            return;
+          }
+
 
           map.extent = bbox;
           //Write out the map xml

@@ -25,10 +25,11 @@ exports.app = function(passport) {
 
 		var args = {};
 		args.view = "geoprocessing_operations";
-		args.breadcrumbs = [{
-			link : "/services/tables",
-			name : "Table Listing"
-		}, {
+		args.breadcrumbs = [
+      {
+        link: "/services",
+        name: "Home"
+      }, {
 			link : "",
 			name : "Geoprocessing Operations"
 		}];
@@ -68,8 +69,8 @@ exports.app = function(passport) {
 
 			this.args.view = "geoprocessing_operation";
 			this.args.breadcrumbs = [{
-				link : "/services/tables",
-				name : "Table Listing"
+				link : "/services",
+				name : "Home"
 			}, {
 				link : "/services/geoprocessing",
 				name : "Geoprocessing Operations"
@@ -148,8 +149,8 @@ exports.app = function(passport) {
 			//Page initial load.  No results
 			this.args.view = "geoprocessing_operation";
 			this.args.breadcrumbs = [{
-				link : "/services/tables",
-				name : "Table Listing"
+				link : "/services",
+				name : "Home"
 			}, {
 				link : "/services/geoprocessing",
 				name : "Geoprocessing Operations"

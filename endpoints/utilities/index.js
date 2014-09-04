@@ -23,7 +23,12 @@ exports.app = function (passport) {
         var args = {};
 
         args.view = "services";
-        args.breadcrumbs = [{
+        args.breadcrumbs = [
+          {
+            link: "/services",
+            name: "Home"
+          },
+          {
             link: "/services/tables",
             name: "Table Listing"
         }, {
@@ -59,7 +64,12 @@ exports.app = function (passport) {
         }
 
         args.view = "wktpreview";
-        args.breadcrumbs = [{
+        args.breadcrumbs = [
+          {
+            link: "/services",
+            name: "Home"
+          },
+          {
             link: "/services/tables",
             name: "Table Listing"
         }, {
