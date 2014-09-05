@@ -534,6 +534,8 @@ common.executeSelfRESTRequest = function (table, path, postargs, callback, setti
 
         res.on('error', function (err) {
             console.log("problem");
+            callback(err, null);
+            return;
         });
 
         //res.setEncoding('utf8');

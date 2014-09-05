@@ -374,8 +374,18 @@ exports.app = function (passport) {
           common.executeSelfRESTRequest(this.args.table, "/services/tables/" + this.args.table, {
             where: "1=1",
             format: "geojson"
-          }, function () {
-            common.log("refreshed column list");
+          }, function (err, result) {
+            if(err) {
+              //Report error and exit.
+              args.errorMessage = err.text;
+              common.respond(flo.args.req, flo.args.res, flo);
+              return;
+            }
+            else{
+              args.columnNames = settings.columnNames[args.table].rows;
+              common.log("refreshed column list");
+            }
+
             flo();
           }, settings);
         }
@@ -427,10 +437,16 @@ exports.app = function (passport) {
           common.executeSelfRESTRequest(args.table, "/services/tables/" + this.args.table, {
             where: "1=1",
             format: "geojson"
-          }, function () {
-            args.columnNames = settings.columnNames[args.table].rows;
+          }, function (err, result) {
+            if(err) {
+              //Report error and exit.
+              args.errorMessage = err.text;
+            }
+            else{
+              args.columnNames = settings.columnNames[args.table].rows;
+              common.log("refreshed column list");
+            }
 
-            common.log("refreshed column list");
             common.respond(req, res, args);
           }, settings);
         }
@@ -457,6 +473,9 @@ exports.app = function (passport) {
       //group by fields
       this.args.statsdef = this.args.statsdef || "";
       //statistics definition clause
+      this.offset = this.args.offset || 0;
+      //offset for pagination
+
 
       //Limit is mainly for the HTML response page.  Don't want too many records coming back there.
       if (this.args.format && this.args.format.toLowerCase() == "html") {
@@ -467,9 +486,11 @@ exports.app = function (passport) {
         this.limit = this.args.limit || -1;
       }
 
+
+
       //requested select fields
       this.returnfields = this.args.returnfields || "";
-      this.returnfields = common.escapePostGresColumns(this.returnfields.split(',')).join(',');
+      this.returnfields = (this.returnfields ? common.escapePostGresColumns(this.returnfields.split(',')).join(',') : "");
       //return fields - copy to local variable so we don't mess with the original
 
       //return geom?
@@ -633,7 +654,8 @@ exports.app = function (passport) {
           text: "SELECT " + fieldList +
             //Dynamically plug in geometry piece depending on the geom field name(s)
             (this.args.geometryStatement ? ", " + this.args.geometryStatement : "") + " FROM " + common.escapePostGresColumns([this.args.table]).join(",") + //escape
-            this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : ""),
+            this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : "")
+            + (this.offset && common.IsNumeric(this.offset) && this.offset != "0" ? " OFFSET " + this.offset : ""),
           values: []
         };
 

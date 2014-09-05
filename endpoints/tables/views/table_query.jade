@@ -15,7 +15,7 @@ block content
 		-}
 
 		h2 Columns
-		div.description 
+		div.description
 			|Below is a list of columns and data types for this table. <br/> Click to include/exclude from query.
 
 		div.columnList
@@ -29,7 +29,7 @@ block content
 					-}
 			-}else{
 				div.littlespace No information found for this table.
-			-}	
+			-}
 
 	div.left#rightHand.blocks
 		div.innerRightHand
@@ -72,7 +72,7 @@ block content
 								span(for='optionsRadios2') No
 								input(type="radio", name="returnGeometry", id="optionsRadios2", value="no", checked="") No
 							-}
-			
+
 					tr
 						td
 							label Return feature envelope(s)
@@ -100,14 +100,14 @@ block content
 							label(for='outputsrid') Output SRID
 						td
 							input(id='outputsrid',type='text',value=outputsrid,placeholder='3857',name='outputsrid')
-		
+
 					tr
 						td
 							label(for='statsdef') Statistics definition
 						td
 							textarea(id='statsdef',placeholder='count:field1,sum:field2',name='statsdef')
 								|#{statsdef}
-			
+
 					tr(style='display:none;')
 						td
 							label(for='wkt') Well Known Text (WKT) Geometry
@@ -128,8 +128,14 @@ block content
 						td
 							input(id='limit',type='text',value=limit,placeholder='1000',name='limit')
 
+					tr
+						td
+							label(for='offset') Feature offset
+						td
+							input(id='offset',type='text',value=offset,placeholder='0',name='offset')
 
-				div(data-role='fieldcontain')   
+
+				div(data-role='fieldcontain')
 					input(id='querySubmit',type='submit',value='Submit',data-transition='fade', data-theme='c')
 
 
@@ -138,7 +144,7 @@ block results
 		div.section.code
 
 			div.codeSamplesHeader Results
-		
+
 			div.codeBody
 
 				-if(infoMessage){
@@ -155,7 +161,7 @@ block results
 					-if(featureCollection.features && featureCollection.features.length > 0 && featureCollection.features[0].geometry){
 						script.
 							var geojson = !{JSON.stringify(featureCollection)};
-					
+
 						h4 Map Preview
 
 						//Map Div
@@ -202,7 +208,7 @@ block results
 										-}else{
 											div.property #{ikey}: #{ival}
 										-}
-								
+
 									-if(val.geometry){
 										-if(val.geometry.geometries){
 											each mgval, mgkey in val.geometry.geometries
@@ -214,7 +220,7 @@ block results
 												div.geometry.truncate geometry: #{gkey}: #{gval}
 										-}
 									-}
-							
+
 					-}else{
 						div.propertyGroup No results found
 					-}
@@ -235,10 +241,10 @@ block apidoc
 		- requestSample.push("returnfields=" + encodeURIComponent(returnfields))
 		- postSample.push("returnfields: '" + returnfields.replace(/\s+/g, "") + "'")
 
-	
+
 	-if(format)
 		- requestSample.push("format=" + encodeURIComponent(format))
-		- postSample.push("format: 'geojson'") 
+		- postSample.push("format: 'geojson'")
 
 	-if(returnGeometry)
 		- requestSample.push("returnGeometry=" + encodeURIComponent(returnGeometry))
@@ -273,12 +279,11 @@ block apidoc
 		- postSample.push("limit: '" + limit + "'")
 
 
-		span.gooood #{requestSample.length}
 	-if(requestSample.length > 0){
 		div.section.code
 
 		div.codeSamplesHeader Code Sample
-		
+
 		div.codeBody
 
 			span Here's how to hit this endpoint programatically to get this data
@@ -323,26 +328,25 @@ block apidoc
 		function toggleColumn(columnName,btn){
 			if(columnList.indexOf(columnName) == -1){
 				columnList.push(columnName);
-				$(btn).addClass("active");	
+				$(btn).addClass("active");
 			}
 			else{
 				columnList.splice(columnList.indexOf(columnName), 1);
-				$(btn).removeClass("active");	
+				$(btn).removeClass("active");
 			}
 			$("#returnfields").val(columnList.join(","));
 		}
 
 		function toggleGeomColumn(checked,btn){
 			if(checked === true){
-				$(btn).removeClass("active");	
+				$(btn).removeClass("active");
 				$('#optionsRadios1').prop('checked', false);
 				$('#optionsRadios2').prop('checked', true);
 			}
 			else{
-				$(btn).addClass("active");	
+				$(btn).addClass("active");
 				$('#optionsRadios1').prop('checked', true);
 				$('#optionsRadios2').prop('checked', false);
 			}
 		}
 
-		
