@@ -145,10 +145,11 @@ div.description {
 #rightHand {
   padding: 0 40px;
   background-color: #fff;
-  min-width: 660px;
+  margin-left: 360px;
+  float: none;
 }
 .innerRightHand {
-  margin-top: 60px;
+  padding-top: 60px;
 }
 .blue {
   color: #0769ae;
