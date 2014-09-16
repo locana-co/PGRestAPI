@@ -377,12 +377,12 @@ exports.app = function (passport) {
           }, function (err, result) {
             if(err) {
               //Report error and exit.
-              args.errorMessage = err.text;
+              flo.args.errorMessage = err.text;
               common.respond(flo.args.req, flo.args.res, flo);
               return;
             }
             else{
-              args.columnNames = settings.columnNames[this.args.table].rows;
+              args.columnNames = settings.columnNames[flo.args.table].rows;
               common.log("refreshed column list");
             }
 
