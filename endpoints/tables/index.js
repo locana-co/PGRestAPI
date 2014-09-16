@@ -382,7 +382,7 @@ exports.app = function (passport) {
               return;
             }
             else{
-              args.columnNames = settings.columnNames[args.table].rows;
+              args.columnNames = settings.columnNames[this.args.table].rows;
               common.log("refreshed column list");
             }
 
