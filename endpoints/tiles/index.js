@@ -1451,8 +1451,7 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
         // 'radial-distance', 'visvalingam-whyatt', 'zhao-saalfeld' (default)
         opts.simplify_algorithm = 'radial-distance';
 
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Encoding', 'deflate');
+        res.setHeader('Content-Type', 'application/x-protobuf');
 
         map.extent = bbox;
         // also pass buffer_size in options to be forward compatible with recent node-mapnik
@@ -1519,8 +1518,11 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
             };
             // No deflate.
             //return !_self._deflate ? done(null, image.getData()) : zlib.deflate(image.getData(), done);
-            //For now, assume we're deflating
-            zlib.deflate(image.getData(), done);
+
+            if(res.req.headers["accept-encoding"] && res.req.headers["accept-encoding"].indexOf("deflate") > -1){
+              res.setHeader('content-encoding', 'deflate');
+              zlib.deflate(image.getData(), done);
+            }
           });
         });
 
