@@ -5,6 +5,8 @@
 var flow = require('flow');
 var pg = require('pg');
 var common = require("../../../common");
+var GeoFragger = require('../../../lib/GeoFragger');
+var geoFragger = new GeoFragger();
 
 //Takes in a POINT (X Y) and returns a WKT representation of the buffer.
 //Arguments are:
@@ -49,6 +51,29 @@ var wktBufferQuery = "DO $$DECLARE " +
   "END$$; " +
   "select * from _temp;";
 
+var geoJsonBufferQuery = "DO $$DECLARE " +
+  "orig_srid int; " +
+  "utm_srid int; " +
+  "input geometry := ST_GeomFromGeoJSON('{geojson}'); " +
+  "geomgeog geometry; " +
+  "zone int; " +
+  "pref int; " +
+  "BEGIN " +
+  "geomgeog:= ST_Transform(input,4326); " +
+  "IF (ST_Y(geomgeog))>0 THEN " +
+  "pref:=32600; " +
+  "ELSE " +
+  "pref:=32700; " +
+  "END IF; " +
+  "zone:=floor((ST_X(geomgeog)+180)/6)+1; " +
+  "orig_srid:= ST_SRID(input); " +
+  "utm_srid:= zone+pref; " +
+  "drop table if exists _temp; " +
+  "create temporary table _temp as " +
+  "SELECT ST_AsGeoJSON(ST_transform(ST_Buffer(ST_transform(input, utm_srid), {buffer_distance}), orig_srid)) as geom; " +
+  "END$$; " +
+  "select * from _temp;";
+
 
 Buffer.execute = flow.define(
   function(args, callback) {
@@ -71,7 +96,11 @@ Buffer.execute = flow.define(
       }
 
       else if (inputFormat.toLowerCase() === 'geojson') {
-        console.log('geojson');
+        var geoJson = geoFragger.toPostGISFragment(JSON.parse(inputGeometry));
+//        var geoJson = '{"type": "Point", "coordinates": [77.24212646484374,28.586933499067946],"crs":{"type":"name","properties":{"name":"EPSG:4326"}}}';
+        var sql = geoJsonBufferQuery
+          .replace("{geojson}", JSON.stringify(geoJson))
+          .replace("{buffer_distance}", bufferDistance);
       }
 
       common.executePgQuery(sql, this);//Flow to next function when done.
