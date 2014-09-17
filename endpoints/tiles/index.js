@@ -1522,6 +1522,8 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
             if(res.req.headers["accept-encoding"] && res.req.headers["accept-encoding"].indexOf("deflate") > -1){
               res.setHeader('content-encoding', 'deflate');
               zlib.deflate(image.getData(), done);
+            }else{
+              done(null, image.getData());
             }
           });
         });
