@@ -1519,9 +1519,9 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
             // No deflate.
             //return !_self._deflate ? done(null, image.getData()) : zlib.deflate(image.getData(), done);
 
-            if(res.req.headers["accept-encoding"] && res.req.headers["accept-encoding"].indexOf("deflate") > -1){
-              res.setHeader('content-encoding', 'deflate');
-              zlib.deflate(image.getData(), done);
+            if(res.req.headers["accept-encoding"] && res.req.headers["accept-encoding"].indexOf("gzip") > -1){
+              res.setHeader('content-encoding', 'gzip');
+              zlib.gzip(image.getData(), done);
             }else{
               done(null, image.getData());
             }

@@ -6,7 +6,7 @@ var express = require('express'),
 //These next requires are specific to this module only
 var path = require('path'),
   flow = require('flow'),
-  zlib = require('zlib')
+  zlib = require('zlib');
 
 var tilelive = require('tilelive');
 var MMLBuilder = require("../tiles/cartotomml/mml_builder");
@@ -241,16 +241,18 @@ function loadPBFMBTilesRoutes(app) {
             // `err` is an error object when generation failed, otherwise null.
             // `tile` contains the compressed image file as a Buffer
             // `headers` is a hash with HTTP headers for the image.
-            res.setHeader('content-type', 'application/x-protobuf');
             if (!err) {
-              if(res.req.headers["accept-encoding"] && res.req.headers["accept-encoding"].indexOf("deflate") > -1){
-                res.setHeader('content-encoding', 'deflate');
+              if(res.req.headers["accept-encoding"] && (res.req.headers["accept-encoding"].indexOf("gzip") > -1 || res.req.headers["accept-encoding"].indexOf("deflate") > -1)){
+                res.setHeader('Content-Encoding', headers['Content-Encoding']);
+                res.setHeader('Content-Type', headers['Content-Type']);
                 res.send(tile);
                 return;
               }
               else{
-                //no deflate.  Actually inflate the thing and send it (for phantomjs that doesn't request deflate in request headers.
-                zlib.inflate(tile, function(err, buffer){
+                //no gzip or deflate.  Actually unzip the thing and send it (for phantomjs - doesn't request gzip or deflate in request headers).
+                //zlib.unzip detects whether to deflate or gunzip
+                res.setHeader('Content-Type', headers['Content-Type']);
+                zlib.unzip(tile, function(err, buffer){
                   res.send(buffer);
                   return;
                 });
