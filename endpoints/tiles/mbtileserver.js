@@ -242,7 +242,9 @@ function loadPBFMBTilesRoutes(app) {
             // `tile` contains the compressed image file as a Buffer
             // `headers` is a hash with HTTP headers for the image.
             if (!err) {
-              if(res.req.headers["accept-encoding"] && (res.req.headers["accept-encoding"].indexOf("gzip") > -1 || res.req.headers["accept-encoding"].indexOf("deflate") > -1)){
+              //Make sure that the compression type being reported by mbtiles matches what the browser is asking for
+              //Headless browsers sometimes have no compression, while older tilemill tiles are compressed with 'deflate'.  Some headless browsers ask for 'gzip'.
+              if(res.req.headers["accept-encoding"] && (res.req.headers["accept-encoding"].indexOf(headers["Content-Encoding"]) > -1)){
                 res.setHeader('Content-Encoding', headers['Content-Encoding']);
                 res.setHeader('Content-Type', headers['Content-Type']);
                 res.send(tile);
@@ -251,7 +253,6 @@ function loadPBFMBTilesRoutes(app) {
               else{
                 //no gzip or deflate.  Actually unzip the thing and send it (for phantomjs - doesn't request gzip or deflate in request headers).
                 //zlib.unzip detects whether to deflate or gunzip
-                res.setHeader('Content-Type', headers['Content-Type']);
                 zlib.unzip(tile, function(err, buffer){
                   res.send(buffer);
                   return;
