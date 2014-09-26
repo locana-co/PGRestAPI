@@ -156,8 +156,10 @@ exports.app = function (passport) {
 
   }));
 
-  loadPBFMBTilesRoutes(app);
+  console.log("About to load PBF .mbtiles");
+  loadPBFMBTilesRoutes(app);  
 
+  //console.log("About to load PNG .mbtiles");
   loadPNGMBTilesRoutes(app);
 
   return app;
@@ -176,18 +178,28 @@ function loadPNGMBTilesRoutes(app){
 
   tilelive.all(PNGmbtilesLocation, function(err, list){
     PNGmbTileFiles = list;
+    console.log("fetched tilelive list of PNGs");
 
     //Create endpoint for mbtiles server, 1 for each source
-    PNGmbTileFiles.forEach(function (file) {
+    //PNGmbTileFiles.forEach(function (file) { 
+    asyncEach(PNGmbTileFiles, function(file, idx){    
+     debugger;
+     console.log("iterating on PNGMBTiles List - " + file.basename);
 
       var PNGroute = ""; //store the route name
 
       var mbtilespath = 'mbtiles://' + path.join(PNGmbtilesLocation, file.basename);
 
+      
+     
       tilelive.load(mbtilespath, function (err, source) {
-        if (err)
-          throw err;
-
+	debugger;
+	if (err) {
+          console.log("Error creating service for " + file.basename);
+	  return;
+	}
+	
+        console.log("Tilelive Loaded " + file.basename);
         var name = file.basename.split('.')[0];
         PNGroute = '/services/tiles/' + name  + '/:z/:x/:y.png';
 
@@ -208,9 +220,26 @@ function loadPNGMBTilesRoutes(app){
         console.log("Created PNG .mbtiles service: " + PNGroute);
         _imageTileRoutes.push({ name: name, route: PNGroute, type: ".png .mbtiles" });
       });
-    });
+
+}, 1000);
+
+
+
+
+   // });
 
   });
+}
+
+function asyncEach(array, fn, delay){
+  var i = 0;
+  setTimeout(function iter(){
+    if(i===array.length){
+      return;
+    }
+    fn.call(array, array[i], i++);
+    setTimeout(iter, delay);
+  }, 0);
 }
 
 function loadPBFMBTilesRoutes(app) {
