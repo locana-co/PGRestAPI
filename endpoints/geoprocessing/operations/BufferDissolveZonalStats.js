@@ -11,7 +11,7 @@ var pg = require('pg'),
 //2. Buffer Radius
 
 var operation = {};
-var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32645', name: 'bangladesh' }, 'UGA': { srid: '32635', name: 'uganda' }, 'NGA': { name: 'nigeria', srid: '32632' }, 'KEN': { name: 'kenya', srid: '32636' } };
+var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32645', name: 'bangladesh' }, 'UGA': { srid: '32635', name: 'uganda' }, 'NGA': { name: 'nigeria', srid: '32632' }, 'KEN': { name: 'kenya', srid: '32636' }, 'IND': { name: 'india', srid: '32643'} };
 //SRIDs from http://www.sumapa.com/crsxpais.cfm
 /* METADATA */
 
@@ -36,7 +36,7 @@ operation.Query = "DO $$DECLARE " +
 "from {country}_district_landuse a " +
 "inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(geom, {srid}), {buffer_distance}), 4326 )) as geom " +
 "FROM cicos_{cico_year} " +
-"WHERE lower(cicos_{cico_year}.country) = lower('{country}')" +
+"WHERE lower(cicos_{cico_year}.country) = lower('{country}') " +
 "AND {where_clause} " +
 ") b on " +
 "st_intersects(a.geom, b.geom) " +
@@ -67,7 +67,7 @@ operation.execute = flow.define(
             operation.inputs["cico_year"] = args.cico_year;
 
             //Take the point and buffer it in PostGIS
-            var query = { text: operation.Query.replace("{where_clause}", operation.inputs["where_clause"]).replace("{cico_year}", operation.inputs["cico_year"]).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
+            var query = { text: operation.Query.replace("{where_clause}", operation.inputs["where_clause"]).split("{cico_year}").join(operation.inputs["cico_year"]).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
             common.executePgQuery(query, this);//Flow to next function when done.
 
         }
