@@ -1,0 +1,22 @@
+extends ../../../shared_views/layout
+
+block content
+	script.
+		//Trigger Active Nav Link
+		$("#image-tiles").addClass("active");
+
+	div.heading Image Tiles
+
+	span Image Tiles (.png) are stored in an .mbtiles SQLITE database, and are typically exported from TillMill or MapBox Studio. The following pre-baked Image Tile datasets are available.
+
+	div.bigSpace
+
+	- var items = opslist
+	- each item in items
+		div.littleSpace
+			a(href=item.fullURL) #{item.name}
+					
+
+
+block sidebar
+	.widget

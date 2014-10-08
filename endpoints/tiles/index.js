@@ -313,8 +313,8 @@ exports.app = function (passport) {
     });
   });
 
-  //Tile endpoint, display all tile routes
-//  app.all('/services/imagetiles', function (req, res) {
+//  //Tile endpoint, display all tile routes
+//  app.all('/services/image-tiles', function (req, res) {
 //
 //    var args = common.getArguments(req);
 //
