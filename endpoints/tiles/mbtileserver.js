@@ -156,8 +156,87 @@ exports.app = function (passport) {
 
   }));
 
+  //Create an on-demand route do attempt to load a vector tiles .mbtiles dataset.  If not found, simply return a 404
+  app.all('/services/vector-tiles/:datasetname/:z/:x/:y.pbf', flow.define(
+
+    function(req, res) {
+      //Stash these for later
+      this.req = req;
+      this.res = res;
+
+      //check the request and see if the specified dataset name exists
+      //See if there is a <datasetname>.mbtiles file for this table.
+      var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
+      var flo = this;
+      var filepath = path.join(mbtilesLocation, req.params.datasetname + ".mbtiles");
+
+      fs.stat(filepath, function (err, stat) {
+        flo(err, fullpath);
+      });
+    },function(err, fullpath){
+
+    var flo = this;
+
+    //If not found, or error - exit.
+    if(err){
+      this.res.removeHeader('Content-Encoding');
+      this.res.writeHead(404, {
+        'Content-Type': 'application/octet-stream'
+      });
+      this.res.end();
+      return;
+    }
+
+
+
+    var PBFroute = ""; //store the route name
+    var mbtilespath = 'mbtiles://' + fullpath);
+
+    tilelive.load(mbtilespath, function (err, source) {
+      if (err)
+        throw err;
+
+      var name = flo.req.params.datasetname.split('.')[0];
+
+      PBFroute = '/services/vector-tiles/' + name + '/:z/:x/:y.pbf';
+
+      source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+          // `err` is an error object when generation failed, otherwise null.
+          // `tile` contains the compressed image file as a Buffer
+          // `headers` is a hash with HTTP headers for the image.
+          if (!err) {
+            //Make sure that the compression type being reported by mbtiles matches what the browser is asking for
+            //Headless browsers sometimes have no compression, while older tilemill tiles are compressed with 'deflate'.  Some headless browsers ask for 'gzip'.
+            if(res.req.headers["accept-encoding"] && (res.req.headers["accept-encoding"].indexOf(headers["Content-Encoding"]) > -1)){
+              res.setHeader('Content-Encoding', headers['Content-Encoding']);
+              res.setHeader('Content-Type', headers['Content-Type']);
+              res.send(tile);
+              return;
+            }
+            else{
+              //no gzip or deflate.  Actually unzip the thing and send it (for phantomjs - doesn't request gzip or deflate in request headers).
+              //zlib.unzip detects whether to deflate or gunzip
+              zlib.unzip(tile, function(err, buffer){
+                res.send(buffer);
+                return;
+              });
+            }
+
+          } else {
+            res.send(new Buffer(''));
+          }
+        });
+
+
+      console.log("Created PBF .mbtiles service: " + PBFroute);
+      _vectorTileRoutes.push({ name: name, route: PBFroute, type: ".pbf .mbtiles" });
+    });
+  });
+
+  //Load all Vector Tiles .mbtiles files.
   loadPBFMBTilesRoutes(app);
 
+  //Load all Image .mbtiles files.
   loadPNGMBTilesRoutes(app);
 
   return app;
@@ -170,6 +249,8 @@ exports.getVectorTileRoutes = function () {
 exports.getImageTileRoutes = function () {
   return _imageTileRoutes;
 }
+
+
 
 function loadPNGMBTilesRoutes(app){
   var PNGmbtilesLocation = path.join(__dirname, "../../data/png_mbtiles");
@@ -270,6 +351,59 @@ function loadPBFMBTilesRoutes(app) {
       });
     });
   });
+}
+
+function loadPBFMBTilesRoute(app) {
+  var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
+
+  //Load mbtiles from mbtiles folder.
+
+  var PBFroute = ""; //store the route name
+
+  var mbtilespath = 'mbtiles://' + path.join(mbtilesLocation, file.basename);
+
+  tilelive.load(mbtilespath, function (err, source) {
+    if (err)
+      throw err;
+
+    var name = file.basename.split('.')[0];
+
+    PBFroute = '/services/vector-tiles/' + name + '/:z/:x/:y.pbf';
+
+    app.get(PBFroute, function (req, res) {
+
+      source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+        // `err` is an error object when generation failed, otherwise null.
+        // `tile` contains the compressed image file as a Buffer
+        // `headers` is a hash with HTTP headers for the image.
+        if (!err) {
+          //Make sure that the compression type being reported by mbtiles matches what the browser is asking for
+          //Headless browsers sometimes have no compression, while older tilemill tiles are compressed with 'deflate'.  Some headless browsers ask for 'gzip'.
+          if (res.req.headers["accept-encoding"] && (res.req.headers["accept-encoding"].indexOf(headers["Content-Encoding"]) > -1)) {
+            res.setHeader('Content-Encoding', headers['Content-Encoding']);
+            res.setHeader('Content-Type', headers['Content-Type']);
+            res.send(tile);
+            return;
+          }
+          else {
+            //no gzip or deflate.  Actually unzip the thing and send it (for phantomjs - doesn't request gzip or deflate in request headers).
+            //zlib.unzip detects whether to deflate or gunzip
+            zlib.unzip(tile, function (err, buffer) {
+              res.send(buffer);
+              return;
+            });
+          }
+
+        } else {
+          res.send(new Buffer(''));
+        }
+      });
+    });
+
+    console.log("Created PBF .mbtiles service: " + PBFroute);
+    _vectorTileRoutes.push({ name: name, route: PBFroute, type: ".pbf .mbtiles" });
+  });
+
 }
 
 //Experiments.
