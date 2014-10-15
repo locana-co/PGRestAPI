@@ -48,12 +48,14 @@ exports.app = function (passport) {
 
     if (mbTileFiles && mbTileFiles.length > 0) {
       mbTileFiles.forEach(function (item) {
-        args.opslist.push({
-          name: item.id,
-          link: "dataset?name=" + item.id,
-          center: item.center,
-          fullURL: path.join(req.url, "dataset?name=" + item.id)
-        });
+        if(item) {
+          args.opslist.push({
+            name: item.id,
+            link: "dataset?name=" + item.id,
+            center: item.center,
+            fullURL: path.join(req.url, "dataset?name=" + item.id)
+          });
+        }
       });
     }
 
@@ -81,12 +83,14 @@ exports.app = function (passport) {
 
     if (PNGmbTileFiles && PNGmbTileFiles.length > 0) {
       PNGmbTileFiles.forEach(function (item) {
-        args.opslist.push({
-          name: item.id,
-          link: "dataset?name=" + item.id,
-          center: item.center,
-          fullURL: path.join(req.url, "dataset?name=" + item.id)
-        });
+        if(item) {
+          args.opslist.push({
+            name: item.id,
+            link: "dataset?name=" + item.id,
+            center: item.center,
+            fullURL: path.join(req.url, "dataset?name=" + item.id)
+          });
+        }
       });
     }
 
@@ -147,9 +151,11 @@ exports.app = function (passport) {
         //look up tileJSON info
         if (mbTileFiles && mbTileFiles.length > 0) {
           mbTileFiles.forEach(function (item) {
-            if(item.id == self.args.name){
-              self.args.featureCollection[0].center = { lat: item.center[1], lng: item.center[0], zoom: item.center[2]};
-            }
+           if(item){
+             if(item.id == self.args.name){
+               self.args.featureCollection[0].center = { lat: item.center[1], lng: item.center[0], zoom: item.center[2]};
+             }
+           }
           });
         }
 
@@ -242,8 +248,10 @@ exports.app = function (passport) {
         //look up tileJSON info
         if (PNGmbTileFiles && PNGmbTileFiles.length > 0) {
           PNGmbTileFiles.forEach(function (item) {
-            if(item.id == self.args.name){
-              self.args.featureCollection[0].center = { lat: item.center[1], lng: item.center[0], zoom: item.center[2]};
+            if(item) {
+              if (item.id == self.args.name) {
+                self.args.featureCollection[0].center = { lat: item.center[1], lng: item.center[0], zoom: item.center[2]};
+              }
             }
           });
         }
