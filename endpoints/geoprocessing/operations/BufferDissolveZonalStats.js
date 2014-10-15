@@ -24,7 +24,8 @@ operation.outputImage = true;
 operation.inputs["where_clause"] = {};
 operation.inputs["buffer_distance"] = { value: 0, units: "" }; //how far and what units?
 operation.inputs["country_code"] = []; //Let user specify input country code
-operation.inputs["cico_year"] = []; //Let user specify the cico year.  2013 or 2014
+operation.inputs["sector_year"] = []; //Let user specify the sector year.  2013 or 2014
+operation.inputs["sector"] = ""; //which sector are we processing? agriculture,library,health,cicos
 
 //This will execute just for Land Use and buffers - ~ 4 seconds for all points in Uganda, minus rural
 operation.Query = "DO $$DECLARE " +
@@ -35,8 +36,8 @@ operation.Query = "DO $$DECLARE " +
 "ST_UNION(st_intersection(a.geom,b.geom)) as geom " +
 "from {country}_district_landuse a " +
 "inner join (SELECT ST_Union(ST_transform( ST_BUFFER( ST_transform(geom, {srid}), {buffer_distance}), 4326 )) as geom " +
-"FROM cicos_{cico_year} " +
-"WHERE lower(cicos_{cico_year}.country) = lower('{country}') " +
+"FROM {sector}_{sector_year} " +
+"WHERE lower({sector}_{sector_year}.country) = lower('{country}') " +
 "AND {where_clause} " +
 ") b on " +
 "st_intersects(a.geom, b.geom) " +
@@ -64,10 +65,11 @@ operation.execute = flow.define(
             operation.inputs["where_clause"] = args.where_clause;
             operation.inputs["buffer_distance"] = args.buffer_distance;
             operation.inputs["country_code"] = args.country_code.toUpperCase();
-            operation.inputs["cico_year"] = args.cico_year;
+            operation.inputs["sector_year"] = args.sector_year;
+            operation.inputs["sector"] = args.sector;
 
             //Take the point and buffer it in PostGIS
-            var query = { text: operation.Query.replace("{where_clause}", operation.inputs["where_clause"]).split("{cico_year}").join(operation.inputs["cico_year"]).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
+            var query = { text: operation.Query.replace("{where_clause}", operation.inputs["where_clause"]).split("{sector_year}").join(operation.inputs["sector_year"]).split("{sector}").join(operation.inputs["sector"]).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
             common.executePgQuery(query, this);//Flow to next function when done.
 
         }
@@ -90,7 +92,7 @@ operation.isInputValid = function (input) {
 
     if (input) {
         //make sure we have a where clause, buffer disatance and the country code is found in the country object.
-        if (input["where_clause"] && input["buffer_distance"] && countries[input["country_code"].toUpperCase()] && input["cico_year"]) {
+        if (input["where_clause"] && input["buffer_distance"] && countries[input["country_code"].toUpperCase()] && input["sector_year"] && input["sector"]) {
             //It's got everything we need.
             return true;
         }
