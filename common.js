@@ -255,6 +255,9 @@ common.escapePostGresColumns = function (items) {
 //Take in an array, spit out an array of unescaped columns
 common.unEscapePostGresColumns = function (items) {
     //remove all double quotes from strings
+
+    if(!items) return "";
+
     return items.map(function (item) {
         //remove all quotes
         return item.replace(/"/g, "");
