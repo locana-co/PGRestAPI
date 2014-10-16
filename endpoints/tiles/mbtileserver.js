@@ -326,9 +326,6 @@ function loadPNGMBTilesRoutes(app){
     //Create endpoint for mbtiles server, 1 for each source
     asyncEach(localPNGList, function(file, idx) {
 
-      console.log("PNG file #:" + idx);
-      console.log("iterating on PNGMBTiles List - " + file);
-
       var PNGroute = ""; //store the route name
 
       var mbtilespath = 'mbtiles://' + path.join(PNGmbtilesLocation, file);
