@@ -18,9 +18,7 @@ settings.pg.port = '5432';
 settings.pg.database = 'test';
 settings.pg.featureLimit = 1000; //how many features to return by default
 
-settings.tilestream.host = ""; //54.212.254.185
-settings.tilestream.path = ""; ///api/Tileset
-settings.tilestream.port = ""; //8888
+//settings.otherSchemas = ['myschema']; //Optionally list postgres schemas other than 'public' to read
 
 //Should the API display postgres views?
 settings.displayViews = true;
