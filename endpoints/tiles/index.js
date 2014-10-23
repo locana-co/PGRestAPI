@@ -240,7 +240,7 @@ exports.app = function (passport) {
               'user': settings.pg.username,
               'password': settings.pg.password,
               'type': 'postgis',
-              'estimate_extent': 'true',
+              'estimate_extent': 'false',
               'geometry_field': item.geometry_column,
               'srid': item.srid,
               'geometry_type': item.type

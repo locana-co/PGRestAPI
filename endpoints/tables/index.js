@@ -654,7 +654,7 @@ exports.app = function (passport) {
           text: "SELECT " + fieldList +
             //Dynamically plug in geometry piece depending on the geom field name(s)
             (this.args.geometryStatement ? ", " + this.args.geometryStatement : "") + " FROM " + common.escapePostGresColumns([this.args.table]).join(",") + //escape
-            this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : "")
+            this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.args.sort ? " ORDER BY " + this.args.sort : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : "")
             + (this.offset && common.IsNumeric(this.offset) && this.offset != "0" ? " OFFSET " + this.offset : ""),
           values: []
         };
