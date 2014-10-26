@@ -34,7 +34,7 @@
     "underscore": "1.6.0"
   },
   "optionalDependencies": {
-    "mapnik": "1.4.10",
+    "mapnik": "1.4.15",
     "carto": "0.11.0",
     "ogr2ogr": "0.3.1",
     "mbtiles": "0.5.0",
