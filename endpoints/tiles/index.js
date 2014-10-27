@@ -37,6 +37,13 @@ var ShapeTileStats = {
   VectorTiles: { times: [] }
 };
 
+var GeoJSONTileStats = {
+  SingleTiles: { times: [] },
+  MultiTiles: { times: [] },
+  VectorTiles: { times: [] }
+};
+
+
 var MemoryShapeTileStats = {
   SingleTiles: { times: [] },
   MultiTiles: { times: [] },
@@ -54,6 +61,7 @@ var RasterTileStats = {
 var shapefiles = []; //a list of shapefiles that will be dynamically read
 var memoryShapefileList = []; //a list of shapefile names to be loaded into memory
 var memoryShapefiles = {}; //Store the memory datasources here
+var geojsonfiles = []; //a list of geojson files to be dynamically read
 var rasters = []; //a list of rasters that will be dynamically read
 var tileRoutes = []; //Keep a list of image tile routes
 var VectorTileRoutes = []; //Keep a list of vector tile routes
@@ -66,7 +74,6 @@ if (mapnik.register_default_input_plugins)
 //var maps = mappool.create_pool(10);
 //TODO: Determine the best value for this
 
-var tileSettings = { mapnik_datasource: {}, tileSize: { height: 256, width: 256}, routeProperties: { name: "", source: "", geom_field: "", srid: "", cartoFile: "" }};
 
 exports.app = function (passport) {
 
@@ -79,11 +86,15 @@ exports.app = function (passport) {
   app.set('view engine', 'jade');
 
   var shpLocation = path.join(__dirname, "../../data/shapefiles");
+  var geojsonLocation = path.join(__dirname, "../../data/geojson");
   var memoryShpLocation = path.join(__dirname, "../../data/inmemory-shapefiles");
   var rasterLocation = path.join(__dirname, "../../data/rasters");
 
   //Find Shapefiles
   shapefiles = getShapeFilePaths(shpLocation);
+
+  //Find GeoJSON files
+  //geojsonfiles = getGeoJSONFilePaths(geojsonLocation);
 
   //Find shapefiles to be loaded into memory
   memoryShapefileList = getMemoryShapeFilePaths(memoryShpLocation);
@@ -165,6 +176,8 @@ exports.app = function (passport) {
   shapefiles.forEach(function (item) {
     shpName = item.split('.')[0];
 
+    var tileSettings = { mapnik_datasource: {}, tileSize: { height: 256, width: 256}, routeProperties: { name: "", source: "", geom_field: "", srid: "", cartoFile: "" }};
+
     tileSettings.mapnik_datasource = {
       type: 'shape',
       file: path.join(shpLocation, item)
@@ -181,13 +194,37 @@ exports.app = function (passport) {
     createVectorTileRoute(app, tileSettings, ShapeTileStats.VectorTiles);
   });
 
+  //var geojsonName = "";
+  ////Loop thru geojson and spin up new routes
+  //geojsonfiles.forEach(function (item) {
+  //  geojsonName = item.split('.')[0];
+  //
+  //  var tileSettings = { mapnik_datasource: {}, tileSize: { height: 256, width: 256}, routeProperties: { name: "", source: "", geom_field: "", srid: "", cartoFile: "" }};
+  //
+  //  tileSettings.mapnik_datasource = {
+  //    type: 'geojson',
+  //    file: path.join(geojsonLocation, item)
+  //  };
+  //
+  //  tileSettings.routeProperties.name = geojsonName;
+  //  tileSettings.routeProperties.table = geojsonName;
+  //  tileSettings.routeProperties.srid = 4326;
+  //  tileSettings.routeProperties.cartoFile = "";
+  //  tileSettings.routeProperties.source = "geojson";
+  //  tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
+  //  tileSettings.routeProperties.performanceObject = GeoJSONTileStats;
+  //
+  //  //createMultiTileRoute(app, tileSettings, MemoryShapeTileStats.MultiTiles);
+  //  createVectorTileRoute(app, tileSettings, GeoJSONTileStats.VectorTiles);
+  //});
+
   var memoryShpName = "";
   memoryShapefileList.forEach(function (item) {
     //Also (for performance testing puproses, create in-memory versions of the .shp datasources and spin up a new route for those)
     memoryShpName = item.split('.')[0];
     memoryShapefiles[memoryShpName] = createInMemoryDatasource(memoryShpName, memoryShpLocation + "/" + item);
 
-    var tileSettings = { routeProperties: {} };
+    var tileSettings = { mapnik_datasource: {}, tileSize: { height: 256, width: 256}, routeProperties: { name: "", source: "", geom_field: "", srid: "", cartoFile: "" }};
 
     tileSettings.mapnik_datasource = memoryShapefiles[memoryShpName];
     tileSettings.mapnik_datasource.geometry_type = "point"; //TODO.  Figure this out.
@@ -228,7 +265,7 @@ exports.app = function (passport) {
 
           (function (item) {
 
-            var tileSettings = { routeProperties: {} };
+            var tileSettings = { mapnik_datasource: {}, tileSize: { height: 256, width: 256}, routeProperties: { name: "", source: "", geom_field: "", srid: "", cartoFile: "" }};
 
             tileSettings.mapnik_datasource = {
               'host': settings.pg.server,
@@ -280,6 +317,8 @@ exports.app = function (passport) {
       clearStatsObject(MemoryShapeTileStats);
       clearStatsObject(RasterTileStats);
       clearStatsObject(RasterTileStats);
+      //clearStatsObject(GeoJSONTileStats);
+
       resultString += "Session Stats reset by user. \n\n\n";
     }
 
@@ -287,6 +326,7 @@ exports.app = function (passport) {
     //Get the average render time for each type
     resultString += generateStatsString(PGTileStats, "PostGIS");
     resultString += generateStatsString(ShapeTileStats, "Shapefile");
+    //resultString += generateStatsString(GeoJSONTileStats, "GeoJSON");
     resultString += generateStatsString(RasterTileStats, "Raster");
 
     var cacheLength = (cacher.client.keys().length / 2);
@@ -1055,6 +1095,21 @@ function getShapeFilePaths(shpLocation) {
   return items;
 }
 
+
+//Find all geojson files in the ./data/geojson folder.
+//Spin up a new endpoint for each one of those.
+function getGeoJSONFilePaths(geojsonLocation) {
+  var items = [];
+  require("fs").readdirSync(geojsonLocation).forEach(function (file) {
+    var ext = path.extname(file);
+    if (ext == ".geojson" || ext == ".json" || ext == ".js") {
+      items.push(file);
+    }
+  });
+
+  return items;
+}
+
 //Find all shapefiles in the ./data/InMemory-Shapefiles folder.
 //These are shapefiles that should be loaded into memory when the server starts
 function getMemoryShapeFilePaths(shpLocation) {
@@ -1236,7 +1291,7 @@ var createMultiTileRoute = exports.createMultiTileRoute = flow.define(
 );
 
 
-//Generic implementation of multi-tiles
+//Generic implementation of single-tiles
 var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
   function (app, routeSettings, performanceObject) {
 
@@ -1393,7 +1448,6 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
     this();
   },
   function () {
-    //Flow from after getting full path to Style file
 
     var _self = this;
 
@@ -1430,7 +1484,7 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
         var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), false);
 
         layer.datasource = _self.mapnikDatasource;
-        layer.styles = [_self.table, 'default'];
+        layer.styles = [_self.settings.routeProperties.table, 'default'];
 
         map.bufferSize = 10;
 
