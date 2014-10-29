@@ -107,24 +107,22 @@ describe('Tables', function () {
 
 
 //This is for the API level testing
-//var should = require('chai').should(),
-//    supertest = require('supertest'),
-//    api = supertest('http://localhost:3000');
+var should = require('chai').should(),
+    supertest = require('supertest'),
+    api = supertest('http://localhost:3001');
 
+//Get services/tables list as array
+describe('/services/tables', function () {
 
-//describe('/services', function () {
+    it('returns list of tables posts as an array', function (done) {
+        api.get('/services/tables?format=json')
+        .expect(200)
+        .expect('Content-Type', "application/json")
+        .end(function (err, res) {
+            if (err) return done(err);
+            res.body.should.be.instanceof(Array);
+            done();
+        });
+    });
 
-//    it('returns list of tables posts as HTML', function (done) {
-//        api.get('/services')
-//        .expect(200)
-//        .expect('Content-Type', "text/html; charset=utf-8")
-//        .end(function (err, res) {
-//            console.log("Here: " + JSON.stringify(res.body, null, 4));
-
-//            if (err) return done(err);
-//            res.body.should.have.property('list').and.be.instanceof(Array);
-//            done();
-//        });
-//    });
-
-//});
+});

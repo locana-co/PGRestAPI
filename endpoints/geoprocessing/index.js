@@ -93,6 +93,9 @@ exports.app = function(passport) {
 					return;
 				}
 
+				//Setup return geom fields array based on GP object specification (if exists)
+				if(this.gpOperation.geom_columns) this.args.geom_fields_array = this.gpOperation.geom_columns;
+
 				//Write out page based on dynamic inputs
 				this.args.formfields = [];
 				this.args._input_arguments = [];

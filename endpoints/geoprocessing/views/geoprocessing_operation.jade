@@ -87,9 +87,7 @@ block results
 								-if(val.geometry){
 									-if(val.geometry.geometries){
 										each mgval, mgkey in val.geometry.geometries
-											-if(mgval.coordinates){
-												div.geometries #{mgval.type}: #{mgval.coordinates}
-											-}
+											div.geometries #{mgval}
 									-}else{
 										each gval, gkey in val.geometry
 											div.geometry geometry: #{gkey}: #{gval}
