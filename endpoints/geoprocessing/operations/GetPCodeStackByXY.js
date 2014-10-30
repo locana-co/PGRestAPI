@@ -20,11 +20,11 @@ var operation = {};
 operation.name = "GetPCodeStackByXY";
 operation.description = "Takes an X and Y coordinate, returns JSON object with intersected GADM boundaries with any pcodes that are available.";
 operation.inputs = {};
-operation.geom_columns = ['geom0', 'geom1', 'geom2', 'geom3', 'geom4', 'geom5']; //List the expected geom columns that come back from this query, so the formatters know which geoms to convert to GeoJSON
 
 
-operation.inputs["x"] = { };
-operation.inputs["y"] = { };
+operation.inputs["x"] = { value: "", required: true, help: "x coordinate (longitude), decimal degrees" };
+operation.inputs["y"] = { value: "", required: true, help: "y coordinate (latitude), decimal degrees" };
+operation.inputs["returnGeometry"] = { value: "", required: false, default_value: false, help: "true or false"}; //default value = false
 
 operation.execute = flow.define(
   function(args, callback) {
@@ -33,17 +33,30 @@ operation.execute = flow.define(
 
     //This contains Geom, but doesn't output in the HTML correctly.
     //var query = "select name0,guid0,ST_AsGeoJSON(geom0) as geom0,pcode0,name1,guid1,ST_AsGeoJSON(geom1) as geom1,pcode1,name2,guid2,ST_AsGeoJSON(geom2) as geom2,pcode2,name3,guid3,ST_AsGeoJSON(geom3) as geom3,pcode3,name4,guid4,ST_AsGeoJSON(geom4) as geom4,pcode4,name5,guid5,ST_AsGeoJSON(geom5) as geom5,pcode5  from gadmrollup where ST_Intersects(ST_GeomFromText('POINT({{x}} {{y}})', 4326), geom3);";
-    var query = "select name0,guid0,pcode0,name1,guid1,pcode1,name2,guid2,pcode2,name3,guid3,pcode3,name4,guid4,pcode4,name5,guid5,pcode5  from gadmrollup where ST_Intersects(ST_GeomFromText('POINT({{x}} {{y}})', 4326), geom3);";
+    var query = "select name0,guid0,pcode0,name1,guid1,pcode1,name2,guid2,pcode2,name3,guid3,pcode3,name4,guid4,pcode4,name5,guid5,pcode5 {{geometry}} from gadmrollup where ST_Intersects(ST_GeomFromText('POINT({{x}} {{y}})', 4326), geom3);";
 
 
     this.args = args;
     this.callback = callback;
     //Step 1
 
+    var x = operation.inputs["x"].value = args.x;
+    var y = operation.inputs["y"].value = args.y;
+    var returnGeometry = operation.inputs["returnGeometry"].value = (args.returnGeometry == 'true');
+
     //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-    if (operation.isInputValid(args) === true) {
-      var x = operation.inputs["x"] = args.x;
-      var y = operation.inputs["y"] = args.y;
+    if (operation.isInputValid(operation.inputs) === true) {
+
+      if(returnGeometry == true){
+        //Geometry, replace the geometry placeholder with the geometry columns.
+        query = query.replace('{{geometry}}', ', ST_AsGeoJSON(geom0) as geom0,ST_AsGeoJSON(geom1) as geom1,ST_AsGeoJSON(geom2) as geom2,ST_AsGeoJSON(geom3) as geom3,ST_AsGeoJSON(geom4) as geom4,ST_AsGeoJSON(geom5) as geom5')
+        //List the expected geom columns that come back from this query, so the formatters know which geoms to convert to GeoJSON
+        operation.geom_columns = ['geom0', 'geom1', 'geom2', 'geom3', 'geom4', 'geom5']; //List the expected geom columns that come back from this query, so the formatters know which geoms to convert to GeoJSON
+      }else{
+         //no geometry.  Replace the placeholder with empty string
+        query = query.replace('{{geometry}}', '');
+        operation.geom_columns = [];
+      }
 
       var sql = { text: query.replace("{{x}}", x).replace("{{y}}", y), values: []};
 
@@ -64,15 +77,19 @@ operation.execute = flow.define(
 
 //Make sure arguments are tight before executing
 operation.isInputValid = function(input) {
-
-  if (input) {
-    if (input["x"] && input["y"]) {
-      //It's got everything we need.
-      return true;
+  //Check inputs
+  if(input){
+    for (var key in input) {
+      if (input.hasOwnProperty(key)) {
+        if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+            //Required but not present.
+            return false;
+        }
+      }
     }
   }
 
-  return false;
+  return true;
 };
 
 module.exports = operation;

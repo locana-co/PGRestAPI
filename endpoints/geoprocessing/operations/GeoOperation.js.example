@@ -1,7 +1,6 @@
 //8.31.2013 - Ryan Whitley
 //Starting a Plug and Play GP Workflow
 
-
 /*
 Require the modules you need here.
 They must be installed in the main application using npm install.  Will work later on making this more modular
@@ -10,22 +9,23 @@ They must be installed in the main application using npm install.  Will work lat
 var flow = require('flow'); //Requiring Flow module
 var pg = require('pg'); //Requiring PostGres module
 
-//Name of the GP Operation.  Should be unique and meaningful.
-var Buffer = {}; //Sample Operation named Buffer
-
-/* GP Operation Metadata - All 3 Required */
-Buffer.name = "Buffer";
-Buffer.description = "Buffers a point and returns the geometry as WKT.";
-Buffer.inputs = {};
 
 
-/* GP Operation input parameters */
-Buffer.inputs["input_geometry"] = "";
-Buffer.inputs["buffer_distance"] = "";
+var operation = {};
+
+/* Operation Metadata - All 3 Required */
+operation.name = "Buffer"; //Name of the GP Operation.  Should be unique and meaningful.
+operation.description = "Buffers a point and returns the geometry as WKT.";
+operation.inputs = {};
+
+
+/* Operation input parameters */
+operation.inputs["input_geometry"] = { value: "", required: true, help: "input geometry in WKT format" };
+operation.inputs["buffer_distance"] = { value: "", required: true, help: "buffer distance, in meters" };
 
 
 //Since we don't want to be writing and creating new PostGres functions from this app, use this anonymous code block in postgres.
-DissolveAndClip.GPQuery = "DO $$DECLARE " + 
+operation.GPQuery = "DO $$DECLARE " +
 "orig_srid int; " +
 "utm_srid int; " +
 "input geometry := ST_GeomFromText('{wkt}', 4326); " +
@@ -50,19 +50,18 @@ DissolveAndClip.GPQuery = "DO $$DECLARE " +
 
 
 /* Operation must have an execute method.  Flow will help process asynchronous steps in a more procedural manner.  */
-Buffer.execute = flow.define(
+operation.execute = flow.define(
     function (args, callback) {
         this.args = args;
         this.callback = callback;
 
-        //Step 1
-        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-        if (Buffer.isInputValid(args) === true) {
-            Buffer.inputs["input_geometry"] = args.input_geometry;
-            Buffer.inputs["buffer_distance"] = args.buffer_distance;
+        operation.inputs["input_geometry"].value = args.input_geometry;
+        operation.inputs["buffer_distance"].value = args.buffer_distance;
 
+        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
+        if (operation.isInputValid(operation.inputs) === true) {
             //Take the point and buffer it in PostGIS.  Replace the placeholder in the query with the passed in WKT.
-            Buffer.executePgQuery(Buffer.bufferQuery.replace("{wkt}", Buffer.inputs["input_geometry"]), this);//Flow to next function when done.
+            operation.executePgQuery(operation.GPQuery.replace("{wkt}", operation.inputs["input_geometry"].value), this);//Flow to next function when done.
 
         }
         else {
@@ -78,51 +77,24 @@ Buffer.execute = flow.define(
     }
 )
 
-//Make sure arguments are tight
-Buffer.isInputValid = function (input) {
-    //Test to see if inputs are specified
-    var isValid = false;
-
-    if (input) {
-        if (input["input_geometry"] && input["buffer_distance"]) {  //Use whatever logic you want to make sure input is specified.  Can do numeric validation and lots of other stuff here if you want.
-            //It's got everything we need.
-            return true;
+//Make sure arguments are tight before executing
+operation.isInputValid = function(input) {
+  //Check inputs
+  if(input){
+    for (var key in input) {
+      if (input.hasOwnProperty(key)) {
+        if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+            //Required but not present.
+            return false;
         }
+      }
     }
+  }
 
-    return isValid;
-}
+  return true;
+};
 
-//A helper function used to execute postgres Queries
-Buffer.executePgQuery = function(query, callback) {
-    var result = { status: "success", rows: [] }; //object to store results, and whether or not we encountered an error.
 
-    //Just run the query
-    //Setup Connection to PG
-    var client = new pg.Client(global.conString); //global.conString stores the default connection string to postgres.  Change it if you want to connect to a different DB.
-    client.connect();
-
-    var query = client.query(query);
-
-    //If query was successful, this is iterating thru result rows.
-    query.on('row', function (row) {
-        result.rows.push(row);
-    });
-
-    //Handle query error - fires before end event
-    query.on('error', function (error) {
-        //req.params.errorMessage = error;
-        result.status = "error";
-        result.message = error;
-    });
-
-    //end is called whether successfull or if error was called.
-    query.on('end', function () {
-        //End PG connection
-        client.end();
-        callback(result); //pass back result to calling function
-    });
-}
 
 
 module.exports = Buffer;

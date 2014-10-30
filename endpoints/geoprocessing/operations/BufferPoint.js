@@ -12,6 +12,7 @@ var geoFragger = new GeoFragger();
 //Arguments are:
 //1. The POINT
 //2. Buffer Radius
+//3. Input format - wkt or geojson
 
 var Buffer = {};
 
@@ -22,9 +23,9 @@ Buffer.name = "Buffer";
 Buffer.description = "Buffers a point and returns the geometry as WKT. `buffer_distance` is the radius of the buffer in meters. `input_format` can be either WKT or GeoJSON.";
 Buffer.inputs = {};
 
-Buffer.inputs["input_geometry"] = { wkt: "", srid: ""};
-Buffer.inputs["buffer_distance"] = { value: 0, units: ""}; //how far and what units?
-Buffer.inputs["input_format"] = '';
+Buffer.inputs["input_format"] = { value: "", required: false, help: "geojson or wkt", default_value:  "geojson" };
+Buffer.inputs["input_geometry"] = { value: "", required: true, help: "depends on input_format.  either geojson or wkt input" };
+Buffer.inputs["buffer_distance"] = { value: "", required: true, help: "buffer distance in meters" };
 
 
 //Since we don't want to be writing functions, use this anonymous code block in postgres.
@@ -79,16 +80,16 @@ Buffer.execute = flow.define(
   function(args, callback) {
     this.args = args;
     this.callback = callback;
-    //Step 1
+
+    //Set the input values
+    var inputGeometry = Buffer.inputs["input_geometry"].value = args.input_geometry;
+    var bufferDistance = Buffer.inputs["buffer_distance"].value = args.buffer_distance;
+    var inputFormat = Buffer.inputs["input_format"].value = args.input_format || Buffer.inputs["input_format"].default_value;
 
     //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-    if (Buffer.isInputValid(args) === true) {
-      var inputGeometry = Buffer.inputs["input_geometry"] = args.input_geometry;
-      var bufferDistance = Buffer.inputs["buffer_distance"] = args.buffer_distance;
-      var inputFormat = Buffer.inputs["input_format"] = args.input_format;
+    if (Buffer.isInputValid(Buffer.inputs) === true) {
 
       //Take the point and buffer it in PostGIS
-
       if (inputFormat.toLowerCase() === 'wkt') {
         var sql = wktBufferQuery
           .replace("{wkt}", inputGeometry)
@@ -97,7 +98,7 @@ Buffer.execute = flow.define(
 
       else if (inputFormat.toLowerCase() === 'geojson') {
         var geoJson = geoFragger.toPostGISFragment(JSON.parse(inputGeometry));
-//        var geoJson = '{"type": "Point", "coordinates": [77.24212646484374,28.586933499067946],"crs":{"type":"name","properties":{"name":"EPSG:4326"}}}';
+        //var geoJson = '{"type": "Point", "coordinates": [77.24212646484374,28.586933499067946],"crs":{"type":"name","properties":{"name":"EPSG:4326"}}}';
         var sql = geoJsonBufferQuery
           .replace("{geojson}", JSON.stringify(geoJson))
           .replace("{buffer_distance}", bufferDistance);
@@ -119,17 +120,21 @@ Buffer.execute = flow.define(
 );
 
 //Make sure arguments are tight before executing
+//Make sure arguments are tight before executing
 Buffer.isInputValid = function(input) {
-
-  if (input) {
-    if (input["input_geometry"] && input["buffer_distance"] &&
-          input["input_format"] && (input["input_format"].toLowerCase() === 'wkt' || input["input_format"].toLowerCase() === 'geojson')) {
-      //It's got everything we need.
-      return true;
+  //Check inputs
+  if(input){
+    for (var key in input) {
+      if (input.hasOwnProperty(key)) {
+        if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+          //Required but not present.
+          return false;
+        }
+      }
     }
   }
 
-  return false;
+  return true;
 };
 
 module.exports = Buffer;

@@ -8,6 +8,18 @@ block content
 	div.heading #{name}
 
 	span #{description}
+
+	- if (all_inputs){
+		h2 Options:
+		each val, key in all_inputs
+			div.propertyGroup
+				span.argument #{key}
+				span  - #{val.help}
+				- if(val.required){
+					span.required  (required)
+				- }
+
+	- }
 		
 	form(action='',method='post')
 		table.inputTable(style='background-color: #fff;')
@@ -15,33 +27,33 @@ block content
 			- if (name) {
 				- requestSample.push("name=" + encodeURIComponent(name))
 			- }
-			- if(_input_values && _input_values.length > 0){
-				each item in _input_values
-					- requestSample.push(item.name + "=" + encodeURIComponent(item.value))
+			- if(all_inputs){
+				each item, key in all_inputs
+					- requestSample.push(key + "=" + encodeURIComponent(item.value))
 					tr
 						td
-							label(for=item.key) #{item.name}
+							label(for=key) #{key}
 						td
-							input(id=item.name,type='text',value=item.value,name=item.name)
-
-			-}else if(formfields){
-				each item in formfields
-					tr
-						td
-							label(for=item) #{item}
-						td
-							input(id=item,type='text',name=item)
+							input(id=key,type='text',value=item.value,name=key)
 
 			-}
+			//else if(formfields){
+			//	each item in formfields
+			//		tr
+			//			td
+			//				label(for=item) #{item}
+			//			td
+			//				input(id=item,type='text',name=item)
+			//
+			//-}
 
 			tr
 				td
 					label(for='format') format
 				td
 					select(id='format',name='format')
-						formatlist = [ 'html', 'GeoJSON', 'esriJSON']
-							for item in formatlist
-								option #{item}
+						for item in formatlist
+							option #{item}
 			tr
 				td
 					label(for='name') name

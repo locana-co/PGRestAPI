@@ -22,9 +22,9 @@ operation.inputs = {};
 
 operation.outputImage = true;
 
-operation.inputs["geojson"] = {};
-operation.inputs["buffer_distance"] = { value: 0, units: "" }; //how far and what units?
-operation.inputs["country_code"] = []; //Let user specify input country code
+operation.inputs["geojson"] = { value: "", required: true, help: "input geometry as geojson" };
+operation.inputs["buffer_distance"] = { value: "", required: true, help: "point buffer distance, in meters" };
+operation.inputs["country_code"] = { value: [], required: true, help: "TZA, BGD, UGA, NGA, KEN, IND" };
 
 
 operation.Query = "DO $$DECLARE " +
@@ -56,14 +56,18 @@ operation.execute = flow.define(
         //Generate UniqueID for this GP Task
         operation.id = shortid.generate();
 
-        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-        if (operation.isInputValid(args) === true) {
-            operation.inputs["geojson"] = args.geojson;
-            operation.inputs["buffer_distance"] = args.buffer_distance;
-            operation.inputs["country_code"] = args.country_code.toUpperCase();
 
+        operation.inputs["geojson"].value = args.geojson;
+        operation.inputs["buffer_distance"].value = args.buffer_distance;
+        operation.inputs["country_code"].value = args.country_code ? args.country_code.toUpperCase() : "";
+
+        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
+        if (operation.isInputValid(operation.inputs) === true) {
             //Take the point and buffer it in PostGIS
-            var query = { text: operation.Query.replace("{geojson}", operation.inputs["geojson"]).split("{gpid}").join(operation.id).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
+            var query = {
+                text: operation.Query.replace("{geojson}", operation.inputs["geojson"].value).split("{gpid}").join(operation.id).replace("{buffer_distance}", operation.inputs["buffer_distance"].value).split("{country}").join(countries[operation.inputs["country_code"].value].name).replace("{srid}", countries[operation.inputs["country_code"].value].srid),
+                values: []
+            };
             common.executePgQuery(query, this);//Flow to next function when done.
 
         }
@@ -80,22 +84,20 @@ operation.execute = flow.define(
 )
 
 //Make sure arguments are tight before executing
-operation.isInputValid = function (input) {
-    //Test to see if inputs are specified
-    var isValid = false;
-
-    if (input) {
-        //make sure we have a where clause, buffer disatance and the country code is found in the country object.
-        if (input["geojson"] && input["buffer_distance"] && countries[input["country_code"].toUpperCase()]) {
-            //It's got everything we need.
-            return true;
+operation.isInputValid = function(input) {
+    //Check inputs
+    if(input){
+        for (var key in input) {
+            if (input.hasOwnProperty(key)) {
+                if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+                    //Required but not present.
+                    return false;
+                }
+            }
         }
     }
 
-    //TODO - check that the ST_Extent of the input WKT at least touches the BBox of the country specified.
-    //If not, then respond accordingly.
-
-    return isValid;
-}
+    return true;
+};
 
 module.exports = operation;

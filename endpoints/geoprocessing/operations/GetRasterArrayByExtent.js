@@ -9,8 +9,7 @@ operation.name = "GetIdsByExtent";
 operation.description = "Smartly gets GADM IDs associated with Red Cross disasters or projects based on a map viewport (extent).";
 operation.inputs = {};
 
-operation.inputs["bbox"] = {}; //SW coordiantes, NE coordinates, in lat/lng (4326).  minx, miny, maxx, maxy - example: -127.76000976562501,43.476840397778915,-113.060302734375,49.30363576187125
-operation.inputs["raster_name"] = []; //Name of the raster to operate on
+operation.inputs["bbox"] = { value: "", required: true, help: "SW coordiantes, NE coordinates, in lat/lng (4326).  minx, miny, maxx, maxy - example: -127.76000976562501,43.476840397778915,-113.060302734375,49.30363576187125" }; //
 
 operation.outputImage = false;
 
@@ -24,18 +23,20 @@ operation.execute = flow.define(
         //Generate UniqueID for this GP Task
         operation.id = shortid.generate();
 
+
+        //assign parameters to object.
+        operation.inputs["bbox"].value = args.bbox;
+
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-        if (operation.isInputValid(args) === true) {
-
-            //assign parameters to object.
-            operation.inputs["bbox"] = args.bbox;
-            operation.inputs["raster_name"] = args.raster_name;
-
+        if (operation.isInputValid(operation.inputs) === true) {
             //Convert bbox to WKT
             args.wkt = operation.convertBBoxToWKT(args.bbox);
 
             //Execute the query
-            var query = { text : "select * from udf_getidsbyextent(" + (args.gadm_level || "null") + ", '" + args.wkt + "');", values: []};
+            var query = {
+                text: "select * from udf_getidsbyextent(" + (args.gadm_level || "null") + ", '" + args.wkt + "');",
+                values: []
+            };
             common.executePgQuery(query, this);//Flow to next function when done.
         }
         else {
@@ -50,23 +51,31 @@ operation.execute = flow.define(
     }
 );
 
-//Make sure arguments are tight before executing
-operation.isInputValid = function (input) {
-    //Test to see if inputs are specified
-    var isValid = false;
 
-    if (input) {
-        //make sure we have a bbox.  Other args are optional
-        if (input["bbox"] && input["bbox"].split(",").length == 4) {
-            //It's got everything we need.
-            return true;
+//Make sure arguments are tight before executing
+operation.isInputValid = function(input) {
+
+    //make sure we have a bbox.  Other args are optional
+    if (input["bbox"].value && input["bbox"].value.split(",").length == 4) {
+        //It's got everything we need.
+        return true;
+    }else{
+        return false;
+    }
+
+    //Check inputs
+    if(input){
+        for (var key in input) {
+            if (input.hasOwnProperty(key)) {
+                if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+                    //Required but not present.
+                    return false;
+                }
+            }
         }
     }
 
-    //TODO - check that the ST_Extent of the input WKT at least touches the BBox of the country specified.
-    //If not, then respond accordingly.
-
-    return isValid;
+    return true;
 };
 
 

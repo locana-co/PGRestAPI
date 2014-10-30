@@ -13,19 +13,19 @@ var pg = require('pg'),
 var operation = {};
 var countries = { 'TZA': { name: 'tanzania', srid: '32736' }, 'BGD': { srid: '32645', name: 'bangladesh' }, 'UGA': { srid: '32635', name: 'uganda' }, 'NGA': { name: 'nigeria', srid: '32632' }, 'KEN': { name: 'kenya', srid: '32636' }, 'IND': { name: 'india', srid: '32643'} };
 //SRIDs from http://www.sumapa.com/crsxpais.cfm
-/* METADATA */
 
+/* METADATA */
 operation.name = "AccessSummary";
 operation.description = "Calculates the number of people living within a certain radius of given access ponits, broken down by urban and rural locations.";
 operation.inputs = {};
 
 operation.outputImage = true;
 
-operation.inputs["where_clause"] = {};
-operation.inputs["buffer_distance"] = { value: 0, units: "" }; //how far and what units?
-operation.inputs["country_code"] = []; //Let user specify input country code
-operation.inputs["sector_year"] = []; //Let user specify the sector year.  2013 or 2014
-operation.inputs["sector"] = ""; //which sector are we processing? agriculture,library,health,cicos
+operation.inputs["where_clause"] = { value: "", required: true, help: "where clause to specify which points to buffer" };
+operation.inputs["buffer_distance"] = { value: "", required: true, help: "point buffer distance, in meters" };
+operation.inputs["country_code"] = { value: [], required: true, help: "TZA, BGD, UGA, NGA, KEN, IND" }; //Let user specify input country code
+operation.inputs["sector_year"] = { value: [], required: true, help: "which year - 2014 or 2013" }; //Let user specify the sector year.  2013 or 2014
+operation.inputs["sector"] = { value: "", required: true, help: "agriculture,library,health,cicos" }; //which sector are we processing? agriculture,library,health,cicos
 
 //This will execute just for Land Use and buffers - ~ 4 seconds for all points in Uganda, minus rural
 operation.Query = "DO $$DECLARE " +
@@ -60,16 +60,20 @@ operation.execute = flow.define(
         //Generate UniqueID for this GP Task
         operation.id = shortid.generate();
 
+        operation.inputs["where_clause"].value = args.where_clause;
+        operation.inputs["buffer_distance"].value = args.buffer_distance;
+        operation.inputs["country_code"].value = args.country_code ? args.country_code.toUpperCase() : "";
+        operation.inputs["sector_year"].value = args.sector_year;
+        operation.inputs["sector"].value = args.sector;
+
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-        if (operation.isInputValid(args) === true) {
-            operation.inputs["where_clause"] = args.where_clause;
-            operation.inputs["buffer_distance"] = args.buffer_distance;
-            operation.inputs["country_code"] = args.country_code.toUpperCase();
-            operation.inputs["sector_year"] = args.sector_year;
-            operation.inputs["sector"] = args.sector;
+        if (operation.isInputValid(operation.inputs) === true) {
 
             //Take the point and buffer it in PostGIS
-            var query = { text: operation.Query.replace("{where_clause}", operation.inputs["where_clause"]).split("{sector_year}").join(operation.inputs["sector_year"]).split("{sector}").join(operation.inputs["sector"]).replace("{buffer_distance}", operation.inputs["buffer_distance"]).split("{country}").join(countries[operation.inputs["country_code"]].name).replace("{srid}", countries[operation.inputs["country_code"]].srid), values: [] };
+            var query = {
+                text: operation.Query.replace("{where_clause}", args.where_clause).split("{sector_year}").join(args.sector_year).split("{sector}").join(args.sector).replace("{buffer_distance}", args.buffer_distance).split("{country}").join(countries[args.country_code.toUpperCase()].name).replace("{srid}", countries[args.country_code.toUpperCase()].srid),
+                values: []
+            };
             common.executePgQuery(query, this);//Flow to next function when done.
 
         }
@@ -86,19 +90,20 @@ operation.execute = flow.define(
 )
 
 //Make sure arguments are tight before executing
-operation.isInputValid = function (input) {
-    //Test to see if inputs are specified
-    var isValid = false;
-
-    if (input) {
-        //make sure we have a where clause, buffer disatance and the country code is found in the country object.
-        if (input["where_clause"] && input["buffer_distance"] && countries[input["country_code"].toUpperCase()] && input["sector_year"] && input["sector"]) {
-            //It's got everything we need.
-            return true;
+operation.isInputValid = function(input) {
+    //Check inputs
+    if(input){
+        for (var key in input) {
+            if (input.hasOwnProperty(key)) {
+                if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+                    //Required but not present.
+                    return false;
+                }
+            }
         }
     }
 
-    return isValid;
-}
+    return true;
+};
 
 module.exports = operation;

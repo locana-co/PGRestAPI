@@ -422,3 +422,15 @@ div.navLinks a:hover {
 .capitalize {
   text-transform: capitalize;
 }
+.italic {
+  font-style: italic;
+}
+.argument {
+  font-style: italic;
+  font-size: 14px;
+  font-weight: bold;
+}
+.required {
+  font-style: italic;
+  font-weight: bold;
+}

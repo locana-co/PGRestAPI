@@ -24,13 +24,14 @@ operation.inputs = {};
 
 operation.outputImage = false;
 
-operation.inputs["height"] = {};
-operation.inputs["width"] = {};
-operation.inputs["cell_size"] = [];
-operation.inputs["values"] = [];
-operation.inputs["upper_left_x"] = [];
-operation.inputs["upper_left_y"] = [];
-operation.inputs["srid"] = [];
+operation.inputs["height"] = { value: "", required: true, help: "Height of raster in units of projection" };
+operation.inputs["width"] = { value: "", required: true, help: "Width of raster in units of projection" };
+operation.inputs["cell_size"] = { value: "", required: true, help: "what is the cell size?" };
+operation.inputs["values"] = { value: "", required: true, help: "multidimensional array of values" };
+operation.inputs["upper_left_x"] = { value: "", required: true, help: "Top left x coordinate for raster" };
+operation.inputs["upper_left_y"] = { value: "", required: true, help: "Top left y coordinate for raster" };
+operation.inputs["srid"] = { value: "", required: true, help: "Spatial Reference ID - 4326", default_value: 4326 };
+
 
 //The bit of SQL that will do the work. Set it up here, and execute it down below
 operation.Query = "DO $$DECLARE " +
@@ -50,19 +51,22 @@ operation.execute = flow.define(
     function (args, callback) {
         this.args = args;
         this.callback = callback;
-        //Step 1
-        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-        if (operation.isInputValid(args) === true) {
-            operation.inputs["height"] = args.height;
-            operation.inputs["width"] = args.width;
-            operation.inputs["cell_size"] = args.cell_size;
-            operation.inputs["values"] = args.values;
-            operation.inputs["upper_left_x"] = args.upper_left_x;
-            operation.inputs["upper_left_y"] = args.upper_left_y;
-            operation.inputs["srid"] = args.srid;
 
+        operation.inputs["height"].value = args.height;
+        operation.inputs["width"].value = args.width;
+        operation.inputs["cell_size"].value = args.cell_size;
+        operation.inputs["values"].value = args.values;
+        operation.inputs["upper_left_x"].value = args.upper_left_x;
+        operation.inputs["upper_left_y"].value = args.upper_left_y;
+        operation.inputs["srid"].value = args.srid;
+
+        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
+        if (operation.isInputValid(operation.inputs) === true) {
             //Take the point and buffer it in PostGIS
-            var query = { text: operation.Query.replace("{width}", operation.inputs["width"]).split("{cellsize}").join(operation.inputs["cell_size"]).replace("{srid}", operation.inputs["srid"]).replace("{height}", operation.inputs["height"]).replace("{upper_left_x}", operation.inputs["upper_left_x"]).replace("{upper_left_y}", operation.inputs["upper_left_y"]).replace("{values}", operation.inputs["values"]), values: [] };
+            var query = {
+                text: operation.Query.replace("{width}", operation.inputs["width"].value).split("{cellsize}").join(operation.inputs["cell_size"].value).replace("{srid}", operation.inputs["srid"].value).replace("{height}", operation.inputs["height"].value).replace("{upper_left_x}", operation.inputs["upper_left_x"].value).replace("{upper_left_y}", operation.inputs["upper_left_y"].value).replace("{values}", operation.inputs["values"].value),
+                values: []
+            };
             common.executePgQuery(query, this);//Flow to next function when done.
 
         }
@@ -79,19 +83,20 @@ operation.execute = flow.define(
 )
 
 //Make sure arguments are tight before executing
-operation.isInputValid = function (input) {
-    //Test to see if inputs are specified
-    var isValid = false;
-
-    if (input) {
-        //make sure we have a where clause, buffer disatance and the country code is found in the country object.
-        if (input["height"] && input["width"] && input["srid"] && input["cell_size"] && input["values"] && input["upper_left_x"] && input["upper_left_y"]) {
-            //It's got everything we need.
-            return true;
+operation.isInputValid = function(input) {
+    //Check inputs
+    if(input){
+        for (var key in input) {
+            if (input.hasOwnProperty(key)) {
+                if (input[key].required && (!input[key].value || input[key].value.length == 0)) {
+                    //Required but not present.
+                    return false;
+                }
+            }
         }
     }
 
-    return isValid;
-}
+    return true;
+};
 
 module.exports = operation;
