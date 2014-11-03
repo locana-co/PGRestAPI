@@ -18,6 +18,9 @@ var pg = require('pg'),
   settings = require('./settings'),
   common = require("./common"),
   cors = require('cors'),
+  fs = require("fs"),
+  _ = require("underscore"),
+  https = require('https');
   app = express();
 
 //PostGres Connection String
