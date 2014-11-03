@@ -183,10 +183,8 @@ exports.app = function (passport) {
             //Call and pass to flow when done
           } else {
             //unknown table, or no columns?
-            flo({
-              rows: []
-            });
-            //go to next flow
+            args.errorMessage = "Table doesn't exist or has no columns.";
+            common.respond(flo.req, flo.res, flo.args);
           }
         });
       }
@@ -371,23 +369,16 @@ exports.app = function (passport) {
         } else {
           //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
           var flo = this;
-          common.executeSelfRESTRequest(this.args.table, "/services/tables/" + this.args.table, {
-            where: "1=1",
-            format: "geojson"
-          }, function (err, result) {
-            if(err) {
-              //Report error and exit.
+          loadTableMetadata(this.args.table, function(err, rows){
+            if(err){
               flo.args.errorMessage = err.text;
-              common.respond(flo.args.req, flo.args.res, flo);
+              common.respond(flo.req, flo.res, flo.args);
               return;
+            }else{
+              flo.args.columnNames = rows;
+              flo(); //Move to next block
             }
-            else{
-              flo.args.columnNames = settings.columnNames[flo.args.table].rows;
-              common.log("refreshed column list");
-            }
-
-            flo();
-          }, settings);
+          })
         }
 
       } else {
@@ -424,36 +415,37 @@ exports.app = function (passport) {
         }
 
         var args = this.args;
-
+        var flo = this;
         //See if columns exist for this table in settings.js
 
         if (settings.columnNames[this.args.table]) {
           this.args.columnNames = settings.columnNames[this.args.table].rows;
-
           common.respond(req, res, args);
         } else {
-          //TODO: I don't know if this will work.  Settings is not shared between all modules. It's static.  Use express variables instead.
-          //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
-          common.executeSelfRESTRequest(args.table, "/services/tables/" + this.args.table, {
-            where: "1=1",
-            format: "geojson"
-          }, function (err, result) {
-            if(err) {
-              //Report error and exit.
-              args.errorMessage = err.text;
+          loadTableMetadata(this.args.table, function(err, rows){
+            if(err){
+              flo.args.errorMessage = err.text;
+              common.respond(flo.req, flo.res, flo.args);
+              return;
+            }else{
+              flo.args.columnNames = rows;
+              flo(); //Move to next block
             }
-            else{
-              args.columnNames = settings.columnNames[args.table].rows;
-              common.log("refreshed column list");
-            }
-
-            common.respond(req, res, args);
-          }, settings);
+          })
         }
       }
     }, function () {
-      //should have column names in settings.js now
-      this.args.columnNames = settings.columnNames[this.args.table].rows;
+
+      try {
+        //should have column names in settings.js now
+        this.args.columnNames = settings.columnNames[this.args.table].rows;
+      }
+      catch (err) {
+        //If table is specified that doesn't exist, get out of here.
+        args.errorMessage = "Table " + this.args.table + " was not found.";
+        common.respond(this.req, this.res, this.args);
+        return;
+      }
 
       //either way, get the spatial columns so we can exclude them from the query
       createSpatialQuerySelectStatement(this.args.table, this.args.outputsrid, this);
@@ -569,7 +561,7 @@ exports.app = function (passport) {
           }
         } else {
           //friendly message - exit out
-          this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
+          this.args.errorMessage = "Group by clause must be accompanied by a statistics definition";
 
           common.respond(this.req, this.res, this.args);
           return;
@@ -659,13 +651,6 @@ exports.app = function (passport) {
           values: []
         };
 
-        var args = this.args;
-        //copy for closure.
-        var req = this.req;
-        //copy for closure.
-        var res = this.res;
-        //copy for closure.
-
         common.executePgQuery(query, this);
         //pass to next flow
       } else {
@@ -702,7 +687,7 @@ exports.app = function (passport) {
           flo();
           //For now - hard coded.  Create new dynamic endpoint for this GeoJSON
           //nodetiles.createDynamicGeoJSONEndpoint(features, args.table, "4326", "style.mss");
-        } else if (this.args.format && this.args.format.toLowerCase() == "geojson") {
+        } else if (this.args.format && this.args.format.toLowerCase() == "geojson" || this.args.format && this.args.format.toLowerCase() == "json") {
           //Respond with JSON
           this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
           flo();
@@ -750,6 +735,12 @@ exports.app = function (passport) {
         } else if (this.args.format && this.args.format.toLowerCase() == "csv") {
           //CSV
           this.args.featureCollection = common.formatters.CSVFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array));
+          flo();
+        }
+        else {
+          //Some other format specified.  Default to geoJson Formatter
+          this.args.featureCollection = common.formatters.geoJSONFormatter(result.rows, common.unEscapePostGresColumns(this.args.geom_fields_array), common.unEscapePostGresColumns(this.args.geom_envelope_fields));
+
           flo();
         }
       }
@@ -1352,6 +1343,38 @@ exports.app = function (passport) {
     //set for this class
     app.set('spatialTables', tables);
   });
+
+  function loadTableMetadata(table, cb){
+    //Make a call to the table's base endpoint, which will load metadata for it.
+    common.executeSelfRESTRequest(table, "/services/tables/" + table, {
+      where: "1=1",
+      format: "geojson"
+    }, function (err, result) {
+      if(err) {
+        //Return error
+        cb(err, [])
+        return;
+      }
+      else{
+        if(result && result.error){
+          cb({text: result.error });
+          return;
+        }
+        else{
+          if(settings.columnNames[table]){
+            cb(null, settings.columnNames[table].rows);
+            common.log("refreshed column list");
+          }
+          else{
+            //This table doesn't exist in the DB we're looking in
+            cb({text: "Table " + table + " was not found."});
+            return;
+          }
+        }
+
+      }
+    }, settings);
+  }
 
 
   return app;

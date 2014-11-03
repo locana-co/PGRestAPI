@@ -10,6 +10,12 @@ settings.tilestream = {};
 settings.application.port = 3001;
 //settings.application.ip = "localhost"; //Typically localhost.  If deploying on Amazon EC2 Ubuntu, comment out this line.
 
+//SSL Settings
+settings.ssl = {};
+settings.ssl.pfx = 'mypfx.pfx';
+settings.ssl.password = 'foo';
+
+
 //Settings for postgres DB
 settings.pg.username = 'username';
 settings.pg.password = 'password';

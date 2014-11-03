@@ -88,41 +88,6 @@ describe('Common', function () {
 
 
 
-    
+
 })
 
-describe('Tables', function () {
-    test("table get is defined", function () {
-        //assert.isDefined(tables.get);
-    })
-
-//    test('Checks existence of test application', function(done) {
-//        request.get('http://localhost:3000/services/tables', function(err, response, body) {
-//            response.statusCode.should.equal(200);
-//            body.should.include("I'm Feeling Lucky");
-//            done();
-//        })
-//    });
-})
-
-
-//This is for the API level testing
-var should = require('chai').should(),
-    supertest = require('supertest'),
-    api = supertest('http://localhost:3001');
-
-//Get services/tables list as array
-describe('/services/tables', function () {
-
-    it('returns list of tables posts as an array', function (done) {
-        api.get('/services/tables?format=json')
-        .expect(200)
-        .expect('Content-Type', "application/json")
-        .end(function (err, res) {
-            if (err) return done(err);
-            res.body.should.be.instanceof(Array);
-            done();
-        });
-    });
-
-});

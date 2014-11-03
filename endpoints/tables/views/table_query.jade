@@ -141,20 +141,21 @@ block content
 
 block results
 	-if(infoMessage || errorMessage || featureCollection){
+
+		-if(infoMessage){
+			div.infoMessage
+				| #{infoMessage}
+		-}
+		-if(errorMessage){
+			div.errorMessage
+				| #{errorMessage}
+		-}
+
 		div.section.code
 
 			div.codeSamplesHeader Results
 
 			div.codeBody
-
-				-if(infoMessage){
-					div.infoMessage
-						|#{infoMessage}
-				-}
-				-if(errorMessage){
-					div.errorMessage
-						|#{errorMessage}
-				-}
 
 				.results
 				- if (featureCollection){
@@ -277,6 +278,10 @@ block apidoc
 	-if(limit)
 		- requestSample.push("limit=" + encodeURIComponent(limit))
 		- postSample.push("limit: '" + limit + "'")
+
+	-if(offset)
+		- requestSample.push("offset=" + encodeURIComponent(offset))
+		- postSample.push("offset: '" + offset + "'")
 
 
 	-if(requestSample.length > 0){

@@ -23,6 +23,8 @@ var pg = require('pg'),
 //PostGres Connection String
 global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; //fixes stream.js:94 UNABLE_TO_VERIFY_LEAF_SIGNATURE problem when using SSL
+
 // all environments
 app.set('ipaddr', settings.application.ip);
 app.set('port', process.env.PORT || settings.application.port);
@@ -31,7 +33,7 @@ if (process.env.PORT) {
 }
 app.set('views', 'shared_views');
 app.set('view engine', 'jade');
-//app.set('trust proxy', true);
+app.set('trust proxy', true);
 app.enable("jsonp callback"); //TODO: Remove this if not needed because of CORS
 app.use(express.favicon(path.join(__dirname, 'public/img/favicon.png')));
 app.use(express.logger('dev'));
@@ -39,6 +41,7 @@ app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(express.cookieParser('eobfgl-shoe'));
 app.use(express.session());
+
 
 //Set up a public folder.
 app.use(require('less-middleware')({
@@ -130,18 +133,42 @@ app.all('/services', function (req, res) {
 
 
 
+//Configure HTTPS if present
+if(settings.ssl && settings.ssl.pfx && settings.ssl.password){
+  //Use HTTPS
+  var SSLoptions = {
+    pfx: fs.readFileSync(settings.ssl.pfx),
+    passphrase: settings.ssl.password
+  };
 
-//Create web server
-http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
-  var startMessage = "SpatialServer listening";
+  //Create web server (https)
+  https.createServer(SSLoptions, app).listen(app.get('port'), app.get('ipaddr'), function() {
+    var startMessage = "SpatialServer listening (HTTPS)";
 
-  if (app.get('ipaddr')) {
-    startMessage += ' on IP:' + app.get('ipaddr') + ', ';
-  }
+    if (app.get('ipaddr')) {
+      startMessage += ' on IP:' + app.get('ipaddr') + ', ';
+    }
 
-  startMessage += ' on port ' + app.get('port');
-  console.log(startMessage);
-});
+    startMessage += ' on port ' + app.get('port');
+
+    console.log(startMessage);
+  });
+
+}else{
+  //Use HTTP
+  //Create web server
+  http.createServer(app).listen(app.get('port'), app.get('ipaddr'), function () {
+    var startMessage = "SpatialServer listening";
+
+    if (app.get('ipaddr')) {
+      startMessage += ' on IP:' + app.get('ipaddr') + ', ';
+    }
+
+    startMessage += ' on port ' + app.get('port');
+    console.log(startMessage);
+  });
+}
+
 
 
 //Look for any errors (this signature is for error handling), this is generally defined after all other app.uses.

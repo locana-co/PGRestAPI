@@ -1,6 +1,6 @@
 {
   "name": "PGRestAPI",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "author": "Ryan Whitley <apollolm@gmail.com>",
   "description": "Spatial API on top of PostGreSQL/PostGIS.",
@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "start": "node index.js",
-    "test": "node_modules\\.bin\\mocha -u tdd --reporter spec"
+    "test": "node_modules/.bin/mocha -u tdd --reporter spec"
   },
   "dependencies": {
     "cors": "2.4.1",
@@ -44,16 +44,21 @@
   "devDependencies": {
     "mocha": "1.20.1",
     "sinon": "1.10.3",
-    "chai": "~1.4.2",
+    "chai": "1.9.2",
+    "chai-things": "0.2.0",
     "express-mock-request": "0.0.2",
-    "supertest": "0.13.0"
+    "supertest": "0.13.0",
+    "vector-tile": "0.1.1",
+    "pbf": "0.0.1"
   },
   "keywords": [
     "PostGIS",
     "Mapnik",
     "GIS",
     "Maps",
-    "Spatial API"
+    "Spatial API",
+    "Vector Tiles",
+    "Protobuf"
   ],
   "repository": {
     "type": "git",

@@ -33,10 +33,16 @@ common.respond = function (req, res, args, callback) {
     else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
         //Respond with JSON
         if (args.errorMessage) {
-            res.writeHead(500, {
+            res.writeHead(200, {
                 'Content-Type': 'application/json'
             });
             res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
+        }
+        else if(args.infoMessage) {
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+            res.end(JSON.stringify({ error: args.infoMessage }, null, indent));
         }
         else {
             //Send back json file
@@ -72,7 +78,7 @@ common.respond = function (req, res, args, callback) {
 
         //Responsd with GeoJSON
         if (args.errorMessage) {
-            res.writeHead(500, {
+            res.writeHead(200, {
                 'Content-Type': 'application/json'
             });
             res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
@@ -89,7 +95,7 @@ common.respond = function (req, res, args, callback) {
         //Requesting Shapefile Format.
         //If there's an error, return a json
         if (args.errorMessage) {
-            res.writeHead(500, {
+            res.writeHead(200, {
                 'Content-Type': 'application/json'
             });
             res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
@@ -105,7 +111,7 @@ common.respond = function (req, res, args, callback) {
         //Responsd with CSV
         //If there's an error, return a json
         if (args.errorMessage) {
-            res.writeHead(500, {
+            res.writeHead(200, {
                 'Content-Type': 'application/json'
             });
             res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
@@ -123,7 +129,7 @@ common.respond = function (req, res, args, callback) {
     else {
         //If unrecognized format is specified
         if (args.errorMessage) {
-            res.writeHead(500, {
+            res.writeHead(200, {
                 'Content-Type': 'application/json'
             });
             res.end(JSON.stringify({ error: args.errorMessage }, null, indent));
