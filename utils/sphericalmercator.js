@@ -16,7 +16,7 @@ function SphericalMercator() {
     this.DEG_TO_RAD = Math.PI / 180;
     this.RAD_TO_DEG = 180 / Math.PI;
     this.size = 256;
-    this.levels = 18;
+    this.levels = 20;
     this.proj4 = proj4;
     for (var d = 0; d < this.levels; d++) {
         this.Bc.push(size / 360);
