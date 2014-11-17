@@ -511,7 +511,7 @@ common.formatters.CSVFormatter = function (rows, geom_fields_array) {
 
         for (var index in row) {
             if (geom_fields_array.indexOf(index) == -1)
-                csvArray.push((row[index] || '') + ",");
+                csvArray.push((row[index] || (row[index] == 0 ? row[index] : '')) + ",");
         }
         //Add newline
         csvArray.push('\r\n');
