@@ -2,7 +2,7 @@
 var pg = require('pg'),
     querystring = require('querystring'),
     http = require("http"),
-    settings = require("./settings"),
+    settings = require("./settings/settings"),
     fs = require("fs"),
     shortid = require("shortid"),
     mercator = require('./utils/sphericalmercator.js'), // 3857

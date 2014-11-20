@@ -13,7 +13,7 @@ var should = require('chai').should(),
 
 //common and settings files
 var common = require("../common"),
-    settings = require('../settings');
+    settings = require('../settings/settings');
 
 var gjv = require("geojson-validation");
 

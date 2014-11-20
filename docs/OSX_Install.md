@@ -42,9 +42,10 @@ To do this use the DB Owner or superuser to run
 
 ...in PostGres.
 
-###Create settings.js file
-Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
-	
+###Create settings/settings.js file
+Copy the settings/settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
+
+	cd settings
 	sudo cp settings.js.example settings.js
 
 *For security reasons, it is recommended that you use a READ ONLY PostGreSQL User.*
@@ -55,11 +56,6 @@ Copy the settings.js.example file and update the postgres server name, port and 
 	settings.pg.port = '5432';
 	settings.pg.database = 'test';
 
-If you're using TileStream to serve static map caches, you can reference that instance:
-
-	settings.tilestream.host = "54.212.254.185";
-	settings.tilestream.path = "/api/Tileset";
-	settings.tilestream.port = "8888";
 
 Specify whether to show PostGreSQL Views and Tables:
 

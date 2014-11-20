@@ -1,7 +1,7 @@
 ﻿//////////Geoprocessing Module////////////
 
 //Common and settings should be used by all sub-modules
-var express = require('express'), common = require("../../common"), flow = require('flow'), settings = require('../../settings');
+var express = require('express'), common = require("../../common"), flow = require('flow'), settings = require('../../settings/settings');
 
 //The next requires are specific to this module only
 var gp = require('./operations');

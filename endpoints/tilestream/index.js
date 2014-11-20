@@ -1,7 +1,7 @@
 ﻿//////////Tiles////////////
 
 //Express, Common and settings should be used by all sub-modules
-var express = require('express'), common = require("../../common"), settings = require('../../settings');
+var express = require('express'), common = require("../../common"), settings = require('../../settings/settings');
 
 //These next requires are specific to this module only
 var http = require('http');

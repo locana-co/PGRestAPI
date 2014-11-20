@@ -45,8 +45,8 @@ To grant read-only permissions for a user (assuming your user is already created
 	ON SEQUENCES 
 	TO <username>;
 
-###Create settings.js file
-Copy the settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.  
+###Create settings/settings.js file
+Copy the settings/settings.js.example file and update the postgres server name, port and username and password to point to your PostGreSQL instance.
 
 *For security reasons, it is recommended that you use a READ ONLY PostGreSQL User.*
 
@@ -55,12 +55,6 @@ Copy the settings.js.example file and update the postgres server name, port and 
 	settings.pg.server = '127.0.0.1';
 	settings.pg.port = '5432';
 	settings.pg.database = 'test';
-
-If you're using TileStream to serve static map caches, you can reference that instance:
-
-	settings.tilestream.host = "54.212.254.185";
-	settings.tilestream.path = "/api/Tileset";
-	settings.tilestream.port = "8888";
 
 If there are tables or views you don't want published, add them to the 'noFlyList' array:
 

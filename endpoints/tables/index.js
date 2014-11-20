@@ -1,7 +1,7 @@
 ﻿//////////Tables////////////
 
 //Express, Common and settings should be used by all sub-modules
-var express = require('express'), common = require("../../common"), settings = require('../../settings');
+var express = require('express'), common = require("../../common"), settings = require('../../settings/settings');
 
 //The next requires are specific to this module only
 var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), shortid = require("shortid");

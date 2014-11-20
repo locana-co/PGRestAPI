@@ -2,7 +2,7 @@
 var flow = require('flow');
 var pg = require('pg'),
         common = require("../../../common"),
-        settings = require('../../../settings'),
+        settings = require('../../../settings/settings'),
         shortid = require('shortid');
 
 //Takes in geojson parts, returns counts by landuse type.

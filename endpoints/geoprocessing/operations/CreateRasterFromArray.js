@@ -2,7 +2,7 @@
 var flow = require('flow');
 var pg = require('pg'),
         common = require("../../../common"),
-        settings = require('../../../settings');
+        settings = require('../../../settings/settings');
 
 //Takes in a multidimensional array, or at least an array of strings.
 //Arguments are:

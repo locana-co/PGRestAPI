@@ -5,9 +5,9 @@
 var settings
 //if settings.js doesn't exist, let the user know and exit
 try {
-  settings = require('./settings.js');
+  settings = require('./settings/settings.js');
 } catch (e) {
-  console.log("No settings.js file detected in root.  Try copying the settings.js.example to settings.js and add in settings.");
+  console.log("No settings.js file detected in settings folder.  Try copying the settings/settings.js.example to settings/settings.js and add in settings.");
   return;
 }
 
@@ -15,7 +15,7 @@ var pg = require('pg'),
   express = require('express'),
   http = require('http'),
   path = require('path'),
-  settings = require('./settings'),
+  settings = require('./settings/settings'),
   common = require("./common"),
   cors = require('cors'),
   fs = require("fs"),

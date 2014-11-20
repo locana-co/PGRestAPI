@@ -48,3 +48,8 @@ Thumbs.db
 .idea/
 
 .DS_Store
+
+# These are settings and confidential information that pertains to Spatial Server
+settings/*
+!settings/README.md
+!settings/settings.js.example

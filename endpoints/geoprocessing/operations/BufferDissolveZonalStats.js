@@ -2,7 +2,7 @@
 var flow = require('flow');
 var pg = require('pg'),
         common = require("../../../common"),
-        settings = require('../../../settings'),
+        settings = require('../../../settings/settings'),
         shortid = require('shortid');
 
 //Takes in a where clause, buffers, dissolves and zonal stats.  Return table of zonal stats.
