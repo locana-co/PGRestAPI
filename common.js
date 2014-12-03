@@ -291,10 +291,10 @@ common.getArguments = function (req) {
 
     //Grab POST or QueryString args depending on type
     if (req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
+        //If a post, then arguments will be members of the req.body property
         args = req.body;
     } else if (req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
+        //If request is a get, then args will be members of the req.query property
         args = req.query;
     }
     return args;

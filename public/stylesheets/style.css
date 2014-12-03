@@ -199,6 +199,8 @@ pre {
 }
 .geometry {
   /*word-wrap: break-word;*/
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 .section.code {
   background-color: #fff;

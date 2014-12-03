@@ -6,13 +6,14 @@ var express = require('express'), common = require("../../common"), settings = r
 //The next requires are specific to this module only
 var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), shortid = require("shortid");
 var GeoFragger = require('../../lib/GeoFragger');
-
+var TableController = require('./controllers/tableController.js');
 var tiles;
 try {
   tiles = require('../../endpoints/tiles');
 } catch (e) {
   tiles = null;
 }
+
 
 var ogr2ogr;
 try {
@@ -26,275 +27,21 @@ try {
 if (ogr2ogr)
   settings.application.formatList.push('shapefile');
 
-//var app = exports.app = express();
-
 exports.app = function (passport) {
   var app = express();
 
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
 
-  //Add a route and define response
   //Get list of public base tables from postgres
-  app.all('/services/tables', passport.authenticationFunctions, function (req, res) {
-    var args = {};
-
-    //Grab POST or QueryString args depending on type
-    if (req.method.toLowerCase() == "post") {
-      //If a post, then arguments will be members of the this.req.body property
-      args = req.body;
-    } else if (req.method.toLowerCase() == "get") {
-      //If request is a get, then args will be members of the this.req.query property
-      args = req.query;
-    }
-
-    args.view = "table_list";
-    args.path = req.path;
-    args.host = settings.application.publichost || req.headers.host;
-    args.link = "http://" + args.host + "/services/tables";
-    args.breadcrumbs = [{
-      link : "/services",
-      name : "Home"
-    }, {
-      link : "",
-      name : "Table Listing"
-    }];
-
-    try {
-      //Check to see if we've stashed the list already.
-      if (settings.tableList && !args.search) {
-        //Render HTML page with results at bottom
-        args.featureCollection = settings.tableList;
-        common.respond(req, res, args);
-      } else {
-        //Fetch from DB
-        var query = {
-          text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public'" + (settings.otherSchemas && settings.otherSchemas.length > 0 ? " OR table_schema IN ('" + settings.otherSchemas.join("', '") + "') " : "") + " and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
-          values: []
-        };
-        common.executePgQuery(query, function (err, result) {
-          if (err) {
-            args.errorMessage = err.text;
-            common.respond(req, res, args);
-            return;
-          }
-
-          args.featureCollection = result.rows.map(function (item) {
-            return item.table_name;
-          });
-
-          //Get array of table names
-          //stash it for later - if not the result of a search
-          if (!args.search)
-            settings.tableList = args.featureCollection;
-
-          //Render HTML page with results at bottom
-          common.respond(req, res, args);
-        });
-      }
-    } catch (e) {
-      args.errorMessage = e.text;
-      common.respond(req, res, args);
-    }
+  app.all('/services/tables', passport.authenticationFunctions, function(req, res){
+    TableController.getTableList(req, res);
   });
 
-  //Table Detail
-  app.all('/services/tables/:table', flow.define(
-    //If the querystring is empty, just show the regular HTML form.
-
-    function (req, res) {
-      this.req = req;
-      this.res = res;
-
-      this.args = {};
-
-      //Grab POST or QueryString args depending on type
-      if (this.req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
-        this.args = this.req.body;
-      } else if (this.req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
-        this.args = this.req.query;
-      }
-
-      this.args.table = this.req.params.table;
-      this.args.view = "table_details";
-      this.args.breadcrumbs = [
-        {
-          link: "/services",
-          name: "Home"
-        },
-        {
-          link: "/services/tables",
-          name: "Table Listing"
-        },
-        {
-          link: "",
-          name: this.args.table
-        }
-      ];
-      this.args.host = settings.application.publichost || req.headers.host;
-      this.args.url = this.req.url;
-      this.args.table_details = [];
-      this.protocol = common.getProtocol(req);
-      this.args.fullURL = this.protocol + (settings.application.publichost || this.req.headers.host) + this.req.path;
-      this.args.link = this.protocol + this.args.host + "/services/tables/" + this.args.table;
-      this.args.featureCollection = {};
-
-      //Find Column Names
-      //Grab from stash if we have it already
-      //TODO: don't use settings object to store column names.  use Express' app object
-
-      if (settings.columnNames && settings.columnNames[this.args.table]) {
-        this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
-
-        this(settings.columnNames[this.args.table]);
-        //Pass on in flow
-      } else {
-        //copy for closure
-        var args = this.args;
-        var flo = this;
-
-        var query = {
-          text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1",
-          values: [this.args.table]
-        };
-
-        common.executePgQuery(query, function (err, result) {
-          //check for error
-          if (err) {
-
-            //Report error and exit.
-            args.errorMessage = err.text;
-            flo();
-            //go to next flow
-          } else if (result && result.rows && result.rows.length > 0) {
-
-            args.featureCollection.columns = result.rows;
-
-            //Stash
-            if (!settings.columnNames) {
-              settings.columnNames = {};
-            }
-
-            settings.columnNames[args.table] = result;
-
-            flo(result);
-            //Call and pass to flow when done
-          } else {
-            //unknown table, or no columns?
-            args.errorMessage = "Table doesn't exist or has no columns.";
-            common.respond(flo.req, flo.res, flo.args);
-          }
-        });
-      }
-    }, function (result) {
-      //Expecting an array of columns and types
-
-      //Add supported operations in a property
-      this.args.featureCollection.supportedOperations = [];
-      this.args.featureCollection.supportedOperations.push({
-        link: this.args.fullURL + "/query",
-        name: "Query"
-      });
-
-      var rasterOrGeometry = {
-        present: false,
-        name: ""
-      };
-
-      var args = this.args;
-      //copy for closure
-
-      result.rows.forEach(function (item) {
-        if (item.data_type == "raster") {
-          args.featureCollection.supportedOperations.push({
-            link: args.fullURL + "/rasterOps",
-            name: "Raster Operations"
-          });
-          rasterOrGeometry.present = true;
-          rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
-        } else if (item.data_type == "geometry") {
-          if (tiles)
-            args.featureCollection.supportedOperations.push({
-              link: args.fullURL + "/" + item.column_name + "/dynamicMapLanding",
-              name: "Dynamic Map Service - " + item.column_name + " column"
-            });
-          args.featureCollection.supportedOperations.push({
-            link: args.fullURL + "/" + item.column_name + "/vector-tiles",
-            name: "Dynamic Vector Tile Service - " + item.column_name + " column"
-          });
-          rasterOrGeometry.present = true;
-          rasterOrGeometry.name = common.escapePostGresColumns([item.column_name])[0];
-        }
-      });
-
-      this.args = args;
-      //update this.args property
-
-      //If there's a geom or raster column, then check for SRID
-      this.spatialTables = app.get('spatialTables');
-
-      if (rasterOrGeometry.present === true) {
-        if (this.spatialTables[this.args.table] && this.spatialTables[this.args.table].srid) {
-          this({
-            rows: [
-              {
-                srid: this.spatialTables[this.args.table].srid
-              }
-            ]
-          });
-        } else {
-          //check SRID
-          var query = {
-            text: 'select ST_SRID(' + rasterOrGeometry.name + ') as SRID FROM "' + this.args.table + '" LIMIT 1;',
-            values: []
-          };
-          common.executePgQuery(query, this);
-        }
-      } else {
-        //Not a spatial table
-        //No SRID
-        this({
-          rows: [
-            {
-              srid: -1
-            }
-          ]
-        }); //flow to next function
-      }
-    }, function (err, result) {
-      //Coming from SRID check
-      if (err) {
-        //Report error and exit.
-        this.args.errorMessage = err.text;
-      } else if (result && result.rows && result.rows.length > 0) {
-        //Get SRID
-        if (result.rows[0].srid == 0 || result.rows[0].srid == "0") {
-          this.args.infoMessage = "Warning:  this table's SRID is 0.  Projections and other operations will not function propertly until you <a href='http://postgis.net/docs/UpdateGeometrySRID.html' target='_blank'>set the SRID</a>.";
-        } else if (result.rows[0].srid == -1) {
-          //Not a spatial table
-          this.args.SRID = "";
-        }
-        else {
-          this.args.SRID = result.rows[0].srid;
-          //Use the SRID
-          if (this.spatialTables[this.args.table]) {
-            this.spatialTables[this.args.table].srid = result.rows[0].srid;
-          } else {
-            //Add the table name and the SRID
-            this.spatialTables[this.args.table] = {};
-            this.spatialTables[this.args.table].srid = result.rows[0].srid;
-          }
-        }
-      } else {
-        //no match found.
-        this.args.infoMessage = "Couldn't find information for this table.";
-      }
-
-      //Render HTML page with results at bottom
-      common.respond(this.req, this.res, this.args);
-    }));
+  //Specific Table Details
+  app.all('/services/tables/:table', function(req, res){
+    TableController.getTableDetails(req, res);
+  });
 
   //Table Query - get - display page with default form
   app.all('/services/tables/:table/query', flow.define(
@@ -806,13 +553,7 @@ exports.app = function (passport) {
       this.args = {};
 
       //Grab POST or QueryString args depending on type
-      if (req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
-        this.args = req.body;
-      } else if (req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
-        this.args = req.query;
-      }
+      this.args = args = common.getArguments(req);
 
       if (JSON.stringify(this.args) != '{}') {
 
@@ -983,13 +724,7 @@ exports.app = function (passport) {
       this.res = res;
 
       //Grab POST or QueryString args depending on type
-      if (this.req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
-        this.args = this.req.body;
-      } else if (this.req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
-        this.args = this.req.query;
-      }
+      this.args = common.getArguments(req);
 
       this.args.view = "table_dynamic_map";
       this.args.table = this.req.params.table;
@@ -1085,13 +820,7 @@ exports.app = function (passport) {
       this.res = res;
 
       //Grab POST or QueryString args depending on type
-      if (this.req.method.toLowerCase() == "post") {
-        //If a post, then arguments will be members of the this.req.body property
-        this.args = this.req.body;
-      } else if (this.req.method.toLowerCase() == "get") {
-        //If request is a get, then args will be members of the this.req.query property
-        this.args = this.req.query;
-      }
+      this.args = common.getArguments(req);
 
       this.args.view = "table_vector_tiles";
       this.args.table = this.req.params.table;
