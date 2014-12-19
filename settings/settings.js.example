@@ -66,4 +66,8 @@ settings.leaflet.css = 'http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css';
 settings.jquery = {};
 settings.jquery.js = 'http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js';
 
+// For middleware that checks the referrer header of incoming requests
+settings.acceptableReferrers = [];
+settings.referrerCheckHints = [];
+
 module.exports = settings;
