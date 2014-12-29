@@ -382,8 +382,10 @@ exports.app = function (passport) {
               return;
             }
             else{
-              flo.args.columnNames = settings.columnNames[flo.args.table].rows;
-              common.log("refreshed column list");
+              if (settings.columnNames[flo.args.table]) {
+                flo.args.columnNames = settings.columnNames[flo.args.table].rows;
+                common.log("refreshed column list");
+              }
             }
 
             flo();
@@ -425,8 +427,8 @@ exports.app = function (passport) {
 
         var args = this.args;
 
-        //See if columns exist for this table in settings.js
 
+        //See if columns exist for this table in settings.js
         if (settings.columnNames[this.args.table]) {
           this.args.columnNames = settings.columnNames[this.args.table].rows;
 
@@ -443,8 +445,10 @@ exports.app = function (passport) {
               args.errorMessage = err.text;
             }
             else{
-              args.columnNames = settings.columnNames[args.table].rows;
-              common.log("refreshed column list");
+	          if (settings.columnNames[args.table]) {
+		        args.columnNames = settings.columnNames[args.table].rows;
+		        common.log("refreshed column list");
+	          }
             }
 
             common.respond(req, res, args);
@@ -654,7 +658,7 @@ exports.app = function (passport) {
           text: "SELECT " + fieldList +
             //Dynamically plug in geometry piece depending on the geom field name(s)
             (this.args.geometryStatement ? ", " + this.args.geometryStatement : "") + " FROM " + common.escapePostGresColumns([this.args.table]).join(",") + //escape
-            this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : "")
+            this.where + (this.args.groupby_appended ? " GROUP BY " + this.args.groupby_appended : "") + (this.args.sort ? " ORDER BY " + this.args.sort : "") + (this.limit && common.IsNumeric(this.limit) && this.limit != "-1" ? " LIMIT " + this.limit : "")
             + (this.offset && common.IsNumeric(this.offset) && this.offset != "0" ? " OFFSET " + this.offset : ""),
           values: []
         };
