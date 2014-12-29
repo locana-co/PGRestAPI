@@ -417,7 +417,6 @@ exports.app = function (passport) {
         var args = this.args;
         var flo = this;
         //See if columns exist for this table in settings.js
-
         if (settings.columnNames[this.args.table]) {
           this.args.columnNames = settings.columnNames[this.args.table].rows;
           common.respond(req, res, args);
@@ -561,7 +560,7 @@ exports.app = function (passport) {
           }
         } else {
           //friendly message - exit out
-          this.args.errorMessage = "Group by clause must be accompanied by a statistics definition";
+          this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
 
           common.respond(this.req, this.res, this.args);
           return;
