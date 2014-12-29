@@ -362,7 +362,7 @@ common.convertTileBoundsToBBoxWKT = function (bbox) {
     var bboxBottomRight = mercator.xyz_to_envelope(parseInt(BottomRightTile.x), parseInt(BottomRightTile.y), parseInt(BottomRightTile.z), false, true);
 
     //Had to reverse the indices here, they were backwards from what I thought they should be.
-    var corners = { minx: bboxTopLeft[0], miny: bboxTopLeft[1], maxx: bboxBottomRight[2], maxy: bboxBottomRight[3]};
+    var corners = { minx: bboxTopLeft[0], miny: bboxTopLeft[3], maxx: bboxBottomRight[2], maxy: bboxBottomRight[1]};
     return "POLYGON((minx miny, minx maxy, maxx maxy, maxx miny, minx miny))".split('minx').join(corners.minx).split('miny').join(corners.miny).split('maxx').join(corners.maxx).split('maxy').join(corners.maxy);
 }
 
@@ -536,7 +536,6 @@ common.executeSelfRESTRequest = function (table, path, postargs, callback, setti
             'Content-Length': post_data.length
         }
     };
-
 
     var post_req = http.request(options, function (res) {
         var str = [];

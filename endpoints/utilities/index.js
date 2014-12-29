@@ -140,7 +140,7 @@ exports.app = function (passport) {
                     args.featureCollection = features;
                     args.scripts = [settings.leaflet.js, settings.jquery.js];
                     //Load external scripts for map preview
-                    args.css = [settings.leaflet.js];
+                    args.css = [settings.leaflet.css];
                 }
 
                 common.respond(req, res, args);

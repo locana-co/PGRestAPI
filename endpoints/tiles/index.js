@@ -1481,6 +1481,25 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
 
         var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
 
+        var label_point_layer;
+        if(args.labelpoints && _self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
+          //If user specifies label points to be created, then create another layer in this vector tile that stores the centroid to use as a label point.
+
+          //The only difference in the datasource is the table parameter, which is either a table name, or a sub query that allows you specify a WHERE clause.
+          _self.settings.mapnik_datasource.table = (args.fields ? '(SELECT ' + ('ST_PointOnSurface(' + _self.settings.routeProperties.geom_field + ') as geom' ) + (args.fields ? ',' + args.fields : '')  + ' from "' + _self.settings.routeProperties.table + '"' + (args.where ? ' WHERE ' + args.where : '') + ') as "' + _self.settings.routeProperties.table + "_label" + '"' : '"' + _self.settings.routeProperties.table + '"');
+
+          //Make a new Mapnik datasource object
+          _self.mapnikDatasource_label = (_self.settings.mapnik_datasource.describe ? _self.settings.mapnik_datasource : new mapnik.Datasource(_self.settings.mapnik_datasource));
+
+
+          label_point_layer = new mapnik.Layer(_self.settings.routeProperties.name + "_label", ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+          label_point_layer.datasource = _self.mapnikDatasource_label;
+          label_point_layer.styles = [_self.settings.routeProperties.table, 'default'];
+
+          //Add label layer
+          map.add_layer(label_point_layer);
+        }
+
         var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), false);
 
         layer.datasource = _self.mapnikDatasource;
@@ -1489,6 +1508,7 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
         map.bufferSize = 10;
 
         map.add_layer(layer);
+
         console.log(map.toXML());
 
         //From Tilelive-Bridge - getTile
