@@ -1,7 +1,8 @@
 ﻿//////////Tables////////////
 
 //Express, Common and settings should be used by all sub-modules
-var express = require('express'), common = require("../../common"), settings = require('../../settings/settings');
+var express = require('express'), common = require("../../common"), settings = require('../../settings/settings'),
+    referrerCheck = require('../../utils/referrer-header-check');
 
 //The next requires are specific to this module only
 var flow = require('flow'), fs = require("fs"), http = require("http"), path = require("path"), shortid = require("shortid");
@@ -36,7 +37,7 @@ exports.app = function (passport) {
 
   //Add a route and define response
   //Get list of public base tables from postgres
-  app.all('/services/tables', passport.authenticationFunctions, function (req, res) {
+  app.all('/services/tables', [passport.authenticationFunctions], function (req, res) {
     var args = {};
 
     //Grab POST or QueryString args depending on type
@@ -99,7 +100,7 @@ exports.app = function (passport) {
   });
 
   //Table Detail
-  app.all('/services/tables/:table', flow.define(
+  app.all('/services/tables/:table', [referrerCheck], flow.define(
     //If the querystring is empty, just show the regular HTML form.
 
     function (req, res) {
@@ -297,7 +298,7 @@ exports.app = function (passport) {
     }));
 
   //Table Query - get - display page with default form
-  app.all('/services/tables/:table/query', flow.define(
+  app.all('/services/tables/:table/query', [referrerCheck],  flow.define(
     //If the querystring is empty, just show the regular HTML form.
 
     function (req, res) {
