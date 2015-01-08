@@ -28,7 +28,12 @@ common.respond = function (req, res, args, callback) {
         args.responseTime = new Date - req._startTime; //ms since start of request
 
         //Determine sample request based on args
-        res.render(args.view, args);
+        if(args.view){
+            res.render(args.view, args);
+        }
+        else{
+            res.send(args);
+        }
     }
     else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
         //Respond with JSON
