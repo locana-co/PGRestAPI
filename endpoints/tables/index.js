@@ -844,7 +844,7 @@ exports.app = function (passport) {
         this.args.host = req.headers.host;
         this.args.featureCollection = {};
 
-        var statType = (req.body.statType ? req.body.statType : "sum");
+        var statType = this.args.stattype = (req.body.statType ? req.body.statType : "sum");
 
         //Add in WKT, if specified
         var wkt = "";
