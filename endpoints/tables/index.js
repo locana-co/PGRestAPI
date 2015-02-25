@@ -1050,7 +1050,7 @@ exports.app = function (passport) {
       }
     }, function (err, result) {
 
-      if (err) {
+      if (err || !result.rows[0].table_extent) {
         this.args.errorMessage = "Problem getting the extent for this table.";
       } else {
         var bboxArray = result.rows[0].table_extent.replace("BOX(", "").replace(")", "").split(",");

@@ -5,41 +5,44 @@ PGRestAPI (a.k.a. Chubbs Spatial Server)
 
 ## Overview
 
-Node.js REST API for PostgreSQL Spatial Entities.
+Node.js REST API for PostgreSQL Spatial Tables.
 
-Point it at your instance of PostgreSQL and PostGIS,
-and you'll get a REST API that supports:
-* Dynamic Tiled Map Services for spatial tables using Mapnik (Not for Windows installs, yet)
-* Dynamic Vector Tile Services for spatial tables using Mapnik (Not for Windows installs, yet)
-* RESTful Query endpoint for each table and view - return GeoJSON, esriJSON or Shapefile.  Supports spatial and tabular queries and aggregation.
-* Geoprocessing Framework - (You still have to know how to write PostGIS logic, but...), with dynamic tiled maps available as output.
-* Route Caching for .pngs
-* Admin panel (/admin) to show tile generation statistics and cache size
-* Shapefile List (/shapefiles) to display shapefiles being served as map services
-* Vector Tiles endpoint for serving .mbtiles sources
-* Image Tiles endpoint for serving .mbtiles sources
+A few key uses for PGRestAPI:
+
+* Create [Mapbox Vector Tiles](https://github.com/mapbox/vector-tile-spec) on the fly from PostGIS or shapefiles.  [_more..._](docs/VectorTiles.md)
+* Serve pre-created Vector Tiles .mbtiles files
+* Serve pre-created PNG .mbtiles files (like TileStream)
+* REST API for querying Postgres tables - Supports spatial intersection, tabular queries and aggregation queries
+* REST API returns GeoJSON, CSV, Shapefile or esriJSON
+* Templates for creating custom web service endpoints - (Execute custom SQL functions, for example)
+* Rasters in PostGIS offer basic intersect operations and zonal stats.  Find sum of raster values that intersect a polygon, for example.
+
 
 Utilities:
 * WKT Previewer
+* Server side proxy - support requests to servers that don't support CORS
 
 Under development:
-* GeoJSON to .png endpoint
 * Better caching for different endpoints
-* In-memory map services (Loads a Shapefile into memory for faster response times. Drop shapefiles into endpoints/mapnik/data/inmemory-shapefiles)
+
 * Raster map services (Drop a .tif into data/rasters)
-* Shapefile map services ((Drop shapefiles into data/shapefiles)
-* Datablaster - Sort of an ETL to pregenerate .json/.geojson files for use in your applications (similar to how Jeckyll produces HTML/CSS/Javascirpt)
+
 * Authentication with passport/MongoDB/Mongoose (Disabled for now)
 
 
 More To-Dos:
-* CartoCSS to Mapnik XML parser (Carto module)
+* Update Express and other libraries to current versions
+* More tests
+* Major refactoring of endpoints folder
+* Break up endpoint functionality into modules
 * Persistent caching
 * Administrative Panel
+* Editing
 
+Soon will drop:
+* PNG image creation from PostGIS Tables
+* CartoCSS to Mapnik XML parser (Carto module) (this actually works, but is not used by our team)
 
-Express, Jade and general structure based on:
-Project is structured based on http://www.bearfruit.org/2013/06/21/start-a-new-node-js-express-app-the-right-way/
 
 ##Installation
 
