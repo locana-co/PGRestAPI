@@ -24,6 +24,7 @@ var cacher = new CCacher();
 var TMS_SCHEME = false;
 var _styleExtension = '.mss';
 var _defaultMSS = "default" + _styleExtension;
+var _defaultRastMSS = "rast_default" + _styleExtension;
 
 var PGTileStats = {
   SingleTiles: { times: [] },
@@ -247,7 +248,7 @@ exports.app = function (passport) {
   //Loop thru rasters and spin up new routes
   rasters.forEach(function (item) {
     rasterName = item.split('.')[0];
-    //createRasterTileRenderer(app, rasterName, rasterLocation + "/" + item, 4326, null);
+    createRasterTileRenderer(app, rasterName, rasterLocation + "/" + item, 4326, null);
   });
 
 
@@ -670,7 +671,7 @@ var createMemoryShapefileTileRenderer = exports.createMemoryShapefileTileRendere
       fullpath = stylepath + cartoFile;
     } else {
       //default
-      fullpath = stylepath + table + styleExtension;
+      fullpath = stylepath + table + _styleExtension;
     }
 
     var flo = this;
@@ -775,7 +776,7 @@ var createMemoryShapefileSingleTileRenderer = exports.createMemoryShapefileSingl
     fullpath = stylepath + cartoFile;
   } else {
     //default
-    fullpath = stylepath + table + styleExtension;
+    fullpath = stylepath + table + _styleExtension;
   }
 
   var flo = this;
@@ -946,115 +947,124 @@ function createInMemoryDatasource(name, path_to_shp) {
 
 
 //Create a static renderer that will always use the default styling
-var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(function (app, table, path_to_raster, epsgSRID, cartoFile) {
+var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
+    function (app, filename, path_to_raster, epsgSRID, cartoFile) {
 
-  this.app = app;
-  this.table = table;
-  this.epsg = epsgSRID;
-  this.path_to_raster = path_to_raster;
+        this.app = app;
+        this.settings = {};
+        this.settings.srid = epsgSRID;
+        this.settings.routeProperties = {};
+        this.settings.routeProperties.name = filename;
+        this.settings.routeProperties.cartoFile = cartoFile;
+        this.settings.mapnik_datasource = {};
+        this.settings.mapnik_datasource.file = path_to_raster;
 
-  var name;
-  var stylepath = __dirname + '/cartocss/';
-  var fullpath = "";
+        this._stylepath = path.join(__dirname, 'cartocss');
 
-  //Set the path to the style file
-  if (cartoFile) {
-    //Passed in
-    fullpath = stylepath + cartoFile;
-  } else {
-    //default
-    fullpath = stylepath + table + styleExtension;
-  }
+        //Set the path to the style file
+        this.fullpath = (this.settings.routeProperties.cartoFile ? path.join(this._stylepath, this.settings.routeProperties.cartoFile) : path.join(this._stylepath, this.settings.routeProperties.name + '.xml'));
 
-  var flo = this;
+        //See if there is a <name>.xml file for this table.
+        fs.stat(this.fullpath, this);
+    },
+    function (err, stat) {
+        //assume not default styling
+        this.isDefault = false;
 
-  //See if there is a <tablename>.mss/xml file for this table.
-  //See if file exists on disk.  If so, then use it, otherwise, render it and respond.
-  fs.stat(fullpath, function (err, stat) {
-    if (err) {
-      //No file.  Use defaults.
-      fullpath = stylepath + _defaultMSS;
-      //Default
-    }
+        if (err) {
+            //No file.  Use defaults.
+            //it is default styling
+            this.isDefault = true;
 
-    flo(fullpath);
-    //flow to next function
-  });
-}, function (fullpath) {
-  //Flow from after getting full path to Style file
-
-  var _self = this;
-
-  //Create Route for this table
-  this.app.all('/services/rasters/' + _self.table + '/dynamicMap', function (req, res) {
-    //Start Timer to measure response speed for tile requests.
-    var startTime = Date.now();
-
-    parseXYZ(req, TMS_SCHEME, function (err, params) {
-      if (err) {
-        res.writeHead(500, {
-          'Content-Type': 'text/plain'
-        });
-        res.end(err.message);
-      } else {
-        try {
-
-          var map = new mapnik.Map(256, 256, mercator.proj4);
-
-          var layer = new mapnik.Layer(_self.table, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
-          //check to see if 3857.  If not, assume WGS84
-
-          var bbox = mercator.xyz_to_envelope(parseInt(params.x), parseInt(params.y), parseInt(params.z), false);
-
-          var raster = new mapnik.Datasource({
-            type: 'gdal',
-            file: _self.path_to_raster,
-            band: 1
-          });
-
-          layer.datasource = raster;
-          layer.styles = [_self.table, 'raster'];
-
-          map.bufferSize = 64;
-          map.load(path.join(fullpath), {
-            strict: true
-          }, function (err, map) {
-            if (err)
-              throw err;
-
-            map.add_layer(layer);
-
-            console.log(map.toXML());
-            // Debug settings
-
-            map.extent = bbox;
-            var im = new mapnik.Image(map.width, map.height);
-            map.render(im, function (err, im) {
-              if (err) {
-                throw err;
-              } else {
-                var duration = Date.now() - startTime;
-                RasterStats.times.push(duration);
-                res.writeHead(200, {
-                  'Content-Type': 'image/png'
-                });
-                res.end(im.encodeSync('png'));
-              }
-            });
-
-          });
-
-        } catch (err) {
-          res.writeHead(500, {
-            'Content-Type': 'text/plain'
-          });
-          res.end(err.message);
+            this.fullpath = path.join(this._stylepath, 'rast_default.xml');
         }
-      }
-    });
-  });
 
-  console.log("Created dynamic raster tile service: " + '/services/rasters/' + _self.table + '/dynamicMap');
+        //Read the file and pass the contents to the next function
+        fs.readFile(this.fullpath, 'utf8', this);
+    },
+    function (err, styleSheet) {
+        if (err) {
+            //keep going with defaults
+        }
+
+        var _self = this;
+
+        var route = '/services/rasters/' + this.settings.routeProperties.name + '/dynamicMap/:z/:x/:y.png';
+
+        //Create Route for this table
+        this.app.get(route, cacher.cache('day'), function (req, res) {
+
+            //Start Timer to measure response speed for tile requests.
+            var startTime = Date.now();
+
+            try {
+                //create map
+                var map = new mapnik.Map(256, 256, mercator.proj4);
+
+                var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), false);
+
+                map.bufferSize = 8;
+
+                map.fromString(styleSheet, {
+                    strict: true
+                }, function (err, map) {
+                    if (err){
+                        //Bad connection to PG possibly
+                        res.writeHead(500, {
+                            'Content-Type': 'text/plain'
+                        });
+                        res.end(err.message);
+                        return;
+                    }
+
+                    var ds = new mapnik.Datasource({
+                        type: 'gdal',
+                        file: _self.settings.mapnik_datasource.file
+                    });
+
+                    // contruct a mapnik layer dynamically
+                    var l = new mapnik.Layer('raster');
+                    l.srs = map.srs;
+                    l.styles = ['rast_default'];
+
+                    // add our custom datasource
+                    l.datasource = ds;
+
+                    // add this layer to the map
+                    map.add_layer(l);
+
+
+                    map.extent = bbox;
+                    //Write out the map xml
+                    console.log(map.toXML());
+
+
+                    var im = new mapnik.Image(map.width, map.height);
+                    map.render(im, function (err, im) {
+
+                        if (err) {
+                            throw err;
+                        } else {
+                            var duration = Date.now() - startTime;
+                            //_self.performanceObject.times.push(duration);
+                            res.writeHead(200, {
+                                'Content-Type': 'image/png'
+                            });
+                            res.end(im.encodeSync('png'));
+                        }
+                    });
+                });
+
+            } catch (err) {
+                res.writeHead(500, {
+                    'Content-Type': 'text/plain'
+                });
+                res.end(err.message);
+            }
+
+        });
+
+    console.log("Created dynamic raster tile service: " + '/services/rasters/' + this.settings.routeProperties.name + '/dynamicMap/:z/:x/:y.*');
 });
 
 

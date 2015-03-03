@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+<Map minimum-version="2.0.0">
+
+<Style name="rast_default" filter-mode="first">
+  <Rule>
+    <RasterSymbolizer opacity="1" scaling="bilinear" />
+  </Rule>
+</Style>
+
+</Map>
