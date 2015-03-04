@@ -21,7 +21,7 @@ If a single table has more than 1 geometry column, a vector tiles endpoint will 
 
 After [installation](https://github.com/spatialdev/PGRestAPI#installation), specify your Postgres connection settings in the settings/settings.js file.
 
-** Example dynamic PostGIS Vector Tile URL
+### Example dynamic PostGIS Vector Tile URL:
 
 	http://spatialserver.spatialdev.com/services/tables/india_urbanareas/geom/vector-tiles
 
@@ -32,7 +32,7 @@ To consume this endpoint in Leaflet using the ([Leaflet.MapboxVectorTile](https:
 provide this url `http://spatialserver.spatialdev.com/services/postgis/india_urbanareas/geom/vector-tiles/{z}/{x}/{y}.pbf` to the MVTSource [config object](https://github.com/SpatialServer/Leaflet.MapboxVectorTile/blob/master/docs/configuration.md#config).
 
 
-Note: By default, dynamic vector tile endpoints pulling from PostGIS *only* pulls the geometry column, and the resulting .pbf (vector tile) will contain NO properties/attributes.
+#### Note: By default, dynamic vector tile endpoints pulling from PostGIS *only* pulls the geometry column, and the resulting .pbf (vector tile) will contain NO properties/attributes.
 
 # Specifying additional properties to be pulled from PostGIS
 
@@ -42,9 +42,9 @@ To do this, alter the querystring in the vector tile URL to add `?fields=foo`
 
 This is a comma separated list of fields you wish to return as properties in the vector tile.
 
-Example of specifying the columns `gid` and `landuse` to be added to the properties of the vector tile:
+### Example of specifying the columns `gid` and `landuse` to be added to the properties of the vector tile:
 
-	`http://spatialserver.spatialdev.com/services/postgis/india_urbanareas/geom/vector-tiles/{z}/{x}/{y}.pbf?fields=gid,landuse`
+	http://spatialserver.spatialdev.com/services/postgis/india_urbanareas/geom/vector-tiles/{z}/{x}/{y}.pbf?fields=gid,landuse
 
 # Filtering PostGIS tables on-the-fly
 
@@ -52,7 +52,7 @@ It is also possible to append a `where` querystring to the end of the url to spe
 
 Example of specifying a where clause to cut down the number of features returned in the vector tile:
 
-	`http://spatialserver.spatialdev.com/services/postgis/india_urbanareas/geom/vector-tiles/{z}/{x}/{y}.pbf?where=gid%3d5`
+	http://spatialserver.spatialdev.com/services/postgis/india_urbanareas/geom/vector-tiles/{z}/{x}/{y}.pbf?where=gid%3d5
 
 This translates to the where clause `WHERE gid=5`.  Only feature(s) where gid equals 5 will be returned.
 

@@ -7,7 +7,7 @@ PGRestAPI (a.k.a. Chubbs Spatial Server)
 
 Node.js REST API for PostgreSQL Spatial Tables.
 
-A few key uses for PGRestAPI:
+### A few key uses for PGRestAPI:
 
 * Create [Mapbox Vector Tiles](https://github.com/mapbox/vector-tile-spec) on the fly from PostGIS or shapefiles.  [_more..._](docs/VectorTiles.md)
 * Serve pre-created Vector Tiles .mbtiles files
@@ -18,11 +18,11 @@ A few key uses for PGRestAPI:
 * Rasters in PostGIS offer basic intersect operations and zonal stats.  Find sum of raster values that intersect a polygon, for example.
 
 
-Utilities:
+#### Utilities:
 * WKT Previewer
 * Server side proxy - support requests to servers that don't support CORS
 
-Under development:
+#### Under development:
 * Better caching for different endpoints
 
 * Raster map services (Drop a .tif into data/rasters)
@@ -30,7 +30,7 @@ Under development:
 * Authentication with passport/MongoDB/Mongoose (Disabled for now)
 
 
-More To-Dos:
+#### More To-Dos:
 * Update Express and other libraries to current versions
 * More tests
 * Major refactoring of endpoints folder
@@ -39,7 +39,7 @@ More To-Dos:
 * Administrative Panel
 * Editing
 
-Soon will drop:
+#### Soon will drop:
 * PNG image creation from PostGIS Tables
 * CartoCSS to Mapnik XML parser (Carto module) (this actually works, but is not used by our team)
 

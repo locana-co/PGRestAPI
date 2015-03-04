@@ -18,12 +18,7 @@ PGRestAPI - Ubuntu Installation
 	sudo apt-get install nodejs
 
 ###Install Mapnik ([original instructions](https://github.com/mapnik/mapnik/wiki/UbuntuInstallation))
-(For Ubuntu 12 and 13, use the 2.2.0 ppa)
 
-	--Mapnik 2.2.0, no support for Ubuntu 14 - trusty - yet
-	sudo add-apt-repository ppa:mapnik/v2.2.0
-	sudo apt-get update
-	sudo apt-get install libmapnik libmapnik-dev mapnik-utils python-mapnik
 
 (For Ubuntu 14, use the 2.2.3 ppa, since there is no ppa for trusty yet)
 
@@ -33,6 +28,15 @@ PGRestAPI - Ubuntu Installation
     # also install datasource plugins if you need them
     sudo apt-get install mapnik-input-plugin-gdal
     sudo apt-get install mapnik-input-plugin-postgis
+
+
+(For Ubuntu 12 and 13, use the 2.2.0 ppa)
+
+	--Mapnik 2.2.0, no support for Ubuntu 14 - trusty - yet
+	sudo add-apt-repository ppa:mapnik/v2.2.0
+	sudo apt-get update
+	sudo apt-get install libmapnik libmapnik-dev mapnik-utils python-mapnik
+
 
 
 ###Clone with GIT (or download [.zip file](https://github.com/spatialdev/PGRestAPI/archive/docs.zip) from GitHub)
