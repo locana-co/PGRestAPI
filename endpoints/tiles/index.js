@@ -958,6 +958,8 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
         this.settings.routeProperties.cartoFile = cartoFile;
         this.settings.mapnik_datasource = {};
         this.settings.mapnik_datasource.file = path_to_raster;
+        this.settings.mapnik_datasource.type = 'gdal';
+        this.settings.mapnik_datasource.band = 1;
 
         this._stylepath = path.join(__dirname, 'cartocss');
 
@@ -1001,7 +1003,7 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
                 //create map
                 var map = new mapnik.Map(256, 256, mercator.proj4);
 
-                var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), false);
+                var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), true); //the last 'true' means that we'll get geographic coords.
 
                 map.bufferSize = 8;
 
@@ -1017,14 +1019,12 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
                         return;
                     }
 
-                    var ds = new mapnik.Datasource({
-                        type: 'gdal',
-                        file: _self.settings.mapnik_datasource.file
-                    });
+                    var ds = new mapnik.Datasource(_self.settings.mapnik_datasource);
 
                     // contruct a mapnik layer dynamically
                     var l = new mapnik.Layer('raster');
-                    l.srs = map.srs;
+                    //l.srs = map.srs;
+                    l.srs = geographic.proj4; //assumes geographic (WGS 84) projection
                     l.styles = ['rast_default'];
 
                     // add our custom datasource
