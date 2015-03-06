@@ -292,6 +292,26 @@ exports.app = function (passport) {
 
   }));
 
+  app.all('/services/vector-tiles/refresh', function (req, res) {
+
+    //Reload all Vector Tiles .mbtiles files.
+    loadPBFMBTilesRoutes(app);
+
+    //When done, come here
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify("{ status: 'Refreshing pbf_mbtiles endpoints.'}"));
+  });
+
+  app.all('/services/image-tiles/refresh', function (req, res) {
+
+    //Reload all Vector Tiles .mbtiles files.
+    loadPNGMBTilesRoutes(app);
+
+    //When done, come here
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify("{ status: 'Refreshing png_mbtiles endpoints.'}"));
+  });
+
   //Load all Vector Tiles .mbtiles files.
   loadPBFMBTilesRoutes(app);
 
@@ -309,8 +329,10 @@ exports.getImageTileRoutes = function () {
 }
 
 
-
 function loadPNGMBTilesRoutes(app){
+  _imageTileRoutes = []; //Clear any previously loaded routes
+  PNGmbTileFiles = []; //clear any previously loaded files
+
   var PNGmbtilesLocation = path.join(__dirname, "../../data/png_mbtiles");
   var localPNGList = [];
 
@@ -381,6 +403,8 @@ function asyncEach(array, fn, delay){
 }
 
 function loadPBFMBTilesRoutes(app) {
+  _vectorTileRoutes = []; //Clear any previously loaded routes
+  mbTileFiles = []; //clear any previously listed files
   var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
   var localMbTilesList = [];
 
@@ -448,6 +472,8 @@ function loadPBFMBTilesRoutes(app) {
       console.log("Created PBF .mbtiles service: " + PBFroute);
       _vectorTileRoutes.push({ name: name, route: PBFroute, type: ".pbf .mbtiles" });
     });
+
+
   });
 
 
