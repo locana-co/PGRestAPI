@@ -302,6 +302,34 @@ exports.app = function (passport) {
     res.end(JSON.stringify("{ status: 'Refreshing pbf_mbtiles endpoints.'}"));
   });
 
+  //Refresh (or look for) a particular dataset
+  app.all('/services/vector-tiles/refresh/:name', function (req, res) {
+
+    //Get name
+    var name = req.params.name;
+
+    if(!name){
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify("{ status: 'Specify dataset name at end of route.  ../refresh/datasetname'}"));
+      return;
+    }
+
+    if(fileExists(name, mbTileFiles) === true){
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify("{ status: 'Dataset already exists. Not refreshing.'}"));
+      return;
+    }
+
+    name += ".mbtiles"; //add extension for mbtiles
+
+    //Reload all Vector Tiles .mbtiles files.
+    loadPBFMBTileByName(app, name);
+
+    //When done, come here
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify("{ status: 'Attempting to refresh.'}"));
+  });
+
   app.all('/services/image-tiles/refresh', function (req, res) {
 
     //Reload all Vector Tiles .mbtiles files.
@@ -310,6 +338,34 @@ exports.app = function (passport) {
     //When done, come here
     res.writeHead(200, {'Content-Type': 'application/json'});
     res.end(JSON.stringify("{ status: 'Refreshing png_mbtiles endpoints.'}"));
+  });
+
+  //refresh (or look for) a particular dataset
+  app.all('/services/image-tiles/refresh/:name', function (req, res) {
+
+    //Get name
+    var name = req.params.name;
+
+    if(!name){
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify("{ status: 'Specify dataset name at end of route.  ../refresh/datasetname'}"));
+      return;
+    }
+
+    if(fileExists(name, PNGmbTileFiles) === true){
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify("{ status: 'Dataset already exists. Not refreshing.'}"));
+      return;
+    }
+
+    name += ".mbtiles"; //add extension for mbtiles
+
+    //Reload all Vector Tiles .mbtiles files.
+    loadPNGMBTileByName(app, name);
+
+    //When done, come here
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify("{ status: 'Attempting to refresh.'}"));
   });
 
   //Load all Vector Tiles .mbtiles files.
@@ -478,6 +534,176 @@ function loadPBFMBTilesRoutes(app) {
 
 
 }
+
+function loadPNGMBTileByName(app, dataset){
+
+  var PNGmbtilesLocation = path.join(__dirname, "../../data/png_mbtiles");
+  var localPNGList = [];
+
+  var fullpath = path.join(PNGmbtilesLocation, dataset);
+
+  //Load mbtiles from mbtiles folder.
+  fs.stat(fullpath, function (err, stat) {
+    if (err) {
+      //No file.  Doesn't exist here.
+      console.log("Dataset doesn't exist.");
+      return;
+    }
+
+    //file exists
+    localPNGList.push(dataset);
+
+    //Create endpoint for mbtiles server, 1 for each source
+    asyncEach(localPNGList, function(file, idx) {
+
+      var PNGroute = ""; //store the route name
+
+      var mbtilespath = 'mbtiles://' + path.join(PNGmbtilesLocation, file);
+
+
+      tilelive.load(mbtilespath, function (err, source) {
+
+        if (err) {
+          console.log("Error creating service for " + file + " " + err);
+          return;
+        }
+
+        //Store info in a array for UI list
+        source.getInfo(function(err, info){
+          PNGmbTileFiles.push(info);
+        });
+
+        console.log("Tilelive Loaded " + file);
+        var name = file.split('.')[0];
+        PNGroute = '/services/tiles/' + name + '/:z/:x/:y.png';
+
+        app.get(PNGroute, function (req, res) {
+          source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+            // `err` is an error object when generation failed, otherwise null.
+            // `tile` contains the compressed image file as a Buffer
+            // `headers` is a hash with HTTP headers for the image.
+            res.setHeader('content-type', 'image/png');
+            if (!err) {
+              res.send(tile);
+            } else {
+              res.send("problem.");
+            }
+          });
+        });
+
+        console.log("Created PNG .mbtiles service: " + PNGroute);
+        _imageTileRoutes.push({ name: name, route: PNGroute, type: ".png .mbtiles" });
+      });
+
+    }, 200);
+
+  });
+}
+
+function loadPBFMBTileByName(app, dataset) {
+  var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
+  var localMbTilesList = [];
+
+  var fullpath = path.join(mbtilesLocation, dataset);
+
+  //Load mbtiles from mbtiles folder.
+  fs.stat(fullpath, function (err, stat) {
+    if (err) {
+      //No file.  Doesn't exist here.
+      console.log("Dataset doesn't exist.");
+      return;
+    }
+
+    //file exists
+    localMbTilesList.push(dataset);
+
+    //Create endpoint for mbtiles server, 1 for each source
+    asyncEach(localMbTilesList, function (file, idx) {
+
+      var PBFroute = ""; //store the route name
+
+      var mbtilespath = 'mbtiles://' + path.join(mbtilesLocation, file);
+
+      tilelive.load(mbtilespath, function (err, source) {
+        if (err) {
+          console.log("Error creating service for " + file + " " + err);
+          return;
+        }
+
+        //Store info in a array for UI list
+        source.getInfo(function(err, info){
+          mbTileFiles.push(info);
+        });
+
+        var name = file.split('.')[0];
+
+        PBFroute = '/services/vector-tiles/' + name + '/:z/:x/:y.pbf';
+
+        app.get(PBFroute, function (req, res) {
+
+          source.getTile(req.param('z'), req.param('x'), req.param('y'), function (err, tile, headers) {
+            // `err` is an error object when generation failed, otherwise null.
+            // `tile` contains the compressed image file as a Buffer
+            // `headers` is a hash with HTTP headers for the image.
+            if (!err) {
+              //Make sure that the compression type being reported by mbtiles matches what the browser is asking for
+              //Headless browsers sometimes have no compression, while older tilemill tiles are compressed with 'deflate'.  Some headless browsers ask for 'gzip'.
+              if (res.req.headers["accept-encoding"] && (res.req.headers["accept-encoding"].indexOf(headers["Content-Encoding"]) > -1)) {
+                res.setHeader('Content-Encoding', headers['Content-Encoding']);
+                res.setHeader('Content-Type', headers['Content-Type']);
+                res.send(tile);
+                return;
+              }
+              else {
+                //no gzip or deflate.  Actually unzip the thing and send it (for phantomjs - doesn't request gzip or deflate in request headers).
+                //zlib.unzip detects whether to deflate or gunzip
+                zlib.unzip(tile, function (err, buffer) {
+                  res.send(buffer);
+                  return;
+                });
+              }
+
+            } else {
+              res.send(new Buffer(''));
+            }
+          });
+        });
+
+        console.log("Created PBF .mbtiles service: " + PBFroute);
+        _vectorTileRoutes.push({ name: name, route: PBFroute, type: ".pbf .mbtiles" });
+      });
+
+
+    });
+
+  });
+
+
+
+
+}
+
+//Given an array of png or pbf object descriptors, see if a dataset of the same name already exists
+function fileExists(filename, metaArray){
+  var found = false;
+
+  if(metaArray){
+    metaArray.forEach(function(item){
+      if(item.id == filename){
+        found = true;
+        return false;
+      }
+    })
+  }
+
+  return found;
+}
+
+
+
+
+
+
 
 function loadPBFMBTilesRoute(app) {
   var mbtilesLocation = path.join(__dirname, "../../data/pbf_mbtiles");
