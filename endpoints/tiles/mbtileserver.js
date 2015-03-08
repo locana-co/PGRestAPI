@@ -314,11 +314,8 @@ exports.app = function (passport) {
       return;
     }
 
-    if(fileExists(name, mbTileFiles) === true){
-      res.writeHead(200, {'Content-Type': 'application/json'});
-      res.end(JSON.stringify("{ status: 'Dataset already exists. Not refreshing.'}"));
-      return;
-    }
+    //Check for duplicate.  If found, remove from the global object, and refresh (doesn't remove duplicate routes)
+    removeGlobalListEntry(app, name, mbTileFiles, false);
 
     name += ".mbtiles"; //add extension for mbtiles
 
@@ -352,11 +349,8 @@ exports.app = function (passport) {
       return;
     }
 
-    if(fileExists(name, PNGmbTileFiles) === true){
-      res.writeHead(200, {'Content-Type': 'application/json'});
-      res.end(JSON.stringify("{ status: 'Dataset already exists. Not refreshing.'}"));
-      return;
-    }
+    //Check for duplicate.  If found, remove from the global object, and refresh (doesn't remove duplicate routes)
+    removeGlobalListEntry(app, name, PNGmbTileFiles, false);
 
     name += ".mbtiles"; //add extension for mbtiles
 
@@ -397,6 +391,9 @@ function loadPNGMBTilesRoutes(app){
     var ext = path.extname(file);
     if (ext == ".mbtiles") {
       localPNGList.push(file);
+
+      //Remove from epxress route list as well
+      removeGlobalListEntry(app, file.replace(".mbtiles", ""), [], true);
     }
   });
 
@@ -469,6 +466,9 @@ function loadPBFMBTilesRoutes(app) {
     var ext = path.extname(file);
     if (ext == ".mbtiles") {
       localMbTilesList.push(file);
+
+      //Remove from epxress route list as well
+      removeGlobalListEntry(app, file.replace(".mbtiles", ""), [], true);
     }
   });
 
@@ -683,22 +683,35 @@ function loadPBFMBTileByName(app, dataset) {
 
 }
 
-//Given an array of png or pbf object descriptors, see if a dataset of the same name already exists
-function fileExists(filename, metaArray){
+//Given an array of png or pbf object descriptors, remove a dataset if the name exists.
+//Skip meta array won't bother checking the array, since if we clear all it will be empty.
+function removeGlobalListEntry(app, filename, metaArray, skipMetaArray){
   var found = false;
 
-  if(metaArray){
-    metaArray.forEach(function(item){
+
+    metaArray.forEach(function(item, idx, object){
       if(item.id == filename){
         found = true;
+        object.splice(idx, 1); //remove entry
         return false;
       }
     })
+
+  if(found === true || skipMetaArray === true){
+    //Look thru express' list of routes and get rid of the one we will be remaking
+    for (k in app.routes.get) {
+      if ((app.routes.get[k].path + "").indexOf("/" + filename + "/") > -1) {
+        app.routes.get.splice(k,1);
+        break;
+      }
+    }
   }
 
-  return found;
-}
 
+
+
+  return found; //was an item removed or not?
+}
 
 
 
