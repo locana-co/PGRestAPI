@@ -846,24 +846,31 @@ exports.app = function (passport) {
 
         var statType = this.args.stattype = (req.body.statType ? req.body.statType : "sum");
 
+        //Allow users to pass in geojson or WKT. (this.args.geojson or this.args.wkt)
+
         //Add in WKT, if specified
         var wkt = "";
         //create internal var so we don't alter the original variable.
-        if (this.args.wkt)
+
+        if(this.args.geojson){
+
+        }
+        else if (this.args.wkt) {
           wkt = " " + this.args.wkt;
 
-        if (wkt.length == 0) {
-          this.args.errorMessage = "You must specify an input geometry in WKT format."
-          common.respond(this.req, this.res, this.args);
-          return;
-        }
+          if (wkt.length == 0) {
+            this.args.errorMessage = "You must specify an input geometry in WKT or geojson format."
+            common.respond(this.req, this.res, this.args);
+            return;
+          }
 
-        if (this.args.wkt.toLowerCase().indexOf('point') == 0) {
-          //if a point geom, then buffer is mandatory
+          if (this.args.wkt.toLowerCase().indexOf('point') == 0) {
+            //if a point geom, then buffer is mandatory
 
-          if (!this.args.bufferdistance) {
-            //Tell them that you're setting it to a default, but continue with the operation (happens in next flow)
-            this.args.infoMessage = "Point geometries need to have a buffer set. Default buffer of 500 meters was used."
+            if (!this.args.bufferdistance) {
+              //Tell them that you're setting it to a default, but continue with the operation (happens in next flow)
+              this.args.infoMessage = "Point geometries need to have a buffer set. Default buffer of 500 meters was used."
+            }
           }
         }
 
@@ -921,18 +928,62 @@ exports.app = function (passport) {
           this.args.bufferdistance = bufferdistance;
         }
 
-        var query = {
-          text: "DO $$DECLARE " + "orig_srid int; " + "utm_srid int; " + "input geometry := ST_GeomFromText('" + this.args.wkt + "', 4326); " + //TODO: make the input SRID dymamic.
-            "geomgeog geometry; " + "buffer geometry; " + "zone int; " + "pref int; " + "BEGIN " + "geomgeog:= ST_Transform(input,4326); " +
+
+        var sql = "";
+
+        //Build SQL String based on geojson or WKT
+        if(this.args.geojson){
+
+          var geojson; //hold the parsed geojson object
+          var intersects = new GeoFragger();
+
+          try {
+            geojson = JSON.parse(this.args.geojson);
+            intersects = intersects.toPostGISFragment(geojson);
+          } catch (e) {
+            //friendly message - exit out
+            this.args.errorMessage = e.message;
+
+            common.respond(this.req, this.res, this.args);
+            return;
+          }
+
+          //var intersects_array = [];
+          //geom_fields_array.forEach(function (item) {
+          //  intersects_array.push("ST_Intersects(ST_GeomFromGeoJSON('" + JSON.stringify(intersects) + "')," + item + ")");
+          //});
+          var geomType = new GeoFragger()._getType(geojson);
+          if(geomType) geomType = geomType.toLowerCase();
+
+          sql = "DO $$DECLARE " + "orig_srid int; " + "utm_srid int; " + "input geometry := ST_GeomFromGeoJSON('" + JSON.stringify(intersects) + "'); " +
+          "geomgeog geometry; " + "buffer geometry; " + "zone int; " + "pref int; " + "BEGIN " + "geomgeog:= ST_Transform(input,4326); " +
             //See if incoming WKT is a point.  If so, use the ST_Y to find the right zone.  Otherwize, get the centroid, and get the y from that.
-            (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "IF (ST_Y(geomgeog))>0 THEN pref:=32600; ELSE pref:=32700; END IF;" : "IF (ST_Y(ST_CENTROID(geomgeog))) > 0 THEN pref:=32600; ELSE pref:=32700; END IF; ") + (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "zone:=floor((ST_X(geomgeog)+180)/6)+1; " : "zone:=floor((ST_X(ST_CENTROID(geomgeog))+180)/6)+1; ") + " " + "orig_srid:= ST_SRID(input); " + "utm_srid:= zone+pref; " +
+          (geomType == "point" ? "IF (ST_Y(geomgeog))>0 THEN pref:=32600; ELSE pref:=32700; END IF;" : "IF (ST_Y(ST_CENTROID(geomgeog))) > 0 THEN pref:=32600; ELSE pref:=32700; END IF; ") + (geomType == "point" ? "zone:=floor((ST_X(geomgeog)+180)/6)+1; " : "zone:=floor((ST_X(ST_CENTROID(geomgeog))+180)/6)+1; ") + " " + "orig_srid:= ST_SRID(input); " + "utm_srid:= zone+pref; " +
 
             //If a point, buffer.  Otherwise, don't.
-            (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326);" : "buffer:=input; ") + "drop table if exists _zstemp; " + //TODO: Add session ID (or something) to make sure this is dynamic.
-            "create temporary table _zstemp as " + "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + ", ST_ASGeoJSON(buffer) as geom, ST_AsText(buffer) as wkt " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
-            " FROM \"" + this.args.table + "\" WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+          (geomType == "point" ? "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326);" : "buffer:=input; ") + "drop table if exists _zstemp; " + //TODO: Add session ID (or something) to make sure this is dynamic.
+          "create temporary table _zstemp as " + "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + " " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+          " FROM \"" + this.args.table + "\" WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
 
-            "END$$; " + "select * from _zstemp;",
+          "END$$; " + "select * from _zstemp;";
+        }
+        else if(this.args.wkt){
+          //Build WKT string
+          sql = "DO $$DECLARE " + "orig_srid int; " + "utm_srid int; " + "input geometry := ST_GeomFromText('" + this.args.wkt + "', 4326); " + //TODO: make the input SRID dymamic.
+          "geomgeog geometry; " + "buffer geometry; " + "zone int; " + "pref int; " + "BEGIN " + "geomgeog:= ST_Transform(input,4326); " +
+            //See if incoming WKT is a point.  If so, use the ST_Y to find the right zone.  Otherwize, get the centroid, and get the y from that.
+          (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "IF (ST_Y(geomgeog))>0 THEN pref:=32600; ELSE pref:=32700; END IF;" : "IF (ST_Y(ST_CENTROID(geomgeog))) > 0 THEN pref:=32600; ELSE pref:=32700; END IF; ") + (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "zone:=floor((ST_X(geomgeog)+180)/6)+1; " : "zone:=floor((ST_X(ST_CENTROID(geomgeog))+180)/6)+1; ") + " " + "orig_srid:= ST_SRID(input); " + "utm_srid:= zone+pref; " +
+
+            //If a point, buffer.  Otherwise, don't.
+          (this.args.wkt.toLowerCase().indexOf("point") == 0 ? "buffer:= ST_transform(ST_Buffer(ST_transform(input, utm_srid), " + bufferdistance + "), 4326);" : "buffer:=input; ") + "drop table if exists _zstemp; " + //TODO: Add session ID (or something) to make sure this is dynamic.
+          "create temporary table _zstemp as " + "SELECT SUM((ST_SummaryStats(ST_Clip(" + raster_column_name + ", buffer , true)))." + this.args.stattype + ") as  " + this.args.stattype + ", ST_ASGeoJSON(buffer) as geom, ST_AsText(buffer) as wkt " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+          " FROM \"" + this.args.table + "\" WHERE ST_Intersects(buffer," + raster_column_name + "); " + //Todo - get raster's SRID dynamically and make sure the buffer is transformed to that SRID.
+
+          "END$$; " + "select * from _zstemp;";
+        }
+
+        var query = {
+          text: sql,
           values: []
         };
 

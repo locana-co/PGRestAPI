@@ -1479,7 +1479,7 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
         //create map
         var map = new mapnik.Map(256, 256, mercator.proj4);
 
-        var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.epsg && (_self.epsg == 3857 || _self.epsg == 3587)) ? mercator.proj4 : geographic.proj4));
+        var layer = new mapnik.Layer(_self.settings.routeProperties.name, ((_self.settings.routeProperties.srid && (_self.settings.routeProperties.srid == 3857 || _self.settings.routeProperties.srid == 3587)) ? mercator.proj4 : geographic.proj4));
 
         var label_point_layer;
         if(args.labelpoints && _self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
