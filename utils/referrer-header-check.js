@@ -68,7 +68,7 @@ module.exports = function(req, res, next) {
     } else {
         var args = { errorMessage: "Unauthorized" };
         res.status(401);
-        return common.respond(res, req, args, null);
+        return common.respond(req, res, args, null);
     }
 
 }
