@@ -32,7 +32,7 @@ common.respond = function (req, res, args, callback) {
             res.render(args.view, args);
         }
         else{
-            res.end(args);
+            res.send(JSON.stringify(args});
         }
     }
     else if (args.format && (args.format.toLowerCase() == "json" || args.format.toLowerCase() == "esrijson" || args.format.toLowerCase() == "j")) {
