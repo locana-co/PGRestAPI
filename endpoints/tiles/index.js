@@ -89,7 +89,13 @@ exports.app = function (passport) {
   var shpLocation = path.join(__dirname, "../../data/shapefiles");
   var geojsonLocation = path.join(__dirname, "../../data/geojson");
   var memoryShpLocation = path.join(__dirname, "../../data/inmemory-shapefiles");
-  var rasterLocation = path.join(__dirname, "../../data/rasters");
+  //var rasterLocation = path.join(__dirname, "../../data/rasters");
+
+  //user custom raster path if user entered in settings.js (see settings.rasterPath)
+  var rasterLocation = settings.rasterPath;
+  if(rasterLocation === undefined) {
+    rasterLocation = path.join(__dirname, "../../data/rasters");
+  }
 
   //Find Shapefiles
   shapefiles = getShapeFilePaths(shpLocation);

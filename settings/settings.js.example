@@ -24,6 +24,9 @@ settings.pg.port = '5432';
 settings.pg.database = 'test';
 settings.pg.featureLimit = 1000; //how many features to return by default
 
+//optional - specify an alternative path for the raster folder
+//settings.rasterPath = '/home/myfolder';
+
 //settings.otherSchemas = ['myschema']; //Optionally list postgres schemas other than 'public' to read
 
 //Should the API display postgres views?
