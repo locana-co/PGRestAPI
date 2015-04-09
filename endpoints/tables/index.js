@@ -149,48 +149,32 @@ exports.app = function (passport) {
       if (settings.columnNames && settings.columnNames[this.args.table]) {
         this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
 
-        this(settings.columnNames[this.args.table]);
+        this(null, settings.columnNames[this.args.table]);
         //Pass on in flow
       } else {
-        //copy for closure
+        //Load table metadata
         var args = this.args;
         var flo = this;
 
-        var query = {
-          text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1",
-          values: [this.args.table]
-        };
-
-        common.executePgQuery(query, function (err, result) {
-          //check for error
-          if (err) {
-
-            //Report error and exit.
-            args.errorMessage = err.text;
-            flo();
-            //go to next flow
-          } else if (result && result.rows && result.rows.length > 0) {
-
-            args.featureCollection.columns = result.rows;
-
-            //Stash
-            if (!settings.columnNames) {
-              settings.columnNames = {};
-            }
-
-            settings.columnNames[args.table] = result;
-
-            flo(result);
-            //Call and pass to flow when done
-          } else {
-            //unknown table, or no columns?
-            args.errorMessage = "Table doesn't exist or has no columns.";
+        loadTableMetadata(this.args.table, function(err, result){
+          if(err){
+            flo.args.errorMessage = err.text;
             common.respond(flo.req, flo.res, flo.args);
+            return;
+          }else{
+            flo.args.columnNames = result.rows;
+            flo(null, result); //Move to next block
           }
-        });
+        })
       }
-    }, function (result) {
+    }, function (err, result) {
       //Expecting an array of columns and types
+
+      if(err){
+        this.args.errorMessage = err;
+        common.respond(this.req, this.res, this.args);
+        return;
+      }
 
       //Add supported operations in a property
       this.args.featureCollection.supportedOperations = [];
@@ -370,14 +354,14 @@ exports.app = function (passport) {
         } else {
           //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
           var flo = this;
-          loadTableMetadata(this.args.table, function(err, rows){
+          loadTableMetadata(this.args.table, function(err, result){
             if(err){
               flo.args.errorMessage = err.text;
               common.respond(flo.req, flo.res, flo.args);
               return;
             }else{
-              flo.args.columnNames = rows;
-              flo(); //Move to next block
+              flo.args.columnNames = result.rows;
+              flo(null, result); //Move to next block
             }
           })
         }
@@ -422,19 +406,19 @@ exports.app = function (passport) {
           this.args.columnNames = settings.columnNames[this.args.table].rows;
           common.respond(req, res, args);
         } else {
-          loadTableMetadata(this.args.table, function(err, rows){
+          loadTableMetadata(this.args.table, function(err, result){
             if(err){
               flo.args.errorMessage = err.text;
               common.respond(flo.req, flo.res, flo.args);
               return;
             }else{
-              flo.args.columnNames = rows;
-              flo(); //Move to next block
+              flo.args.columnNames = result.rows;
+              flo(null, result); //Move to next block
             }
           })
         }
       }
-    }, function () {
+    }, function (flowErr, result) {
 
       try {
         //should have column names in settings.js now
@@ -561,7 +545,7 @@ exports.app = function (passport) {
           }
         } else {
           //friendly message - exit out
-          this.args.infoMessage = "Group by clause must be accompanied by a statistics definition";
+          this.args.errorMessage = "Group by clause must be accompanied by a statistics definition";
 
           common.respond(this.req, this.res, this.args);
           return;
@@ -1395,36 +1379,45 @@ exports.app = function (passport) {
     app.set('spatialTables', tables);
   });
 
-  function loadTableMetadata(table, cb){
-    //Make a call to the table's base endpoint, which will load metadata for it.
-    common.executeSelfRESTRequest(table, "/services/tables/" + table, {
-      where: "1=1",
-      format: "geojson"
-    }, function (err, result) {
-      if(err) {
-        //Return error
-        cb(err, [])
+  function loadTableMetadata(table, cb) {
+
+    var args = {};
+
+    var query = {
+      text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1",
+      values: [table]
+    };
+
+    common.executePgQuery(query, function (err, result) {
+      //check for error
+      if (err) {
+
+        //Report error and exit.
+        cb(err.text, null);
         return;
-      }
-      else{
-        if(result && result.error){
-          cb({text: result.error });
-          return;
-        }
-        else{
-          if(settings.columnNames[table]){
-            cb(null, settings.columnNames[table].rows);
-            common.log("refreshed column list");
-          }
-          else{
-            //This table doesn't exist in the DB we're looking in
-            cb({text: "Table " + table + " was not found."});
-            return;
-          }
+        //go to next flow
+      } else if (result && result.rows && result.rows.length > 0) {
+
+        args.featureCollection = {};
+        args.featureCollection.columns = result.rows;
+
+        //Stash
+        if (!settings.columnNames) {
+          settings.columnNames = {};
         }
 
+        settings.columnNames[table] = result;
+        common.log("refreshed column list");
+
+        cb(null, result);
+        //Call and pass to flow when done
+      } else {
+        //unknown table, or no columns?
+        var errMsg = "Table doesn't exist or has no columns.";
+        cb(errMsg, null);
       }
-    }, settings);
+    });
+
   }
 
 

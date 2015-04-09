@@ -6,14 +6,16 @@ var request = require("request");
 var chai = require('chai');
 chai.use(require('chai-things'));
 
+//common and settings files
+var common = require("../common"),
+  settings = require('../settings/settings');
+
 //This is for the API level testing
 var should = require('chai').should(),
   supertest = require('supertest'),
-  api = supertest('http://localhost:3001');
+  api = supertest('http://localhost:' + settings.application.port);
 
-//common and settings files
-var common = require("../common"),
-    settings = require('../settings/settings');
+
 
 var gjv = require("geojson-validation");
 
@@ -26,12 +28,12 @@ describe('Vector Tiles', function () {
   //TODO: Create startup scripts that build DB and insert rows into tables to test this against.
 
   it('requests a dynamic .pbf tile from a PostGIS database', function (done) {
-    api.get('/services/postgis/agriculture_2014/geom/vector-tiles/14/11967/6906.pbf')
+    api.get('/services/postgis/agriculture_2014/geom/vector-tiles/8/187/109.pbf')
       .expect(200)
       .expect('Content-Type', "application/x-protobuf")
       .end(function (err, res) {
         if (err) return done(err);
-        console.log(res);
+        //console.log(res);
         var arrayBuffer = new Uint8Array(res.text);
         var buf = new Protobuf(arrayBuffer);
         //Pull apart the tile and verify it's legit.

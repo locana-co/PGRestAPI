@@ -6,14 +6,15 @@ var request = require("request");
 var chai = require('chai');
 chai.use(require('chai-things'));
 
+//common and settings files
+var common = require("../common"),
+  settings = require('../settings/settings');
+
 //This is for the API level testing
 var should = require('chai').should(),
   supertest = require('supertest'),
-  api = supertest('http://localhost:3001');
+  api = supertest('http://localhost:' + settings.application.port);
 
-//common and settings files
-var common = require("../common"),
-    settings = require('../settings/settings');
 
 var gjv = require("geojson-validation");
 
