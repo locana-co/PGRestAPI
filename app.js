@@ -21,7 +21,8 @@ var pg = require('pg'),
   fs = require("fs"),
   _ = require("underscore"),
   https = require('https');
-  app = express();
+  app = express(),
+      securityAndUserManagement = require('./api-user-management');
 
 //PostGres Connection String
 global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
@@ -60,8 +61,39 @@ var passport = { authenticationFunctions: []};
 
 //This must be after app.use(passport.initialize())
 app.use(cors());
-app.use(app.router);
 
+// setup protected path and associated user-management routes
+var userMgmtConfig = {
+    additionalExclusions: [
+        /^\/services\/postgis\/.+\/geom\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$/i
+    ],
+    "authenticationSecret": "my_secret",
+    "passwordRetrievalSecret": "try_t0_gu3ss",
+    "confirmEmailSecret": "0r_gu3ss_th1s",
+    "confirmNewUserSecret" : "h@v3_an0th3r_try",
+    "dbType" : "sqlite",
+    "dbSettings": {
+        "dialect": "sqlite",
+        "path": "../user-db/users.sqlite",
+        "mode": "sqlite3.OPEN_READWRITE"
+    },
+    "email": null
+};
+
+// user management email server config
+userMgmtConfig.email = {"user": "guardduty@spatialdev.com",
+    "password": "q1w2e3r4t5",
+    "host": "smtpout.secureserver.net",
+    "ssl": true,
+
+    "fromAlias": "API User Management",
+    "fromEmail": "admin@api.com",
+    "newEmailAddressForTest": "tests@spatialdev.com",
+    "newUserEmailAddressForTest": "r.gwozdz@gmail.com"};
+
+securityAndUserManagement(app, userMgmtConfig);
+
+app.use(app.router);
 
 //Load in all endpoint routes
 //Root Request - show table list
