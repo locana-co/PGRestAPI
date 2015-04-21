@@ -19,10 +19,12 @@ var pg = require('pg'),
   common = require("./common"),
   cors = require('cors'),
   fs = require("fs"),
+    jwt=require("jsonwebtoken"),
   _ = require("underscore"),
   https = require('https');
   app = express(),
-      securityAndUserManagement = require('./api-user-management');
+      securityAndUserManagement = require('./api-user-management'),
+  secured = true;
 
 //PostGres Connection String
 global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
@@ -62,6 +64,10 @@ var passport = { authenticationFunctions: []};
 //This must be after app.use(passport.initialize())
 app.use(cors());
 
+// Secure the endpoints
+if(secured === true) {
+
+
 // setup protected path and associated user-management routes
 var userMgmtConfig = {
     additionalExclusions: [
@@ -93,7 +99,40 @@ userMgmtConfig.email = {"user": "guardduty@spatialdev.com",
 
 securityAndUserManagement(app, userMgmtConfig);
 
+    // Intercept vector-tile endpoints;  These routes might be more easily target in Express > 4.0
+    app.use(function (req, res, next) {
+
+        // Set vector-tile endpoint pattern
+        var pattern = new RegExp("^\/services\/postgis\/.+\/geom\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
+
+        // Does this request fit the endpoint pattern
+        if(pattern.test(req.url)){
+
+            //Get the token query param
+            var token = req.query.token;
+
+            // Validate the token
+            jwt.verify(token, userMgmtConfig.authenticationSecret, function(err, decoded) {
+
+                if(err) {
+                    return res.status(400).json({error: 401, authenticated: false, message: 'invalid token'});
+                }
+
+                // Valid token, deliver the tile
+                next();
+
+            });
+        }
+
+
+
+    });
+
+}
 app.use(app.router);
+
+
+
 
 //Load in all endpoint routes
 //Root Request - show table list

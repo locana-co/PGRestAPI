@@ -32,7 +32,8 @@
     "semver": "2.3.0",
     "shortid": "2.0.1",
     "underscore": "1.6.0",
-    "ya-csv": "0.9.4"
+    "ya-csv": "0.9.4",
+    "jsonwebtoken": "^5.0.0"
   },
   "optionalDependencies": {
     "mapnik": "1.4.15",
