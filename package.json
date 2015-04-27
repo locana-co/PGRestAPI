@@ -15,6 +15,7 @@
     "test": "node_modules/.bin/mocha -u tdd --reporter spec"
   },
   "dependencies": {
+    "@spatialdev/express-user-management": "0.0.4",
     "cors": "2.4.1",
     "crypto": "0.0.3",
     "express": "3.3.4",
@@ -24,6 +25,7 @@
     "jade": "0.35.0",
     "jquery": "2.1.1",
     "jsdom": "0.10.5",
+    "jsonwebtoken": "^5.0.0",
     "less-middleware": "0.1.14",
     "lru-cache": "2.5.0",
     "millstone": "0.6.12",
@@ -32,8 +34,7 @@
     "semver": "2.3.0",
     "shortid": "2.0.1",
     "underscore": "1.6.0",
-    "ya-csv": "0.9.4",
-    "jsonwebtoken": "^5.0.0"
+    "ya-csv": "0.9.4"
   },
   "optionalDependencies": {
     "mapnik": "1.4.15",

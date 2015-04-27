@@ -23,8 +23,9 @@ var pg = require('pg'),
   _ = require("underscore"),
   https = require('https');
   app = express(),
-      securityAndUserManagement = require('./api-user-management'),
+  expressUserManagement = require('@spatialdev/express-user-management'),
   secured = true;
+
 
 //PostGres Connection String
 global.conString = "postgres://" + settings.pg.username + ":" + settings.pg.password + "@" + settings.pg.server + ":" + settings.pg.port + "/" + settings.pg.database;
@@ -64,46 +65,16 @@ var passport = { authenticationFunctions: []};
 //This must be after app.use(passport.initialize())
 app.use(cors());
 
-// Secure the endpoints
+// Secure the endpoints?
 if(secured === true) {
 
-
-// setup protected path and associated user-management routes
-var userMgmtConfig = {
-    additionalExclusions: [
-        /^\/services\/postgis\/.+\/geom\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$/i
-    ],
-    "authenticationSecret": "my_secret",
-    "passwordRetrievalSecret": "try_t0_gu3ss",
-    "confirmEmailSecret": "0r_gu3ss_th1s",
-    "confirmNewUserSecret" : "h@v3_an0th3r_try",
-    "dbType" : "sqlite",
-    "dbSettings": {
-        "dialect": "sqlite",
-        "path": "../user-db/users.sqlite",
-        "mode": "sqlite3.OPEN_READWRITE"
-    },
-    "email": null
-};
-
-// user management email server config
-userMgmtConfig.email = {"user": "guardduty@spatialdev.com",
-    "password": "q1w2e3r4t5",
-    "host": "smtpout.secureserver.net",
-    "ssl": true,
-
-    "fromAlias": "API User Management",
-    "fromEmail": "admin@api.com",
-    "newEmailAddressForTest": "tests@spatialdev.com",
-    "newUserEmailAddressForTest": "r.gwozdz@gmail.com"};
-
-securityAndUserManagement(app, userMgmtConfig);
+    expressUserManagement(app, settings.userMgmtConfig);
 
     // Intercept vector-tile endpoints;  These routes might be more easily target in Express > 4.0
     app.use(function (req, res, next) {
 
         // Set vector-tile endpoint pattern
-        var pattern = new RegExp("^\/services\/postgis\/.+\/geom\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
+        var pattern = new RegExp("^\/services\/postgis\/.+\/.+\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
 
         // Does this request fit the endpoint pattern
         if(pattern.test(req.url)){
@@ -111,19 +82,16 @@ securityAndUserManagement(app, userMgmtConfig);
             //Get the token query param
             var token = req.query.token;
 
-            // Validate the token
-            jwt.verify(token, userMgmtConfig.authenticationSecret, function(err, decoded) {
-
-                if(err) {
-                    return res.status(400).json({error: 401, authenticated: false, message: 'invalid token'});
-                }
-
-                // Valid token, deliver the tile
+            try {
+                var decoded = jwt.verify(token, settings.userMgmtConfig.authenticationSecret);
                 next();
+            } catch(err) {
+                return res.status(400).json({error: 401, authenticated: false, message: 'invalid token'});
+            }
 
-            });
         }
 
+        next();
 
 
     });
