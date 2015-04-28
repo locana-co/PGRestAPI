@@ -2,9 +2,22 @@
  * Module dependencies.
  */
 
-var settings
+var validDeployments = ['production', 'staging', 'development', 'unit-testing'];
+
+var deploymentType = process.argv[2] || 'development';
+
+if(validDeployments.indexOf(deploymentType) === -1) {
+    console.error('Invalid deployment type');
+    return;
+}
+
+
+var settingsPatch, settings;
+
 //if settings.js doesn't exist, let the user know and exit
 try {
+  settingsPatch = require('./settings/settings-patch.js');
+    settingsPatch.setDeploymentSettings(deploymentType);
   settings = require('./settings/settings.js');
 } catch (e) {
   console.log("No settings.js file detected in settings folder.  Try copying the settings/settings.js.example to settings/settings.js and add in settings.");
@@ -15,7 +28,6 @@ var pg = require('pg'),
   express = require('express'),
   http = require('http'),
   path = require('path'),
-  settings = require('./settings/settings'),
   common = require("./common"),
   cors = require('cors'),
   fs = require("fs"),
@@ -23,8 +35,7 @@ var pg = require('pg'),
   _ = require("underscore"),
   https = require('https');
   app = express(),
-  expressUserManagement = require('@spatialdev/express-user-management'),
-  secured = true;
+  expressUserManagement = require('@spatialdev/express-user-management');
 
 
 //PostGres Connection String
@@ -66,7 +77,7 @@ var passport = { authenticationFunctions: []};
 app.use(cors());
 
 // Secure the endpoints?
-if(secured === true) {
+if(settings.secureAPI === true) {
 
     expressUserManagement(app, settings.userMgmtConfig);
 
@@ -85,6 +96,7 @@ if(secured === true) {
             try {
                 var decoded = jwt.verify(token, settings.userMgmtConfig.authenticationSecret);
                 next();
+                return;
             } catch(err) {
                 return res.status(400).json({error: 401, authenticated: false, message: 'invalid token'});
             }
@@ -92,7 +104,6 @@ if(secured === true) {
         }
 
         next();
-
 
     });
 
