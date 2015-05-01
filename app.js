@@ -17,7 +17,7 @@ var settingsPatch, settings;
 //if settings.js doesn't exist, let the user know and exit
 try {
   settingsPatch = require('./settings/settings-patch.js');
-    settingsPatch.setDeploymentSettings(deploymentType);
+  settingsPatch.setDeploymentSettings(deploymentType);
   settings = require('./settings/settings.js');
 } catch (e) {
   console.log("No settings.js file detected in settings folder.  Try copying the settings/settings.js.example to settings/settings.js and add in settings.");
@@ -108,9 +108,8 @@ if(settings.secureAPI === true) {
     });
 
 }
+
 app.use(app.router);
-
-
 
 
 //Load in all endpoint routes
@@ -163,7 +162,6 @@ try {
 
 if (datablaster)
   app.use(datablaster.app(passport));
-
 
 
 
