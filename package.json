@@ -15,7 +15,7 @@
     "test": "node_modules/.bin/mocha -u tdd --reporter spec"
   },
   "dependencies": {
-    "@spatialdev/express-user-management": "0.0.5",
+    "@spatialdev/express-user-management": "0.0.6",
     "cors": "2.4.1",
     "crypto": "0.0.3",
     "express": "3.3.4",

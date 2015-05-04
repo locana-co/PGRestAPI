@@ -101,9 +101,9 @@ if(settings.secureAPI === true) {
                 return res.status(400).json({error: 401, authenticated: false, message: 'invalid token'});
             }
 
+        } else {
+            next();
         }
-
-        next();
 
     });
 
