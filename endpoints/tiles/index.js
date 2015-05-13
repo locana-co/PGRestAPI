@@ -984,7 +984,7 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
             //it is default styling
             this.isDefault = true;
 
-            this.fullpath = path.join(this._stylepath, 'rast_default.xml');
+            this.fullpath = path.join(this._stylepath, 'rastDefault.xml');
         }
 
         //Read the file and pass the contents to the next function
@@ -997,19 +997,27 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
 
         var _self = this;
 
-        var route = '/services/rasters/' + this.settings.routeProperties.name + '/dynamicMap/:z/:x/:y.png';
+        var route = '/services/rasters/' + this.settings.routeProperties.name + '/dynamicMap/:style/:z/:x/:y.png';
 
         //Create Route for this table
-        this.app.get(route, cacher.cache('day'), function (req, res) {
+        this.app.get(route, cacher.cache('minute'), function (req, res) {
+            var stylefyle = req.params.style;
+            var fullstylepath = path.join(__dirname, 'cartocss', stylefyle+'.xml');
 
-            //Start Timer to measure response speed for tile requests.
-            var startTime = Date.now();
+            // if style xml exists, replace the default with the passed in style
+            if (fs.existsSync(fullstylepath)){
+                styleSheet = fs.readFileSync(fullstylepath,'utf8');
+            } else {
+                console.log('defaulting to default stylesheet');
+                stylefyle = 'rastDefault';
+            }
 
             try {
+
                 //create map
                 var map = new mapnik.Map(256, 256, mercator.proj4);
 
-                var bbox = mercator.xyz_to_envelope(+req.param('x'), +req.param('y'), +req.param('z'), true); //the last 'true' means that we'll get geographic coords.
+                var bbox = mercator.xyz_to_envelope(+req.params.x, +req.params.y, +req.params.z, true); //the last 'true' means that we'll get geographic coords.
 
                 map.bufferSize = 8;
 
@@ -1029,9 +1037,9 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
 
                     // contruct a mapnik layer dynamically
                     var l = new mapnik.Layer('raster');
-                    //l.srs = map.srs;
+
                     l.srs = geographic.proj4; //assumes geographic (WGS 84) projection
-                    l.styles = ['rast_default'];
+                    l.styles = [stylefyle];
 
                     // add our custom datasource
                     l.datasource = ds;
@@ -1048,11 +1056,9 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
                     var im = new mapnik.Image(map.width, map.height);
                     map.render(im, function (err, im) {
 
-                        if (err) {
+                            if (err) {
                             throw err;
                         } else {
-                            var duration = Date.now() - startTime;
-                            //_self.performanceObject.times.push(duration);
                             res.writeHead(200, {
                                 'Content-Type': 'image/png'
                             });
@@ -1070,7 +1076,7 @@ var createRasterTileRenderer = exports.createRasterTileRenderer = flow.define(
 
         });
 
-    console.log("Created dynamic raster tile service: " + '/services/rasters/' + this.settings.routeProperties.name + '/dynamicMap/:z/:x/:y.*');
+    console.log("Created dynamic raster tile service: " + '/services/rasters/' + this.settings.routeProperties.name + '/dynamicMap/:stylesheet/:z/:x/:y.*');
 });
 
 

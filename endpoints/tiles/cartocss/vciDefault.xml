@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+<Map minimum-version="2.0.0">
+
+<Style name="vciDefault" filter-mode="first">
+    <Rule>
+        <RasterSymbolizer opacity="1" scaling="bilinear">
+            <RasterColorizer default-mode="discrete" default-color="rgba(0, 0, 0, 0)">
+                <stop value="0" color="#ff5117" />
+                <stop value="0.2" color="#d7f956" />
+                <stop value="0.4" color="#00e400" />
+                <stop value="0.6" color="#008300" />
+                <stop value="0.8" color="#009bff" />
+                <stop value="1.5" color="rgba(0, 0, 0, 0)"  mode="exact" />
+            </RasterColorizer>
+        </RasterSymbolizer>
+    </Rule>
+</Style>
+
+</Map>

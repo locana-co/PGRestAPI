@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+<Map minimum-version="2.0.0">
+
+<Style name="ndviDefault" filter-mode="first">
+    <Rule>
+        <RasterSymbolizer opacity="1" scaling="lanczos">
+            <RasterColorizer default-mode="discrete" default-color="rgba(0, 0, 0, 0)" epsilon="0.001">
+                <stop value="-1" color="#040404" />
+                <stop value="-0.1" color="#040404" />
+                <stop value="0" color="#362f2d" />
+                <stop value="0.05" color="#603913" />
+                <stop value="0.1" color="#8c6239" />
+                <stop value="0.15" color="#c69c6d" />
+                <stop value="0.2" color="#acd373" />
+                <stop value="0.25" color="#65cd65" />
+                <stop value="0.3" color="#0fba0f" />
+                <stop value="0.35" color="#08ab31" />
+                <stop value="0.4" color="#0a9728" />
+                <stop value="0.45" color="#198c32" />
+                <stop value="0.5" color="#059200" />
+                <stop value="0.55" color="#007236" />
+                <stop value="0.6" color="#005e20" />
+                <stop value="0.7" color="#024e1d" />
+                <stop value="1.1" color="#024421" />
+                <stop value="1.5" color="rgba(0, 0, 0, 0)"  mode="exact" />
+            </RasterColorizer>
+        </RasterSymbolizer>
+    </Rule>
+</Style>
+
+</Map>
