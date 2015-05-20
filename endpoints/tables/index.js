@@ -70,7 +70,8 @@ exports.app = function (passport) {
       } else {
         //Fetch from DB
         var query = {
-          text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public'" + (settings.otherSchemas && settings.otherSchemas.length > 0 ? " OR table_schema IN ('" + settings.otherSchemas.join("', '") + "') " : "") + " and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
+          //text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public'" + (settings.otherSchemas && settings.otherSchemas.length > 0 ? " OR table_schema IN ('" + settings.otherSchemas.join("', '") + "') " : "") + " and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
+          text: fs.readFileSync('endpoints/tables/sql/getTablesViews.sql', 'utf8'),
           values: []
         };
         common.executePgQuery(query, function (err, result) {
@@ -146,7 +147,7 @@ exports.app = function (passport) {
       //Grab from stash if we have it already
       //TODO: don't use settings object to store column names.  use Express' app object
 
-      if (settings.columnNames && settings.columnNames[this.args.table]) {
+      if (isTableInHash(this.args.table)) {
         this.args.featureCollection.columns = settings.columnNames[this.args.table].rows;
 
         this(null, settings.columnNames[this.args.table]);
@@ -163,6 +164,7 @@ exports.app = function (passport) {
             return;
           }else{
             flo.args.columnNames = result.rows;
+            flo.args.featureCollection.columns = flo.args.columnNames;
             flo(null, result); //Move to next block
           }
         })
@@ -220,6 +222,7 @@ exports.app = function (passport) {
       //If there's a geom or raster column, then check for SRID
       this.spatialTables = app.get('spatialTables');
 
+      //TODO: this.spatial tables has the geom name appended after the table name.  Need to account for this.
       if (rasterOrGeometry.present === true) {
         if (this.spatialTables[this.args.table] && this.spatialTables[this.args.table].srid) {
           this({
@@ -349,7 +352,7 @@ exports.app = function (passport) {
         }
 
         //See if columns exist for this table in settings.js
-        if (settings.columnNames[this.args.table]) {
+        if (isTableInHash(this.args.table)) {
           this();
         } else {
           //Trigger the table_details endpoint.  That will load the columns into settings.js (globally)
@@ -402,7 +405,7 @@ exports.app = function (passport) {
         var args = this.args;
         var flo = this;
         //See if columns exist for this table in settings.js
-        if (settings.columnNames[this.args.table]) {
+        if (isTableInHash(this.args.table)) {
           this.args.columnNames = settings.columnNames[this.args.table].rows;
           common.respond(req, res, args);
         } else {
@@ -615,7 +618,7 @@ exports.app = function (passport) {
 
       //provide all columns (except geometries).
       if (this.returnfields.legnth == 0 || this.returnfields == "" || this.returnfields.trim() == "*") {
-        createSelectAllStatementWithExcept(this.args.table, common.unEscapePostGresColumns(geom_fields_array).join(","), this);
+        createSelectAllStatementWithExcept(this.args.table, "'" + common.unEscapePostGresColumns(geom_fields_array).join("','") + "'", this);
         //Get all fields except the no fly list
       } else {
         //flow to next block - pass fields
@@ -1220,8 +1223,9 @@ exports.app = function (passport) {
   //pass in a table, and a comma separated list of fields to NOT select
   function createSelectAllStatementWithExcept(table, except_list, callback) {
     var query = {
-      text: "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN ($2)",
-      values: [table, except_list]
+      //text: "SELECT c.column_name::text FROM information_schema.columns As c WHERE table_name = $1 AND  c.column_name NOT IN ($2)",
+      text: fs.readFileSync('endpoints/tables/sql/getSelectAllStatementWithExcept.sql', 'utf8').split("{{table}}").join(table).split("{{except}}").join(except_list),
+      values: []
     };
     common.executePgQuery(query, function (err, result) {
       if (err) {
@@ -1247,7 +1251,7 @@ exports.app = function (passport) {
     getGeometryFieldNames(table, this);
   }, function (err, geom_fields_array) {
     //Array of geometry columns
-    console.log(" in geom fields. " + geom_fields_array.length);
+
     if (geom_fields_array.length == 0) {
       this.callback([], []);
     } else {
@@ -1277,6 +1281,16 @@ exports.app = function (passport) {
     }
   });
 
+  function isTableInHash (table) {
+
+    //See if we've stored this hash of names already.
+    if (settings.columnNames && settings.columnNames[table]) {
+      return true;
+    }
+    //Not in the hash
+    return false;
+  }
+
   //pass in a table, get an array of geometry columns
   function getGeometryFieldNames(table, callback) {
 
@@ -1285,8 +1299,9 @@ exports.app = function (passport) {
     //If no table, return empty array
 
     var query = {
-      text: "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1",
-      values: [table]
+      //text: "select column_name from INFORMATION_SCHEMA.COLUMNS where (data_type = 'USER-DEFINED' AND udt_name = 'geometry') AND table_name = $1",
+      text: fs.readFileSync('endpoints/tables/sql/getGeometryFieldNames.sql', 'utf8').split("{{table}}").join(table),
+      values: []
     };
 
     common.executePgQuery(query, function (err, result) {
@@ -1383,9 +1398,12 @@ exports.app = function (passport) {
 
     var args = {};
 
+    var queryText = fs.readFileSync('endpoints/tables/sql/getTableInfo.sql', 'utf8');
+
     var query = {
-      text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1",
-      values: [table]
+      //text: "select column_name, CASE when data_type = 'USER-DEFINED' THEN udt_name ELSE data_type end as data_type from INFORMATION_SCHEMA.COLUMNS where table_name = $1",
+      text: queryText.split("{{table}}").join(table),
+      values: []
     };
 
     common.executePgQuery(query, function (err, result) {
