@@ -68,10 +68,55 @@ exports.app = function (passport) {
         args.featureCollection = settings.tableList;
         common.respond(req, res, args);
       } else {
+
+        var sql = fs.readFileSync('endpoints/tables/sql/getTablesViews.sql', 'utf8');
+        //Set schema search
+        if(settings.otherSchemas && settings.otherSchemas.length > 0){
+          sql = sql.replace("{{schemas}}", " OR n.nspname IN ('" + settings.otherSchemas.join("', '") + "')");
+        }
+        else{
+          sql = sql.replace("{{schemas}}", "");
+        }
+
+        //Include tables?
+        if(settings.displayTables === true){
+          sql = sql.replace("{{include_tables}}", " c.relkind = 'r'");
+        }
+        else{
+          sql = sql.replace("{{include_tables}}", " 1=1");
+        }
+
+        //Include views/materialized views?
+        if(settings.displayViews === true){
+          sql = sql.replace("{{include_views}}", " c.relkind = 'v'");
+          sql = sql.replace("{{include_materialized}}", " c.relkind = 'm'");
+        }
+        else{
+          sql = sql.replace("{{include_views}}", "1=1");
+          sql = sql.replace("{{include_materialized}}", "1=1");
+        }
+
+        //Set no fly list
+        if(settings.pg.noFlyList && settings.pg.noFlyList.length > 0){
+          sql = sql.replace("{{no_fly_list}}", ",'" + settings.pg.noFlyList.join("','") + "'");
+        }
+        else{
+          sql = sql.replace("{{no_fly_list}}", "");
+        }
+
+
+        //Allow for search
+        if(args.search){
+          sql = sql.replace("{{search}}", " AND table_name ILIKE ('" + args.search + "%') ");
+        }
+        else{
+          sql = sql.replace("{{search}}", "");
+        }
+
         //Fetch from DB
         var query = {
           //text: "SELECT * FROM information_schema.tables WHERE table_schema = 'public'" + (settings.otherSchemas && settings.otherSchemas.length > 0 ? " OR table_schema IN ('" + settings.otherSchemas.join("', '") + "') " : "") + " and (" + (settings.displayTables === true ? "table_type = 'BASE TABLE'" : "1=1") + (settings.displayViews === true ? " or table_type = 'VIEW'" : "") + ") AND table_name NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys'" + (settings.pg.noFlyList && settings.pg.noFlyList.length > 0 ? ",'" + settings.pg.noFlyList.join("','") + "'" : "") + ") " + (args.search ? " AND table_name ILIKE ('" + args.search + "%') " : "") + " ORDER BY table_schema,table_name; ",
-          text: fs.readFileSync('endpoints/tables/sql/getTablesViews.sql', 'utf8'),
+          text: sql,
           values: []
         };
         common.executePgQuery(query, function (err, result) {

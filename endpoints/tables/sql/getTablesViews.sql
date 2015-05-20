@@ -1,6 +1,6 @@
 SELECT
-NULL AS TABLE_CAT,
-  n.nspname AS TABLE_SCHEM,
+NULL AS table_catalog,
+  n.nspname AS table_schema,
   c.relname AS table_name,
   CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'
 WHEN true THEN
@@ -40,7 +40,7 @@ ELSE NULL
 END
 ELSE NULL
 END
-AS TABLE_TYPE,
+AS table_type,
   d.description AS REMARKS,
   c.relkind
 
@@ -55,9 +55,14 @@ c.relnamespace = n.oid
 AND c.relname LIKE '%'
 AND n.nspname <> 'pg_catalog'
 AND n.nspname <> 'information_schema'
-AND c.relkind IN ('r', 'v', 'm', 'f')
+
+
+AND (n.nspname = 'public'{{schemas}})
+AND ({{include_tables}} OR {{include_views}} OR {{include_materialized}})
+AND c.relname NOT IN ('geography_columns', 'geometry_columns', 'raster_columns', 'raster_overviews', 'spatial_ref_sys' {{no_fly_list}})
+{{search}}
 
 ORDER BY
-TABLE_TYPE,
-  TABLE_SCHEM,
-  table_name
+table_type,
+table_schema,
+table_name
