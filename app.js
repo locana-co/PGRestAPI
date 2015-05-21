@@ -81,14 +81,16 @@ if(settings.secureAPI === true) {
 
     expressUserManagement(app, settings.userMgmtConfig);
 
-    // Intercept vector-tile endpoints;  These routes might be more easily target in Express > 4.0
+    // Intercept tile endpoints
     app.use(function (req, res, next) {
 
-        // Set vector-tile endpoint pattern
-        var pattern = new RegExp("^\/services\/postgis\/.+\/.+\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
+        // Set  endpoint patterns
+        var vectorTilePattern = new RegExp("^\/services\/postgis\/.+\/.+\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
+        var imageTilePattern = new RegExp("^\/services\/tiles\/.+\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)\.png(?:\/(?=$))?$");
+
 
         // Does this request fit the endpoint pattern
-        if(pattern.test(req.url)){
+        if(vectorTilePattern.test(req.url) || imageTilePattern.test(req.url)){
 
             //Get the token query param
             var token = req.query.token;
