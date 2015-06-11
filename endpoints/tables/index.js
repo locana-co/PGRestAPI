@@ -707,7 +707,7 @@ exports.app = function (passport) {
       //check for error
       if (err) {
         //Report error and exit.
-        this.args.errorMessage = err.text;
+        this.args.errorMessage = err.message;
         flo();
       } else {
         //a-ok
