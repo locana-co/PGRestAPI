@@ -662,7 +662,7 @@ exports.app = function (passport) {
       }
 
       //provide all columns (except geometries).
-      if (this.returnfields.legnth == 0 || this.returnfields == "" || this.returnfields.trim() == "*") {
+      if (this.returnfields.length == 0 || this.returnfields == "" || this.returnfields.trim() == "*") {
         createSelectAllStatementWithExcept(this.args.table, "'" + common.unEscapePostGresColumns(geom_fields_array).join("','") + "'", this);
         //Get all fields except the no fly list
       } else {
