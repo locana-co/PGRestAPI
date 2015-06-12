@@ -86,11 +86,12 @@ if(settings.secureAPI === true) {
 
         // Set  endpoint patterns
         var vectorTilePattern = new RegExp("^\/services\/postgis\/.+\/.+\/vector-tiles\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
-        var imageTilePattern = new RegExp("^\/services\/tiles\/.+\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)\.png(?:\/(?=$))?$");
+        var staticVectorTilePattern = new RegExp("^\/services\/vector-tiles\/.+\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
+        var staticImageTilePattern = new RegExp("^\/services\/tiles\/.+\/([^\\/]+?)\/([^\\/]+?)\/([^\\/]+?)(?:\/(?=$))?$");
 
 
         // Does this request fit the endpoint pattern
-        if(vectorTilePattern.test(req.url) || imageTilePattern.test(req.url)){
+        if(vectorTilePattern.test(req.url) || staticVectorTilePattern.test(req.url) || staticImageTilePattern.test(req.url)){
 
             //Get the token query param
             var token = req.query.token;
