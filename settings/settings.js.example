@@ -45,8 +45,8 @@ settings.application.geoJsonOutputFolder = "/public/geojson/output/";
 settings.application.publichost = ""; //like myhost.com. Keep this empty if you want to use the default host
 settings.application.publicport = "80";
 
-//Epxress Session Secret
-settings.epxressSessionSecret = "secret";
+//Express Session Secret
+settings.expressSessionSecret = "secret";
 
 //MongoDB Authentication
 settings.mongodb = {};
