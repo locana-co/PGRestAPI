@@ -179,5 +179,5 @@ app.use(function (err, req, res, next) {
   console.error(err.stack);
   common.log(err.message);
   res.send(500, 'There was an error with the web service. Please try your operation again.');
-  common.log('There was an error with the web servcice. Please try your operation again.');
+  common.log('There was an error with the web service. Please try your operation again.');
 });
