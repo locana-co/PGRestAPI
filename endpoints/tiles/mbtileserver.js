@@ -418,7 +418,7 @@ function loadPNGMBTilesRoutes(app){
           PNGmbTileFiles.push(info);
         });
 
-        console.log("Tilelive Loaded " + file);
+        //console.log("Tilelive Loaded " + file);
         var name = file.split('.')[0];
         PNGroute = '/services/tiles/' + name + '/:z/:x/:y.png';
 
@@ -436,7 +436,7 @@ function loadPNGMBTilesRoutes(app){
           });
         });
 
-        console.log("Created PNG .mbtiles service: " + PNGroute);
+        //console.log("Created PNG .mbtiles service: " + PNGroute);
         _imageTileRoutes.push({ name: name, route: PNGroute, type: ".png .mbtiles" });
       });
 
@@ -573,7 +573,7 @@ function loadPNGMBTileByName(app, dataset){
           PNGmbTileFiles.push(info);
         });
 
-        console.log("Tilelive Loaded " + file);
+        //console.log("Tilelive Loaded " + file);
         var name = file.split('.')[0];
         PNGroute = '/services/tiles/' + name + '/:z/:x/:y.png';
 
@@ -591,7 +591,7 @@ function loadPNGMBTileByName(app, dataset){
           });
         });
 
-        console.log("Created PNG .mbtiles service: " + PNGroute);
+        //console.log("Created PNG .mbtiles service: " + PNGroute);
         _imageTileRoutes.push({ name: name, route: PNGroute, type: ".png .mbtiles" });
       });
 
@@ -810,7 +810,7 @@ function loadTM2ZSources(){
           }
         });
       });
-      console.log("Created PNG .mbtiles service: " + PNGroute);
+      //console.log("Created PNG .mbtiles service: " + PNGroute);
     });
   });
 
