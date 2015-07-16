@@ -5,14 +5,8 @@ var email   = require('emailjs');
 var fs = require('fs');
 var json2csv = require('json2csv');
 var AdmZip = require('adm-zip');
-var server  = email.server.connect({
-    "user": "guardduty@spatialdev.com",
-    "password": "q1w2e3r4t5",
-    "host": "smtpout.secureserver.net",
-    "ssl": true
-});
-
-//var common = require("../../../common");
+settings = require('../../../settings/settings');
+var server  = email.server.connect(settings.emailConfig);
 var tableviewsRaw = require("./tableviews.json");
 var tableviewDictionary = {};
 
@@ -74,31 +68,37 @@ operation.execute = flow.define(
         })
 
         json2csv({ data: filteredRecords, fields: fields, fieldNames: fieldnames }, function(err, csv) {
-            if (err) console.log(err);
-            console.log(csv);
 
-
-            // add local file
+            if (err) {
+                callback({text:err});
+                return;
+            }
 
             var fileName = 'export/_' + Math.random().toString(36).substr(2, 9) + '.zip';
             var zip = new AdmZip();
-            zip.addFile("ata-tableview-export.csv", new Buffer(csv), "tableview export");
+            zip.addFile("ata-table-export.csv", new Buffer(csv), "table export");
             zip.writeZip(fileName);
 
             var message = {
-                text:    "i hope this works",
-                from:    "rgwozdz@spatialdev.com",
-                to:      "rich <rgwozdz@spatialdev.com>",
-                subject: "ATA tableview export",
+                text:    "Your ATA table export is attached",
+                from:    "noreply@ata.gov.et",
+                to:      "<" + emailAddress + ">",
+                subject: "ATA table export",
                 attachment:
                     [
-                        {path:fileName, type:"application/zip", name:"ata-tableview-export.zip"}
+                        {path:fileName, type:"application/zip", name:"ata-table-export.zip"}
                     ]
             };
 
             // send the message and get a callback with an error or details of the message that was sent
             server.send(message, function(err, message) {
-                console.log(err || message);
+
+                if(err){
+                    callback(null, {rows: [{response: "failure to send email"}, {error: err}]});
+                    return;
+                }
+
+                callback(null, {rows: [{response: "success"}]});
 
                 // Delete file
                 fs.unlink(fileName, function (err) {
@@ -106,7 +106,6 @@ operation.execute = flow.define(
                     console.log('successfully deleted ' + fileName);
                 });
 
-                callback(null, {rows: [{response: "success"}]});
 
             });
 
