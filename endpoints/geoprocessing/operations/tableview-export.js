@@ -1,8 +1,17 @@
 var flow = require('flow');
 var pg = require('pg');
 var emailValidator = require("email-validator");
+var email   = require('emailjs');
 var fs = require('fs');
 var json2csv = require('json2csv');
+var AdmZip = require('adm-zip');
+var server  = email.server.connect({
+    "user": "guardduty@spatialdev.com",
+    "password": "q1w2e3r4t5",
+    "host": "smtpout.secureserver.net",
+    "ssl": true
+});
+
 //var common = require("../../../common");
 var tableviewsRaw = require("./tableviews.json");
 var tableviewDictionary = {};
@@ -68,51 +77,43 @@ operation.execute = flow.define(
             if (err) console.log(err);
             console.log(csv);
 
-            callback(null, {response: "success"});
+
+            // add local file
+
+            var fileName = 'export/_' + Math.random().toString(36).substr(2, 9) + '.zip';
+            var zip = new AdmZip();
+            zip.addFile("ata-tableview-export.csv", new Buffer(csv), "tableview export");
+            zip.writeZip(fileName);
+
+            var message = {
+                text:    "i hope this works",
+                from:    "rgwozdz@spatialdev.com",
+                to:      "rich <rgwozdz@spatialdev.com>",
+                subject: "ATA tableview export",
+                attachment:
+                    [
+                        {path:fileName, type:"application/zip", name:"ata-tableview-export.zip"}
+                    ]
+            };
+
+            // send the message and get a callback with an error or details of the message that was sent
+            server.send(message, function(err, message) {
+                console.log(err || message);
+
+                // Delete file
+                fs.unlink(fileName, function (err) {
+                    if (err) throw err;
+                    console.log('successfully deleted ' + fileName);
+                });
+
+                callback(null, {rows: [{response: "success"}]});
+
+            });
+
+
+
         });
 
-       // callback(null, { rows: filteredRecords});
-        /*
-
-
-
-        if(gadmChildTable === 'gadm1') {
-            idField += '1';
-            parentIdField += '0';
-            nameField += '1'
-        } else if (gadmChildTable === 'gadm2'){
-            idField += '2';
-            parentIdField += '1';
-            nameField += '2'
-        } else if (gadmChildTable === 'gadm3'){
-            idField += '3';
-            parentIdField += '2';
-            nameField += '3'
-        } else {
-            return callback({text: "Invalid GADM table name."});
-        }
-
-
-        //Step 1
-
-        //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
-        if (operation.isInputValid(operation.inputs) === true) {
-
-            var sql = { text: query.replace("{{idField}}", idField)
-                .replace("{{nameField}}", nameField)
-                .replace("{{gadmChildTable}}", gadmChildTable)
-                .replace("{{parentIdField}}", parentIdField)
-                .replace("{{gadmParentId}}", gadmParentId), values: []};
-
-            common.executePgQuery(sql, this);//Flow to next function when done.
-
-        }
-        else {
-            //Invalid arguments
-            //return message
-            callback({text: "Missing required arguments."});
-        }
-        */
     },
     function(err, results) {
         //Step 2 - get the results and pass back to calling function
