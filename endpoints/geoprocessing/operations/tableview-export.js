@@ -5,13 +5,13 @@ var email   = require('emailjs');
 var fs = require('fs');
 var json2csv = require('json2csv');
 var AdmZip = require('adm-zip');
-settings = require('../../../settings/settings');
+var settings = require('../../../settings/settings');
 var server  = email.server.connect(settings.emailConfig);
 var tableviewsRaw = require("./tableviews.json");
 var tableviewDictionary = {};
 
 tableviewsRaw.forEach(function(tableview){
-    tableviewDictionary[tableview.survey] = tableview;
+    tableviewDictionary[tableview.survey_id] = tableview;
 });
 
 var operation = {};
@@ -31,26 +31,50 @@ operation.inputs["respondent_ids"] = { value: "", required: false, help: "An arr
 operation.execute = flow.define(
     function(args, callback) {
 
-
-
         this.args = args;
         this.callback = callback;
 
         var surveyId = operation.inputs["survey_id"].value = args.survey_id;
         var emailAddress = operation.inputs["email_address"].value = args.email_address;
-        var respondentIds = [915, 916, 917];//operation.inputs["respondent_ids"].value = args.respondent_ids;
+        var respondentIds = operation.inputs["respondent_ids"].value = args.respondent_ids;
 
         if(/^\s*(\+|-)?\d+\s*$/.test(surveyId) === false){
             return callback({text: "survey_id is not an integer."});
         };
 
 
-        if(!respondentIds instanceof Array) {
-            return callback({respondent_ids: "respondent_ids is not an array."});
+        if(!Array.isArray(respondentIds)) {
+
+            // handle if a comma delimited string was submitted
+            respondentIds = respondentIds.split(',');
+
+            if(!Array.isArray(respondentIds)) {
+                return callback({text: "respondent_ids is not an array."});
+            }
+
         }
 
-        var surveyData = tableviewDictionary['ftc'].data;
-        var headersObj = tableviewDictionary['ftc'].header;
+        // make sure all ids are integers
+        var allIdAreInts = true;
+
+        respondentIds.every(function(id){
+
+            if(/^\s*(\+|-)?\d+\s*$/.test(id) === false){
+                allIdAreInts = false;
+                return false;
+            };
+
+        });
+
+        respondentIds = respondentIds.map(function(id){ return Number(id)});
+
+        if(allIdAreInts === false) {
+            callback({text: "at least on respondent id is not an integer."});
+            return;
+        }
+
+        var surveyData = tableviewDictionary[surveyId].data;
+        var headersObj = tableviewDictionary[surveyId].header_map;
 
         var fields = [];
         var fieldnames = [];
@@ -94,7 +118,7 @@ operation.execute = flow.define(
             server.send(message, function(err, message) {
 
                 if(err){
-                    callback(null, {rows: [{response: "failure to send email"}, {error: err}]});
+                    callback({text: "failure to send email; " + err});
                     return;
                 }
 

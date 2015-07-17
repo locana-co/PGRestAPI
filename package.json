@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@spatialdev/express-user-management": "0.0.6",
+    "adm-zip": "^0.4.7",
     "cors": "2.4.1",
     "crypto": "0.0.3",
     "email-validator": "^1.0.2",
