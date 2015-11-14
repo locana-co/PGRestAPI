@@ -1,0 +1,1 @@
+This directory holds temporary files used in the email export feature.

@@ -15,11 +15,11 @@
     "test": "node_modules/.bin/mocha -u tdd --reporter spec"
   },
   "dependencies": {
-    "@spatialdev/express-user-management": "0.0.6",
+    "express-user-management": "https://github.com/spatialdev/express-user-management/tarball/ata-prod",
     "adm-zip": "^0.4.7",
     "cors": "2.4.1",
+    "cron": "^1.0.9",
     "crypto": "0.0.3",
-    "email-validator": "^1.0.2",
     "emailjs": "^0.3.16",
     "express": "3.3.4",
     "flow": "0.2.3",
@@ -32,6 +32,7 @@
     "jsonwebtoken": "^5.0.0",
     "less-middleware": "0.1.14",
     "lru-cache": "2.5.0",
+    "mapnik": "1.4.17",
     "millstone": "0.6.12",
     "pg": "3.4.0",
     "pg-escape": "^0.1.0",
@@ -42,7 +43,6 @@
     "ya-csv": "0.9.4"
   },
   "optionalDependencies": {
-    "mapnik": "1.4.15",
     "carto": "0.11.0",
     "ogr2ogr": "0.3.1",
     "mbtiles": "0.5.0",

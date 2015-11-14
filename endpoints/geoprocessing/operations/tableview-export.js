@@ -1,18 +1,43 @@
 var flow = require('flow');
 var pg = require('pg');
-var emailValidator = require("email-validator");
 var email   = require('emailjs');
 var fs = require('fs');
+var path = require('path');
 var json2csv = require('json2csv');
 var AdmZip = require('adm-zip');
+var CronJob = require('cron').CronJob;
+
+// Email settings
 var settings = require('../../../settings/settings');
 var server  = email.server.connect(settings.emailConfig);
+
+// Static table view data
 var tableviewsRaw = require("./tableviews.json");
 var tableviewDictionary = {};
 
 tableviewsRaw.forEach(function(tableview){
-    tableviewDictionary[tableview.survey_id] = tableview;
+    tableviewDictionary[tableview.survey] = tableview;
 });
+
+
+// Cron job to clear out export folder;  files should get deleted, but if operation has an exception it might not
+new CronJob('00 00 00 * * *', function(){
+
+    var files = fs.readdirSync('export', function(err, files) {});
+
+    files.filter(function(filename) {
+
+        return path.extname(filename) === '.zip';
+
+    }).forEach(function(filename) {
+        // Delete file
+        fs.unlink('export/' + filename, function (err) {
+            if (err) throw err;
+            console.log('successfully deleted ' + filename);
+        });
+    });
+
+}, null, true, "America/Los_Angeles");
 
 var operation = {};
 
@@ -43,6 +68,14 @@ operation.execute = flow.define(
         };
 
 
+        if(respondentIds === null) {
+            return callback({text: "respondent_ids is not an array."});
+        }
+
+        if(emailAddress === null) {
+            return callback({text: "email address cannot be null."});
+        }
+
         if(!Array.isArray(respondentIds)) {
 
             // handle if a comma delimited string was submitted
@@ -66,15 +99,23 @@ operation.execute = flow.define(
 
         });
 
-        respondentIds = respondentIds.map(function(id){ return Number(id)});
-
         if(allIdAreInts === false) {
             callback({text: "at least on respondent id is not an integer."});
             return;
         }
 
-        var surveyData = tableviewDictionary[surveyId].data;
-        var headersObj = tableviewDictionary[surveyId].header_map;
+        respondentIds = respondentIds.map(function(id){ return Number(id)});
+
+        var surveyData = tableviewsRaw.filter(function(tableview){
+            return tableview.survey_id === surveyId;
+        });
+
+        if(surveyData.length === 0) {
+            callback({text: "Invalid survey id."});
+            return;
+        }
+        var tableData = surveyData[0].data;
+        var headersObj = surveyData[0].header_map;
 
         var fields = [];
         var fieldnames = [];
@@ -86,11 +127,14 @@ operation.execute = flow.define(
 
         // Limit to the submitted respondentIDs
 
-        var filteredRecords = surveyData.filter(function(rec){
+        var filteredRecords = tableData.filter(function(rec){
 
             return respondentIds.indexOf(rec.respondent_id) > -1;
         })
 
+        if(filteredRecords.length === 0) {
+            console.error('No records for export!!!!');
+        }
         json2csv({ data: filteredRecords, fields: fields, fieldNames: fieldnames }, function(err, csv) {
 
             if (err) {

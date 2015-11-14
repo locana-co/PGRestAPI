@@ -31,6 +31,7 @@ operation.execute = flow.define(
         var responseCriteriaJSON = operation.inputs["responseCriteria"].value = args.responseCriteria;
         var responseCriteria;
         var responseClause;
+        var query, sql;
 
         try {
 
@@ -51,7 +52,7 @@ operation.execute = flow.define(
             return callback({text: "Question ID is not an integer."});
         };
 
-        if(['integer', 'decimal', 'select one', 'select all that apply'].indexOf(questionType) === -1) {
+        if(['integer', 'decimal', 'select one', 'select all that apply', 'yes no'].indexOf(questionType) === -1) {
             return callback({text: "Question type is not valid."});
         }
 
@@ -63,11 +64,7 @@ operation.execute = flow.define(
             }
         } else {
 
-            if(!responseCriteria.hasOwnProperty('values')){
-
-                return callback({text: "Response criteria is not valid for question type '" + questionType + "'."});
-
-            } else if (!responseCriteria.values instanceof Array){
+            if (!responseCriteria instanceof Array){
 
                 return callback({text: "Response criteria is not valid for question type '" + questionType + "'."});
 
@@ -75,10 +72,10 @@ operation.execute = flow.define(
 
                 var invalid = false;
 
-                responseCriteria.values.some(function(value){
+                responseCriteria.some(function(value){
 
 
-                    if(validOptions.indexOf(value) === -1) {
+                    if(validOptions.indexOf(value) === -1 && value !== "-9999") {
 
                         invalid = true;
                         return false;
@@ -95,20 +92,41 @@ operation.execute = flow.define(
             }
         }
 
-        // Create response clause
-        if(questionType === 'integer' || questionType === 'decimal') {
+        if (questionType === "yes no" && responseCriteria[0] === "-9999") {
 
-            responseClause = "numeric >= " + responseCriteria.min + " AND numeric <= " + responseCriteria.max;
+            query = "SELECT array_to_json(array_agg(foo.respondent_id)) as respondents FROM(SELECT sr.respondent_id, q.name FROM (SELECT DISTINCT sr.respondent_id FROM survey_responses sr WHERE sr.survey_id = {{surveyId}}) as sr CROSS JOIN (SELECT DISTINCT id, name FROM question WHERE survey_id = {{surveyId}} AND id={{questionId}} ORDER BY id) as q) foo LEFT OUTER JOIN survey_responses sr ON foo.respondent_id = sr.respondent_id AND foo.name = sr.question_name WHERE sr.response IS NULL;";
+
+            sql = { text: query.replace(/{{surveyId}}/g, surveyId)
+                .replace("{{questionId}}", questionId)
+            };
 
         } else {
 
-            var clauseArr = responseCriteria.values.map(function(value){
+            //The query to be executed
+            query = "SELECT array_to_json(array_agg(respondent_id)) as respondents FROM response WHERE "
+            + "(survey_id = {{surveyId}} AND question_id = {{questionId}}) AND {{responseClause}}";
 
-                return "text SIMILAR TO '%(" + value + ")%'";
+            // Create response clause
+            if(questionType === 'integer' || questionType === 'decimal') {
 
-            });
+                responseClause = "numeric >= " + responseCriteria.min + " AND numeric <= " + responseCriteria.max;
 
-            responseClause = clauseArr.join(' AND ');
+            } else {
+
+                var clauseArr = responseCriteria.map(function(value){
+
+                    return "text SIMILAR TO '%(" + value + ")%'";
+
+                });
+
+                responseClause = clauseArr.join(' AND ');
+
+            }
+
+            sql = { text: query.replace(/{{surveyId}}/g, surveyId)
+                .replace("{{questionId}}", questionId)
+                .replace("{{responseClause}}", responseClause), values: []
+            };
 
         }
 
@@ -116,15 +134,6 @@ operation.execute = flow.define(
 
         //See if inputs are set. Incoming arguments should contain the same properties as the input parameters.
         if (operation.isInputValid(operation.inputs) === true) {
-
-
-            //The query to be executed
-            var query = "SELECT array_to_json(array_agg(respondent_id)) as respondents FROM response WHERE "
-                + "(survey_id = {{surveyId}} AND question_id = {{questionId}}) AND {{responseClause}}";
-
-            var sql = { text: query.replace(/{{surveyId}}/g, surveyId)
-                .replace("{{questionId}}", questionId)
-                .replace("{{responseClause}}", responseClause), values: []};
 
             common.executePgQuery(sql, this);//Flow to next function when done.
 

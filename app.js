@@ -35,7 +35,7 @@ var pg = require('pg'),
   _ = require("underscore"),
   https = require('https');
   app = express(),
-  expressUserManagement = require('@spatialdev/express-user-management');
+  expressUserManagement = require('express-user-management');
 
 
 //PostGres Connection String
@@ -232,3 +232,5 @@ app.use(function (err, req, res, next) {
   res.send(500, 'There was an error with the web service. Please try your operation again.');
   common.log('There was an error with the web servcice. Please try your operation again.');
 });
+
+
