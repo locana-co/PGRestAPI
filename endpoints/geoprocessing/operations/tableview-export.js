@@ -45,13 +45,14 @@ var operation = {};
 /* METADATA */
 
 operation.name = "ExportTableview";
-operation.description = "Takes an email address, survey id, and set of respondent ids, then creates and emails a CSV file.";
+operation.description = "Takes an email address, survey id, set of visible columns, and set of respondent ids, then creates and emails a CSV file.";
 operation.inputs = {};
 
 
-operation.inputs["survey_id"] = { value: "", required: false, help: "A valid survey id." };
-operation.inputs["email_address"] = { value: "", required: false, help: "A email address to send zipped csv to." };
-operation.inputs["respondent_ids"] = { value: "", required: false, help: "An array of respondent ids to limit CSV rows." };
+operation.inputs["survey_id"] = { value: "", required: true, help: "A valid survey id." };
+operation.inputs["email_address"] = { value: "", required: true, help: "A email address to send zipped csv to." };
+operation.inputs["respondent_ids"] = { value: "", required: true, help: "An array of respondent ids to limit CSV rows." };
+operation.inputs["visibleColumns"] = { value: "", required: true, help: "An array of survey column ids/slugs to limit CSV columns." };
 
 operation.execute = flow.define(
     function(args, callback) {
@@ -62,6 +63,7 @@ operation.execute = flow.define(
         var surveyId = operation.inputs["survey_id"].value = args.survey_id;
         var emailAddress = operation.inputs["email_address"].value = args.email_address;
         var respondentIds = operation.inputs["respondent_ids"].value = args.respondent_ids;
+        var visibleColumns = operation.inputs["visibleColumns"].value = args.visibleColumns;
 
         if(/^\s*(\+|-)?\d+\s*$/.test(surveyId) === false){
             return callback({text: "survey_id is not an integer."});
@@ -69,7 +71,11 @@ operation.execute = flow.define(
 
 
         if(respondentIds === null) {
-            return callback({text: "respondent_ids is not an array."});
+            return callback({text: "respondent_ids is not defined."});
+        }
+
+        if(visibleColumns === null) {
+            return callback({text: "visibleColumns is not defined."});
         }
 
         if(emailAddress === null) {
@@ -83,6 +89,17 @@ operation.execute = flow.define(
 
             if(!Array.isArray(respondentIds)) {
                 return callback({text: "respondent_ids is not an array."});
+            }
+
+        }
+
+        if(!Array.isArray(visibleColumns)) {
+
+            // handle if a comma delimited string was submitted
+            visibleColumns = visibleColumns.split(',');
+
+            if(!Array.isArray(visibleColumns)) {
+                return callback({text: "visibleColumns is not an array."});
             }
 
         }
@@ -121,21 +138,44 @@ operation.execute = flow.define(
         var fieldnames = [];
 
         for(var i in headersObj) {
-            fields.push(i);
-            fieldnames.push(headersObj[i]);
+
+
+            // Add properties found in the posted "visibleColumns" array
+            if(visibleColumns.indexOf(i) > -1) {
+                fields.push(i);
+                fieldnames.push(headersObj[i]);
+            }
+
         }
 
-        // Limit to the submitted respondentIDs
+        var exportRecords = [];
+        tableData.forEach(function(rec){
 
-        var filteredRecords = tableData.filter(function(rec){
+            // Skip records with ids that are not founded in the posted "respondent_ids" array
+            if (respondentIds.indexOf(rec.respondent_id) === -1){
+                return;
+            }
 
-            return respondentIds.indexOf(rec.respondent_id) > -1;
-        })
+            // Create an object to store only those property names found in the posted "visibleColumns" array
+            var newRec = {};
 
-        if(filteredRecords.length === 0) {
+            // Loop through JSON properties
+            for (var i in rec) {
+
+                // Add properties found in the posted "visibleColumns" array
+                if(visibleColumns.indexOf(i) > -1) {
+                    newRec[i] = rec[i];
+                }
+            }
+
+            exportRecords.push(newRec);
+        });
+
+
+        if(exportRecords.length === 0) {
             console.error('No records for export!!!!');
         }
-        json2csv({ data: filteredRecords, fields: fields, fieldNames: fieldnames }, function(err, csv) {
+        json2csv({ data: exportRecords, fields: fields, fieldNames: fieldnames }, function(err, csv) {
 
             if (err) {
                 callback({text:err});

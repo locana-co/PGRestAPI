@@ -15,13 +15,13 @@
     "test": "node_modules/.bin/mocha -u tdd --reporter spec"
   },
   "dependencies": {
-    "express-user-management": "https://github.com/spatialdev/express-user-management/tarball/ata-prod",
     "adm-zip": "^0.4.7",
     "cors": "2.4.1",
     "cron": "^1.0.9",
     "crypto": "0.0.3",
     "emailjs": "^0.3.16",
     "express": "3.3.4",
+    "express-user-management": "https://github.com/spatialdev/express-user-management/tarball/ata-prod",
     "flow": "0.2.3",
     "generic-pool": "2.0.4",
     "geojson-validation": "0.1.5",
@@ -36,6 +36,7 @@
     "millstone": "0.6.12",
     "pg": "3.4.0",
     "pg-escape": "^0.1.0",
+    "q": "^1.4.1",
     "request": "2.37.0",
     "semver": "2.3.0",
     "shortid": "2.0.1",
