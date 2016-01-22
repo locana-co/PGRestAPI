@@ -1438,6 +1438,13 @@ var createSingleTileRoute = exports.createSingleTileRoute = flow.define(
   });
 
 
+var escape_columns = function(columns) {
+  for(var i=0; i < columns.length; i++){
+    columns[i] = '"' + columns[i] + '"';
+  }
+  return columns;
+}
+
 //Generic implementation of vector tiles
 var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
   function (app, routeSettings, performanceObject) {
@@ -1467,6 +1474,8 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
 
         //If a where clause was passed in, and we're using a postgis datasource, allow it
         if (_self.settings.mapnik_datasource.type.toLowerCase() == 'postgis') {
+          fields_list = args.fields.split(',');
+          args.fields = escape_columns(fields_list).join(",");
           _self.settings.mapnik_datasource.table = (args.fields ? '(SELECT ' + _self.settings.routeProperties.geom_field + (args.fields ? ',' + args.fields : '') + ' from "' + _self.settings.routeProperties.table + '"' + (args.where ? ' WHERE ' + args.where : '') + ') as "' + _self.settings.routeProperties.table + '"' : '"' + _self.settings.routeProperties.table + '"');
         }
       }
