@@ -32,7 +32,7 @@ block content
                 var map = L.map('map');
                 var bounds = [[YMIN, XMIN], [YMAX, XMAX]]; //SouthWest, NorthEast (Lat Lon, Lat Lon) grr.
 
-                L.tileLayer('http://{s}.tiles.mapbox.com/v3/examples.map-qfyrx5r8/{z}/{x}/{y}.png').addTo(map);
+                L.tileLayer('http://{s}.tiles.mapbox.com/v3/mapbox.world-blue/{z}/{x}/{y}.png').addTo(map);
 
                 //Highly experimental Mapnik Vector Tiles PBFLayer
                 var pbfSource = new L.TileLayer.PBFSource({
