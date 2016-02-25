@@ -1572,10 +1572,10 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
                 return;
               }
 
-              // Empty tiles are equivalent to no tile.
+              // Empty tiles are valid responses.
               if (_self._blank || !key) {
                 res.removeHeader('Content-Encoding');
-                res.writeHead(404, {
+                res.writeHead(200, {
                   'Content-Type': 'application/octet-stream'
                 });
 
