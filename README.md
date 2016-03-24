@@ -1,6 +1,8 @@
 PGRestAPI (a.k.a. Chubbs Spatial Server)
 =========
 
+[![Join the chat at https://gitter.im/spatialdev/PGRestAPI](https://badges.gitter.im/spatialdev/PGRestAPI.svg)](https://gitter.im/spatialdev/PGRestAPI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ![alt text](https://raw.github.com/spatialdev/PGRestAPI/master/docs/screens/logo.png "Logo")
 
 ## Overview
