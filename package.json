@@ -26,7 +26,7 @@
     "jsdom": "0.10.5",
     "less-middleware": "0.1.14",
     "lru-cache": "2.5.0",
-    "millstone": "0.6.12",
+    "millstone": "0.6.17",
     "pg": "3.4.0",
     "request": "2.37.0",
     "semver": "2.3.0",
