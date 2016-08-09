@@ -1470,7 +1470,8 @@ var createVectorTileRoute = exports.createVectorTileRoute = flow.define(
           _self.settings.mapnik_datasource.table = (args.fields || args.where ? '(SELECT ' + _self.settings.routeProperties.geom_field + (args.fields ? ',' + args.fields : '') + ' from "' + _self.settings.routeProperties.table + '"' + (args.where ? ' WHERE ' + args.where : '') + ') as "' + _self.settings.routeProperties.table + '"' : '"' + _self.settings.routeProperties.table + '"');
         }
       }
-
+      _self.settings.mapnik_datasource.extent_from_subquery = true
+      _self.settings.mapnik_datasource.estimate_extent = true
       //Make the mapnik datasource.  We wait until now in case the table definition changes if a where clause is passed in above.
       _self.mapnikDatasource = (_self.settings.mapnik_datasource.describe ? _self.settings.mapnik_datasource : new mapnik.Datasource(_self.settings.mapnik_datasource));
 
