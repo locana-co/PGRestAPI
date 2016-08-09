@@ -290,8 +290,8 @@ exports.app = function (passport) {
             tileSettings.routeProperties.geom_field = item.geometry_column;
             tileSettings.routeProperties.defaultStyle = "";//The name of the style inside of the xml file
 
-            createMultiTileRoute(app, tileSettings, PGTileStats.MultiTiles);
-            createSingleTileRoute(app, tileSettings, PGTileStats.SingleTiles);
+            //createMultiTileRoute(app, tileSettings, PGTileStats.MultiTiles);
+            //createSingleTileRoute(app, tileSettings, PGTileStats.SingleTiles);
             createVectorTileRoute(app, tileSettings, PGTileStats.VectorTiles);
 
           })(item);
