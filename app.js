@@ -58,8 +58,22 @@ app.use(express.static(path.join(__dirname, 'GPModels')));
 //support for storing authentication credentials
 var passport = { authenticationFunctions: []};
 
+var whitelist = settings.cors.whitelist
+console.log(whitelist)
+var corsOptions = {
+    origin: function(origin, callback){
+    if (origin){
+        var originIsWhitelisted = whitelist.indexOf(origin) !== -1;
+        console.log(originIsWhitelisted)
+        callback(originIsWhitelisted ? null : 'Bad Request', originIsWhitelisted);
+    } else {
+        callback (null, { origin: false });
+    }
+  }
+};
+
 //This must be after app.use(passport.initialize())
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(app.router);
 
 
@@ -73,20 +87,6 @@ app.get('/', passport.authenticationFunctions, function (req, res) {
 var services = [];
 
 //TODO - Loop thru endpoints folder and require everything in there
-var tables = require('./endpoints/tables');
-app.use(tables.app(passport));
-services.push({ name: "PostGres Table Endpoints", link: "/services/tables" })
-
-
-var geoprocessing = require('./endpoints/geoprocessing');
-app.use(geoprocessing.app(passport));
-services.push({ name: "Geoprocessing", link: "/services/geoprocessing" })
-
-var utilities = require('./endpoints/utilities');
-app.use(utilities.app(passport));
-services.push({ name: "Utilities", link: "/services/utilities" })
-
-
 var tiles;
 try {
   tiles = require('./endpoints/tiles');
@@ -101,38 +101,47 @@ if (tiles) {
   app.use(tiles.app(passport));
 }
 
+// Disable ALL services endpoint except tiles
 
-var datablaster;
-try {
-  datablaster = require('./endpoints/datablaster');
+//var tables = require('./endpoints/tables');
+//app.use(tables.app(passport));
+//services.push({ name: "PostGres Table Endpoints", link: "/services/tables" })
+//
 
-} catch (e) {
-  datablaster = null;
-  console.log("Datablaster not properly installed. Skipping. Reason: No blast_config.js file found in endpoints/datablaster");
-}
+//var geoprocessing = require('./endpoints/geoprocessing');
+//app.use(geoprocessing.app(passport));
+//services.push({ name: "Geoprocessing", link: "/services/geoprocessing" })
+//
+//var utilities = require('./endpoints/utilities');
+//app.use(utilities.app(passport));
+//services.push({ name: "Utilities", link: "/services/utilities" })
 
-if (datablaster)
-  app.use(datablaster.app(passport));
-
-
+//var datablaster;
+//try {
+//  datablaster = require('./endpoints/datablaster');
+//
+//} catch (e) {
+//  datablaster = null;
+//  console.log("Datablaster not properly installed. Skipping. Reason: No blast_config.js file found in endpoints/datablaster");
+//}
+//
+//if (datablaster)
+//  app.use(datablaster.app(passport));
 
 
 //Create default /services route
-app.all('/services', function (req, res) {
-  //Display default page with list of services
-  var args = common.getArguments(req);
-
-  args.view = "services_list";
-  args.path = req.path;
-  args.host = settings.application.publichost || req.headers.host;
-  args.link = (req.secure ? "https:" : "http:") + "//" + args.host + "/services";
-  args.services = services;
-
-  common.respond(req, res, args);
-});
-
-
-
+//app.all('/services', function (req, res) {
+//  //Display default page with list of services
+//  var args = common.getArguments(req);
+//
+//  args.view = "services_list";
+//  args.path = req.path;
+//  args.host = settings.application.publichost || req.headers.host;
+//  args.link = (req.secure ? "https:" : "http:") + "//" + args.host + "/services";
+//  args.services = services;
+//
+//  common.respond(req, res, args);
+//});
 
 
 
@@ -172,12 +181,10 @@ if(settings.ssl && settings.ssl.pfx && settings.ssl.password){
   });
 }
 
-
-
 //Look for any errors (this signature is for error handling), this is generally defined after all other app.uses.
 app.use(function (err, req, res, next) {
   console.error(err.stack);
   common.log(err.message);
   res.send(500, 'There was an error with the web service. Please try your operation again.');
-  common.log('There was an error with the web servcice. Please try your operation again.');
+  common.log('There was an error with the web service. Please try your operation again.');
 });
