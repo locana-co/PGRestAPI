@@ -9,6 +9,8 @@ PGRestAPI (a.k.a. Chubbs Spatial Server)
 
 Node.js REST API for PostgreSQL Spatial Tables.
 
+An introduction to PGRestAPI can be found [here](https://github.com/spatialdev/PGRestAPI/blob/master/docs/Intro_PGRestAPI.pdf)
+
 A few key uses for PGRestAPI:
 
 * Create [Mapbox Vector Tiles](https://github.com/mapbox/vector-tile-spec) on the fly from PostGIS or shapefiles.  [_more..._](docs/VectorTiles.md)
